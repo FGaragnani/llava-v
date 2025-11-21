@@ -67,6 +67,7 @@ class ModelArguments:
     mm_vision_select_feature: Optional[str] = field(default="patch")
     # GLAMM alignment encoder arguments
     alignment_crop_size: Optional[int] = field(default=None, metadata={"help": "Input feature dimension for alignment encoder; if None infer from patch embedder."})
+    projector_dim: Optional[int] = field(default=2048, metadata={"help": "Hidden dimension for the alignment encoder projector."})
 
 
 @dataclass
@@ -1026,7 +1027,13 @@ def train(attn_implementation=None):
         try:
             # TODO: Maybe change the alignment_encoder
             if getattr(model.get_model(), "alignment_encoder", None) is None:
-                model.get_model().alignment_encoder = nn.Linear(in_dim, hidden_dim)
+                model.get_model().alignment_encoder = nn.Sequential([
+                    nn.Linear(in_dim, projector_dim),
+                    nn.SiLU(),
+                    nn.Linear(projector_dim, projector_dim),
+                    nn.SiLU(),
+                    nn.Linear(projector_dim, hidden_dim)
+                ])
         except Exception as e:
             rank0_print(f"WARNING: Failed creating alignment encoder: {e}")
 
