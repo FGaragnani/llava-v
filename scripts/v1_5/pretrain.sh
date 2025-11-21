@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=viral_llava_lora_dino
-#SBATCH --output=/work/cvcs2025/garagnani_napolitano_ricciardi/fil/tesi/logs/%x_%j.out
-#SBATCH --error=/work/cvcs2025/garagnani_napolitano_ricciardi/fil/tesi/logs/%x_%j.err
+#SBATCH --output=/work/tesi_fgaragnani/logs/%x_%j.out
+#SBATCH --error=/work/tesi_fgaragnani/logs/%x_%j.err
 #SBATCH --open-mode=truncate
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -9,7 +9,7 @@
 #SBATCH --mem=240G
 #SBATCH --cpus-per-task=32
 #SBATCH --partition=all_usr_prod
-#SBATCH --account=cvcs2025
+#SBATCH --account=tesi_fgaragnani
 #SBATCH --time=8:00:00
 
 module load anaconda3/2022.05
@@ -32,8 +32,8 @@ export WANDB_MODE=offline
 export WANDB_PROJECT=jeppetto
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 # export HF_HUB_CACHE="/leonardo_scratch/large/userexternal/fcocchi0/rag_mlmm/hf_models"
-export HF_HUB_CACHE="/work/cvcs2025/garagnani_napolitano_ricciardi/fil/tesi/checkpoints/"
-export HF_HOME="/work/cvcs2025/garagnani_napolitano_ricciardi/fil/tesi/checkpoints/"
+export HF_HUB_CACHE="/work/tesi_fgaragnani/checkpoints/"
+export HF_HOME="/work/tesi_fgaragnani/checkpoints/"
 export HF_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 
@@ -45,15 +45,13 @@ learning_rate=2e-4
 mm_projector_lr=2e-5
 run_name="${SLURM_JOB_NAME}"
 # output_dir="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/viral/${run_name}"
-output_dir="/work/cvcs2025/garagnani_napolitano_ricciardi/fil/tesi/checkpoints/viral/${run_name}"
+output_dir="/work/tesi_fgaragnani/checkpoints/viral/${run_name}"
 
 per_device_train_batch_size=16
 gradient_accumulation_steps=2
 
 # language_model="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/vicuna-7b-v1.5"
-language_model="/work/cvcs2025/garagnani_napolitano_ricciardi/fil/tesi/checkpoints/lmsys/vicuna-7b-v1.5"
-train_data_path="/leonardo_scratch/large/userexternal/fgaragna/dataset/viral/llava_v1_5_mix665k.json"
-train_image_folder="/leonardo_scratch/large/userexternal/fgaragna/dataset/viral"
+language_model="/work/tesi_fgaragnani/checkpoints/lmsys/vicuna-7b-v1.5"
 
 ((ws = $SLURM_NNODES * $SLURM_GPUS_PER_NODE))
 export WORLD_SIZE=$ws
@@ -73,7 +71,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     --nnodes=$SLURM_NNODES --nproc-per-node=$SLURM_GPUS_PER_NODE --rdzv-endpoint=$MASTER_ADDR --master-port=$MASTER_PORT --rdzv-id=$SLURM_JOB_NAME --rdzv-backend=c10d \
     llava/train/train_mem.py \
     --deepspeed ./scripts/zero2.json \
-    --model_name_or_path lmsys/vicuna-7b-v1.5 \
+    --model_name_or_path $language_model \
     --version plain \
     --data_path ./playground/data/LLaVA-Pretrain/blip_laion_cc_sbu_558k.json \
     --image_folder ./playground/data/LLaVA-Pretrain/images \
@@ -106,5 +104,5 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     --lazy_preprocess True \
     --report_to wandb \
     --use_glamm True \
-    --grand_image_dir /work/cvcs2025/garagnani_napolitano_ricciardi/fil/tesi/dataset/GLAMM/images \
-    --grand_annotation_dir /work/cvcs2025/garagnani_napolitano_ricciardi/fil/tesi/dataset/GLAMM/annotations/annotations/
+    --grand_image_dir /work/tesi_fgaragnani/dataset/GLAMM/images \
+    --grand_annotation_dir /work/tesi_fgaragnani/dataset/GLAMM/annotations/annotations/
