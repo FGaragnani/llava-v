@@ -69,7 +69,7 @@ echo "DATALOADER WORKERS: ${dataloader_num_workers}"
 srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     torchrun \
     --nnodes=$SLURM_NNODES --nproc-per-node=$SLURM_GPUS_PER_NODE --rdzv-endpoint=$MASTER_ADDR --master-port=$MASTER_PORT --rdzv-id=$SLURM_JOB_NAME --rdzv-backend=c10d \
-    llava/train/train_mem.py \
+    train/train_mem.py \
     --deepspeed ./scripts/zero2.json \
     --model_name_or_path $language_model \
     --version plain \
