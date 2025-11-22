@@ -825,10 +825,10 @@ def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer,
     if getattr(data_args, "use_glamm", False) and data_args.grand_image_dir and data_args.grand_annotation_dir:
         try:
             # Local import to avoid mandatory dependency when not used
-            from train.glamm_dataset import GranDDataset  # type: ignore
+            from train.glamm_dataset import GranDDataset
         except ImportError:
             try:
-                from .glamm_dataset import GranDDataset  # type: ignore
+                from .glamm_dataset import GranDDataset
             except ImportError:
                 GranDDataset = None  # type: ignore
         if GranDDataset is not None:
@@ -838,10 +838,6 @@ def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer,
                 tokenizer=tokenizer,
                 data_args=data_args,
             )
-            # Ensure multimodal flag for collator image fallback if vision tower active
-            if not data_args.is_multimodal and hasattr(grand_dataset, "flatten_patches"):
-                # GranDDataset always produces images; no need to set is_multimodal unless vision modules initialized
-                pass
         else:
             rank0_print("WARNING: GranDDataset could not be imported; proceeding without GLAMM data.")
 

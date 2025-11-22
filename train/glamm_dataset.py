@@ -73,23 +73,7 @@ class GranDDataset(Dataset):
 
     def _build_image_index(self):
         for ann_path in self.annotation_files:
-            try:
-                with open(ann_path, "r", encoding="utf-8") as f:
-                    ann_file = json.load(f)
-            except Exception:
-                continue
-            if not isinstance(ann_file, dict) or not ann_file:
-                continue
-            image_name = list(ann_file.keys())[0]
-            ann = ann_file.get(image_name, {})
-            dense = ann.get("dense_caption", {})
-            caption = dense.get("caption") if isinstance(dense, dict) else (dense if isinstance(dense, str) else None)
-            if not caption or not isinstance(caption, str):
-                continue
-            image_path = os.path.join(self.image_dir, image_name)
-            if not os.path.exists(image_path):
-                continue
-            self._image_index.append({"ann_path": ann_path, "image_name": image_name})
+            self._image_index.append({"ann_path": ann_path, "image_name": ann_path.split(".")[0]})
 
     def __len__(self) -> int:
         return len(self._image_index)
