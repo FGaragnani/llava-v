@@ -838,6 +838,7 @@ def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer,
                 tokenizer=tokenizer,
                 data_args=data_args,
             )
+            rank0_print("GrandDDataset correctly loaded.")
         else:
             rank0_print("WARNING: GranDDataset could not be imported; proceeding without GLAMM data.")
 
