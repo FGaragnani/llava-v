@@ -23,7 +23,6 @@ source activate viral
 PROJECT_ROOT="/work/tesi_fgaragnani/"
 export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 
-export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
 export PYTHONUNBUFFERED=1
 # export TORCH_HOME="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys"
 export TRANSFORMERS_VERBOSITY=info
@@ -70,7 +69,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     torchrun \
     --nnodes=$SLURM_NNODES --nproc-per-node=$SLURM_GPUS_PER_NODE --rdzv-endpoint=$MASTER_ADDR --master-port=$MASTER_PORT --rdzv-id=$SLURM_JOB_NAME --rdzv-backend=c10d \
     train/train_mem.py \
-    --deepspeed ./scripts/zero2.json \
+    --deepspeed ./scripts/zero3_offload.json \
     --model_name_or_path $language_model \
     --version plain \
     --data_path ./playground/data/LLaVA-Pretrain/blip_laion_cc_sbu_558k.json \
