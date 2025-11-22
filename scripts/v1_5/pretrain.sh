@@ -23,6 +23,7 @@ source activate viral
 PROJECT_ROOT="/work/tesi_fgaragnani/"
 export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 
+export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
 export PYTHONUNBUFFERED=1
 # export TORCH_HOME="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys"
 export TRANSFORMERS_VERBOSITY=info
