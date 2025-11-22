@@ -81,7 +81,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     --mm_use_im_start_end False \
     --mm_use_im_patch_token False \
     --alignment_crop_size 768 \
-    --bf16 True \
+    --bf16 False \
     --output_dir ./checkpoints/llava-v1.5-7b-pretrain \
     --num_train_epochs 1 \
     --per_device_train_batch_size 32 \
@@ -96,7 +96,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     --warmup_ratio 0.03 \
     --lr_scheduler_type "cosine" \
     --logging_steps 1 \
-    --tf32 True \
+    --tf32 False \
     --model_max_length 2048 \
     --gradient_checkpointing True \
     --dataloader_num_workers 4 \
