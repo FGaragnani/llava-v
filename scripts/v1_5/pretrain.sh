@@ -6,7 +6,7 @@
 #SBATCH --nodes=2
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus-per-node=4
-#SBATCH --mem=180G
+#SBATCH --mem=90G
 #SBATCH --cpus-per-task=16
 #SBATCH --partition=all_usr_prod
 #SBATCH --account=tesi_fgaragnani
