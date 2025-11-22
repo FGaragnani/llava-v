@@ -3,11 +3,11 @@
 #SBATCH --output=/work/tesi_fgaragnani/logs/%x_%j.out
 #SBATCH --error=/work/tesi_fgaragnani/logs/%x_%j.err
 #SBATCH --open-mode=truncate
-#SBATCH --nodes=2
+#SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus-per-node=4
-#SBATCH --mem=90G
-#SBATCH --cpus-per-task=16
+#SBATCH --mem=240G
+#SBATCH --cpus-per-task=32
 #SBATCH --partition=all_usr_prod
 #SBATCH --account=tesi_fgaragnani
 #SBATCH --time=8:00:00
@@ -46,7 +46,7 @@ run_name="${SLURM_JOB_NAME}"
 # output_dir="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/viral/${run_name}"
 output_dir="/work/tesi_fgaragnani/checkpoints/viral/${run_name}"
 
-per_device_train_batch_size=16
+per_device_train_batch_size=8
 gradient_accumulation_steps=2
 
 # language_model="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/vicuna-7b-v1.5"
