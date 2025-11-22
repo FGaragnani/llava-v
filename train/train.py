@@ -1024,6 +1024,7 @@ def train(attn_implementation=None):
             # Common fallback for dinov2-base
             in_dim = 768
         hidden_dim = model.config.hidden_size
+        projector_dim = getattr(data_args, "glamm_projector_dim", 2048)
         try:
             # TODO: Maybe change the alignment_encoder
             if getattr(model.get_model(), "alignment_encoder", None) is None:
