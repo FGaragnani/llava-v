@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=viral_llava_lora_dino
+#SBATCH --job-name=llava-v_s1
 #SBATCH --output=/work/tesi_fgaragnani/logs/%x_%j.out
 #SBATCH --error=/work/tesi_fgaragnani/logs/%x_%j.err
 #SBATCH --open-mode=truncate
@@ -19,10 +19,6 @@ module unload gcc
 module load gcc/11.3.0
 
 source activate viral
-cd ~/viral
-
-REPO_ROOT="$HOME/viral"
-export PYTHONPATH="${REPO_ROOT}:$PYTHONPATH"
 
 export PYTHONUNBUFFERED=1
 # export TORCH_HOME="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys"
