@@ -20,8 +20,8 @@ module load gcc/11.3.0
 
 source activate viral
 
-PROJECT_ROOT="/work/tesi_fgaragnani/"
-export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
+PROJECT_ROOT="/work/tesi_fgaragnani"
+export PYTHONPATH="$PROJECT_ROOT/:$PROJECT_ROOT/llava/:$PYTHONPATH"
 
 export PYTHONUNBUFFERED=1
 # export TORCH_HOME="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys"
