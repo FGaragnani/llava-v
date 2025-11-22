@@ -3,11 +3,11 @@
 #SBATCH --output=/work/tesi_fgaragnani/logs/%x_%j.out
 #SBATCH --error=/work/tesi_fgaragnani/logs/%x_%j.err
 #SBATCH --open-mode=truncate
-#SBATCH --nodes=1
+#SBATCH --nodes=2
 #SBATCH --ntasks-per-node=1
-#SBATCH --gpus-per-node=8
-#SBATCH --mem=360G
-#SBATCH --cpus-per-task=32
+#SBATCH --gpus-per-node=4
+#SBATCH --mem=180G
+#SBATCH --cpus-per-task=16
 #SBATCH --partition=all_usr_prod
 #SBATCH --account=tesi_fgaragnani
 #SBATCH --time=8:00:00
