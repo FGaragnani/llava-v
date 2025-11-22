@@ -1028,13 +1028,13 @@ def train(attn_implementation=None):
         try:
             # TODO: Maybe change the alignment_encoder
             if getattr(model.get_model(), "alignment_encoder", None) is None:
-                model.get_model().alignment_encoder = nn.Sequential([
+                model.get_model().alignment_encoder = nn.Sequential(
                     nn.Linear(in_dim, projector_dim),
                     nn.SiLU(),
                     nn.Linear(projector_dim, projector_dim),
                     nn.SiLU(),
                     nn.Linear(projector_dim, hidden_dim)
-                ])
+                )
         except Exception as e:
             rank0_print(f"WARNING: Failed creating alignment encoder: {e}")
 
