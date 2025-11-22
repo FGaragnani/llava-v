@@ -143,10 +143,8 @@ class LLaVATrainer(Trainer):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Initialize PatchEmbedder for GranD auxiliary loss
-        self.patch_embedder = None
         device = self.args.device if hasattr(self.args, 'device') else 'cuda'
-        self.patch_embedder = PatchEmbedder(agg_mode="cls")
+        self.patch_embedder = PatchEmbedder(agg_mode="cls", device=device)
         for param in self.patch_embedder.parameters():
             param.requires_grad = False
 

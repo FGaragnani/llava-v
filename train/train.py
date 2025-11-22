@@ -1032,6 +1032,7 @@ def train(attn_implementation=None):
                     nn.SiLU(),
                     nn.Linear(projector_dim, hidden_dim)
                 )
+                rank0_print("alignment_encoder correctly loaded")
         except Exception as e:
             rank0_print(f"WARNING: Failed creating alignment encoder: {e}")
 
