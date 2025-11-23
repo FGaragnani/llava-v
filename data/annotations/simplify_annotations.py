@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
 Script to simplify annotation JSON files by extracting only dense_caption information.
-Usage: python simplify_annotations.py
+Usage: python simplify_annotations.py [--d DIRECTORY]
 """
 
 import os
 import json
+import argparse
 from pathlib import Path
 from tqdm import tqdm
 
@@ -86,4 +87,15 @@ def simplify_annotations(annotation_dir=None):
 
 
 if __name__ == "__main__":
-    simplify_annotations()
+    parser = argparse.ArgumentParser(
+        description="Simplify annotation JSON files by extracting only dense_caption information."
+    )
+    parser.add_argument(
+        "--d", 
+        type=str, 
+        default=None,
+        help="Working directory containing annotation files (default: script directory)"
+    )
+    
+    args = parser.parse_args()
+    simplify_annotations(annotation_dir=args.d)
