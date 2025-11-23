@@ -24,6 +24,8 @@ PROJECT_ROOT="/work/tesi_fgaragnani"
 export PYTHONPATH="$PROJECT_ROOT/:$PROJECT_ROOT/llava/:$PYTHONPATH"
 
 export PYTHONUNBUFFERED=1
+export FLASH_ATTENTION_2=0
+
 # export TORCH_HOME="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys"
 export TRANSFORMERS_VERBOSITY=info
 export TOKENIZERS_PARALLELISM=false
@@ -88,7 +90,6 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps $gradient_accumulation_steps \
     --evaluation_strategy "no" \
-    --attn_implementation sdpa \
     --save_strategy "steps" \
     --save_steps 24000 \
     --save_total_limit 1 \
