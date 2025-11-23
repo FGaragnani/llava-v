@@ -73,7 +73,7 @@ class GranDDataset(Dataset):
 
     def _build_image_index(self):
         for ann_path in self.annotation_files:
-            self._image_index.append({"ann_path": ann_path, "image_name": ann_path.split(".")[0]})
+            self._image_index.append({"ann_path": ann_path, "image_name": os.path.splitext(os.path.basename(ann_path))[0]})
 
     def __len__(self) -> int:
         return len(self._image_index)
