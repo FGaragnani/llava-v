@@ -42,10 +42,9 @@ class GranDDataset(Dataset):
         self.prompt_template = prompt_template or "Describe the scene."
         self.label_joiner = label_joiner
         self.check_area_fn = lambda img_size, patch_area: (patch_area / img_size) > check_area
-        self.annotation_files = [
-            os.path.join(annotation_dir, f)
-            for f in os.listdir(annotation_dir)
-            if f.lower().endswith(".json")
+        self.image_files = [
+            f for f in os.listdir(self.image_dir)
+            if f.lower().endswith(".jpg")
         ]
         self._image_index: List[Dict[str, str]] = []
         self._build_image_index()
@@ -72,8 +71,18 @@ class GranDDataset(Dataset):
         return F.to_tensor(padded)
 
     def _build_image_index(self):
-        for ann_path in self.annotation_files:
-            self._image_index.append({"ann_path": ann_path, "image_name": os.path.splitext(os.path.basename(ann_path))[0]})
+        if not os.path.isdir(self.image_dir):
+            return
+        for img_file in self.image_files:
+            stem = os.path.splitext(img_file)[0]
+            ann_path = os.path.join(self.annotation_dir, stem + ".json") if self.annotation_dir else ''
+            if ann_path and not os.path.isfile(ann_path):
+                ann_path = ''  # mark missing
+            self._image_index.append({
+                "ann_path": ann_path,
+                "image_name": stem,
+                "image_file": img_file,
+            })
 
     def __len__(self) -> int:
         return len(self._image_index)
@@ -82,11 +91,21 @@ class GranDDataset(Dataset):
         if idx < 0 or idx >= len(self._image_index):
             raise IndexError(idx)
         entry = self._image_index[idx]
-        ann_path = entry["ann_path"]
+        ann_path = entry.get("ann_path", '')
         image_name = entry["image_name"]
-        with open(ann_path, "r", encoding="utf-8") as f:
-            ann_file = json.load(f)
-        ann = ann_file.get(image_name, {})
+        if ann_path and os.path.isfile(ann_path):
+            try:
+                with open(ann_path, "r", encoding="utf-8") as f:
+                    ann_file = json.load(f)
+                # Some annotation JSONs are a dict keyed by image_name; others are directly the annotation dict
+                if isinstance(ann_file, dict) and image_name in ann_file:
+                    ann = ann_file.get(image_name, {})
+                else:
+                    ann = ann_file
+            except Exception:
+                ann = {}
+        else:
+            ann = {}
 
         dense = ann.get("dense_caption", {})
         if isinstance(dense, dict):
@@ -100,7 +119,7 @@ class GranDDataset(Dataset):
             details = []
 
         # Image
-        image_path = os.path.join(self.image_dir, image_name + ".jpg")
+        image_path = os.path.join(self.image_dir, entry.get("image_file", image_name + ".jpg"))
         image = Image.open(image_path).convert("RGB")
         w, h = image.size
         img_area = w * h
