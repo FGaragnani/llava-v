@@ -88,6 +88,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps $gradient_accumulation_steps \
     --evaluation_strategy "no" \
+    --attn_implementation sdpa \
     --save_strategy "steps" \
     --save_steps 24000 \
     --save_total_limit 1 \
