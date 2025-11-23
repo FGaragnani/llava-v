@@ -100,7 +100,7 @@ class GranDDataset(Dataset):
             details = []
 
         # Image
-        image_path = os.path.join(self.image_dir, image_name)
+        image_path = os.path.join(self.image_dir, image_name + ".jpg")
         image = Image.open(image_path).convert("RGB")
         w, h = image.size
         img_area = w * h
