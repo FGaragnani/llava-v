@@ -84,6 +84,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     --mm_use_im_patch_token False \
     --alignment_crop_size 768 \
     --bf16 False \
+    --fp16 True \
     --output_dir ./checkpoints/llava-v1.5-7b-pretrain \
     --num_train_epochs 1 \
     --per_device_train_batch_size $per_device_train_batch_size \

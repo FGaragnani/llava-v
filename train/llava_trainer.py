@@ -296,6 +296,9 @@ class LLaVATrainer(Trainer):
         grand_dense_captions = inputs.pop('grand_dense_captions', None)
         grand_dense_labels = inputs.pop('grand_dense_labels', None)
 
+        if getattr(self.args, 'local_rank', 0) in (-1, 0):
+            logger.debug(f"[GrandAlignDebug] batch_keys={list(inputs.keys())} has_grand_mask={grand_mask is not None} has_bboxes={grand_bboxes is not None} has_paths={grand_image_paths is not None} has_captions={grand_dense_captions is not None} has_labels={grand_dense_labels is not None}")
+
         # Request hidden states if any grand samples present
         if grand_mask is not None and 'output_hidden_states' not in inputs:
             inputs['output_hidden_states'] = True
@@ -311,6 +314,11 @@ class LLaVATrainer(Trainer):
         matched_crop_total = 0
         if grand_mask is not None and labels is not None and grand_bboxes is not None and grand_image_paths is not None and grand_dense_labels is not None and grand_dense_captions is not None:
             grand_mask = grand_mask.bool()
+            if getattr(self.args, 'local_rank', 0) in (-1, 0):
+                try:
+                    logger.debug(f"[GrandAlignDebug] grand_mask_any={grand_mask.any().item()} grand_mask_sum={grand_mask.sum().item()}")
+                except Exception:
+                    logger.debug("[GrandAlignDebug] grand_mask statistics unavailable")
             if grand_mask.any():
                 # Obtain last hidden states
                 hidden_states = None
@@ -318,6 +326,8 @@ class LLaVATrainer(Trainer):
                     hidden_states = outputs.hidden_states[-1]
                 elif isinstance(outputs, tuple) and len(outputs) > 2:
                     hidden_states = outputs[2]
+                if getattr(self.args, 'local_rank', 0) in (-1, 0):
+                    logger.debug(f"[GrandAlignDebug] hidden_states_found={hidden_states is not None}")
                 if hidden_states is not None:
                     per_sample_losses = []
                     for b_idx, is_grand in enumerate(grand_mask):
@@ -326,11 +336,15 @@ class LLaVATrainer(Trainer):
                         sample_bboxes = grand_bboxes[b_idx] if b_idx < len(grand_bboxes) else []
                         image_path = grand_image_paths[b_idx] if b_idx < len(grand_image_paths) else None
                         if not sample_bboxes or image_path is None:
+                            if getattr(self.args, 'local_rank', 0) in (-1, 0):
+                                logger.debug(f"[GrandAlignDebug] skip_sample b={b_idx} reason=no_bboxes_or_path")
                             continue
                         label_row = labels[b_idx]
                         # Mask for generated caption tokens (assistant response)
                         token_mask = (label_row != IGNORE_INDEX) & (label_row != -100)
                         if token_mask.sum() == 0:
+                            if getattr(self.args, 'local_rank', 0) in (-1, 0):
+                                logger.debug(f"[GrandAlignDebug] skip_sample b={b_idx} reason=empty_token_mask")
                             continue
                         generated_token_ids = label_row[token_mask].tolist()
                         generated_indices = torch.nonzero(token_mask, as_tuple=False).squeeze(-1).tolist()
@@ -338,7 +352,9 @@ class LLaVATrainer(Trainer):
                         try:
                             from PIL import Image
                             img = Image.open(image_path).convert('RGB')
-                        except Exception:
+                        except Exception as e:  # capture error for logging
+                            if getattr(self.args, 'local_rank', 0) in (-1, 0):
+                                logger.debug(f"[GrandAlignDebug] skip_sample b={b_idx} reason=image_open_fail error={repr(e)}")
                             continue
                         crops = []
                         for (l, t, r, b) in sample_bboxes:
@@ -347,6 +363,8 @@ class LLaVATrainer(Trainer):
                             except Exception:
                                 continue
                         if not crops:
+                            if getattr(self.args, 'local_rank', 0) in (-1, 0):
+                                logger.debug(f"[GrandAlignDebug] skip_sample b={b_idx} reason=no_valid_crops")
                             continue
                         crop_total += len(crops)
                         with torch.no_grad():
@@ -366,6 +384,8 @@ class LLaVATrainer(Trainer):
                         crop_losses = []
                         phrases = grand_dense_labels[b_idx] if b_idx < len(grand_dense_labels) else []
                         full_caption_text = grand_dense_captions[b_idx] if b_idx < len(grand_dense_captions) else ""
+                        if getattr(self.args, 'local_rank', 0) in (-1, 0):
+                            logger.debug(f"[GrandAlignDebug] sample b={b_idx} bboxes={len(sample_bboxes)} crops={len(crops)} phrases={len(phrases)}")
 
                         for crop_i, phrase in enumerate(phrases):
                             phrase = phrase.strip()
@@ -376,6 +396,8 @@ class LLaVATrainer(Trainer):
                             variants = [phrase, phrase.lower(), phrase.capitalize()]
                             matched_embed = None
                             for variant in variants:
+                                if self.tokenizer is None:
+                                    break
                                 variant_tokens = self.tokenizer(variant, add_special_tokens=False).input_ids
                                 # Subsequence search
                                 for start in range(len(generated_token_ids) - len(variant_tokens) + 1):
@@ -397,10 +419,17 @@ class LLaVATrainer(Trainer):
                             sim = F.cosine_similarity(F.normalize(aligned_vec.unsqueeze(0), dim=-1),
                                                       F.normalize(matched_embed.unsqueeze(0), dim=-1)).mean()
                             crop_losses.append(1 - sim)
+                        if getattr(self.args, 'local_rank', 0) in (-1, 0):
+                            logger.debug(f"[GrandAlignDebug] sample b={b_idx} crop_losses_count={len(crop_losses)}")
                         if crop_losses:
                             per_sample_losses.append(torch.stack(crop_losses).mean())
                     if per_sample_losses:
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
+                        if getattr(self.args, 'local_rank', 0) in (-1, 0):
+                            logger.debug(f"[GrandAlignDebug] per_sample_losses_count={len(per_sample_losses)} grand_extra_loss={grand_extra_loss.item():.6f}")
+                    else:
+                        if getattr(self.args, 'local_rank', 0) in (-1, 0):
+                            logger.debug("[GrandAlignDebug] no_per_sample_losses grand_extra_loss=0")
 
         # Logging summary (rank 0 only to avoid spam)
         if (grand_extra_loss > 0) and (getattr(self.args, 'local_rank', 0) in (-1, 0)):
@@ -413,7 +442,7 @@ class LLaVATrainer(Trainer):
                 f"phrases_attempted={attempted_phrase_total} phrases_matched={matched_phrase_total} crops_total={crop_total} crops_matched={matched_crop_total}"
             )
 
-        weight = getattr(self.args, 'grand_alignment_loss_weight', 1.0)
+        weight = getattr(self.args, 'grand_alignment_loss_weight', 0.5)
         total_loss = base_loss + (grand_extra_loss * weight)
         if return_outputs:
             return total_loss, outputs
