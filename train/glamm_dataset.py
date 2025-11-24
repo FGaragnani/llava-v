@@ -97,6 +97,7 @@ class GranDDataset(Dataset):
             try:
                 with open(ann_path, "r", encoding="utf-8") as f:
                     ann_file = json.load(f)
+                print("DEBUG: Loading " + image_name + ".jpg")
                 ann = ann_file.get(image_name + ".jpg")
             except Exception:
                 ann = {}
