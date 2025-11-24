@@ -11,25 +11,27 @@ from pathlib import Path
 from tqdm import tqdm
 
 
-def simplify_annotations(annotation_dir=None):
+def simplify_annotations(annotation_dir=None, keep_originals=False):
     """
     Simplify annotation JSON files by keeping only dense_caption information.
     
     Args:
         annotation_dir: Directory containing annotation files. If None, uses script directory.
+        keep_originals: If True, copy originals to original/ folder. If False, move them.
     """
     if annotation_dir is None:
         annotation_dir = Path(__file__).parent
     else:
         annotation_dir = Path(annotation_dir)
     
-    original_dir = annotation_dir / "original"
-    original_dir.mkdir(exist_ok=True)
+    simple_dir = annotation_dir / "simple"
+    simple_dir.mkdir(exist_ok=True)
     
-    # Find all JSON files (excluding those starting with ssa_)
+    original_dir = annotation_dir / "original"
+    
+    # Find all JSON files in the main directory (not in subdirectories)
     json_files = [
-        f for f in annotation_dir.glob("*.json") 
-        if not f.name.startswith("ssa_")
+        f for f in annotation_dir.glob("*.json")
     ]
     
     if not json_files:
@@ -70,20 +72,32 @@ def simplify_annotations(annotation_dir=None):
                 }
             }
             
-            # Move original file to original/ subdirectory
-            original_path = original_dir / filename
-            json_file.rename(original_path)
-            
-            # Save simplified version
-            simplified_path = annotation_dir / f"ssa_{filename}"
+            # Save simplified version with same filename
+            simplified_path = simple_dir / filename
             with open(simplified_path, "w", encoding="utf-8") as f:
                 json.dump(simplified, f, indent=2, ensure_ascii=False)
             
-        except Exception as e:
+            # Handle original file
+            if keep_originals:
+                # Copy to original/ subdirectory
+            if keep_originals:
+                # Copy to original/ subdirectory
+                import shutil
+                original_dir.mkdir(exist_ok=True)
+                original_path = original_dir / filename
+                shutil.copy2(json_file, original_path)
+            else:
+                # Move to original/ subdirectory
+                original_dir.mkdir(exist_ok=True)
+                original_path = original_dir / filename
+                json_file.rename(original_path)
             tqdm.write(f"  ✗ ERROR processing {filename}: {e}")
     
-    print(f"\n✓ Done! Original files moved to: {original_dir}")
-    print("✓ Simplified files created with ssa_ prefix")
+    print(f"\n✓ Done! Simplified files saved to: {simple_dir}")
+    if keep_originals:
+        print(f"✓ Original files backed up to: {original_dir}")
+    else:
+        print(f"✓ Original files moved to: {annotation_dir / 'original'}")
 
 
 if __name__ == "__main__":
@@ -96,6 +110,11 @@ if __name__ == "__main__":
         default=None,
         help="Working directory containing annotation files (default: script directory)"
     )
+    parser.add_argument(
+        "--keep-originals",
+        action="store_true",
+        help="Keep original files in place and copy to original/ folder (default: move to original/)"
+    )
     
     args = parser.parse_args()
-    simplify_annotations(annotation_dir=args.d)
+    simplify_annotations(annotation_dir=args.d, keep_originals=args.keep_originals)
