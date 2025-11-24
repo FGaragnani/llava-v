@@ -12,18 +12,30 @@ from pathlib import Path
 from tqdm import tqdm
 
 
-def simplify_annotations(annotation_dir=None, keep_originals=False):
+def simplify_annotations(annotation_dir=None, image_dir=None, keep_originals=False):
     """
     Simplify annotation JSON files by keeping only dense_caption information.
-    
+
     Args:
         annotation_dir: Directory containing annotation files. If None, uses script directory.
+        image_dir: Optional directory containing images. If provided, only JSON files
+            whose stem matches a file in `image_dir` will be processed.
         keep_originals: If True, copy originals to original/ folder. If False, move them.
     """
     if annotation_dir is None:
         annotation_dir = Path(__file__).parent
     else:
         annotation_dir = Path(annotation_dir)
+
+    # Prepare image stems filter if requested
+    image_stems = None
+    if image_dir:
+        image_dir = Path(image_dir)
+        if not image_dir.exists() or not image_dir.is_dir():
+            print(f"Image directory does not exist or is not a directory: {image_dir}")
+            return
+        # Collect stems of files in image_dir (ignore subdirectories)
+        image_stems = {p.stem for p in image_dir.iterdir() if p.is_file()}
     
     simple_dir = annotation_dir / "simple"
     simple_dir.mkdir(exist_ok=True)
@@ -32,9 +44,13 @@ def simplify_annotations(annotation_dir=None, keep_originals=False):
     original_dir.mkdir(exist_ok=True)
     
     # Find all JSON files in the main directory (not in subdirectories)
-    json_files = [
-        f for f in annotation_dir.glob("*.json")
-    ]
+    json_files = [f for f in annotation_dir.glob("*.json")]
+
+    # If image_dir provided, filter json_files to only those whose stem is in image_stems
+    if image_stems is not None:
+        original_count = len(json_files)
+        json_files = [f for f in json_files if f.stem in image_stems]
+        print(f"Filtered {original_count} -> {len(json_files)} files using images in: {image_dir}")
     
     if not json_files:
         print("No JSON files to process.")
@@ -115,6 +131,13 @@ if __name__ == "__main__":
         action="store_true",
         help="Keep original files in place and copy to original/ folder (default: move to original/)"
     )
+    parser.add_argument(
+        "-i", "--image-dir",
+        dest="image_dir",
+        type=str,
+        default=None,
+        help="Optional image directory: if provided, only process JSON files matching image basenames"
+    )
     
     args = parser.parse_args()
-    simplify_annotations(annotation_dir=args.d, keep_originals=args.keep_originals)
+    simplify_annotations(annotation_dir=args.d, image_dir=args.image_dir, keep_originals=args.keep_originals)
