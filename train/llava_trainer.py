@@ -437,7 +437,7 @@ class LLaVATrainer(Trainer):
                 step = getattr(self.state, 'global_step', None)
             except Exception:
                 step = None
-            logger.info(
+            print(
                 f"[GrandAlign] step={step} base_loss={base_loss.item():.4f} align_loss={grand_extra_loss.item():.4f} "
                 f"phrases_attempted={attempted_phrase_total} phrases_matched={matched_phrase_total} crops_total={crop_total} crops_matched={matched_crop_total}"
             )
