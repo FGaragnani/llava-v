@@ -76,7 +76,8 @@ class PatchEmbedder(nn.Module):
         returns: [N, D] aggregated patch embeddings
         """
         # Preprocess and move to device
-        inputs = self.processor(images=patches, return_tensors="pt", do_rescale=False).to(self.device)
+        inputs = self.processor(images=patches, return_tensors="pt")
+        inputs = {k: v.to(self.device) for k, v in inputs.items()}
         outputs = self.model(**inputs, output_hidden_states=True)
         
         # Hidden states -> last layer embeddings
