@@ -5,8 +5,8 @@
 #SBATCH --open-mode=truncate
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --gpus-per-node=4
-#SBATCH --mem=240G
+#SBATCH --gpus-per-node=1
+#SBATCH --mem=10G
 #SBATCH --cpus-per-task=32
 #SBATCH --partition=all_usr_prod
 #SBATCH --account=tesi_fgaragnani
