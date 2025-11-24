@@ -77,6 +77,7 @@ class PatchEmbedder(nn.Module):
         """
         # Preprocess and move to device
         inputs = self.processor(images=patches, return_tensors="pt")
+        print("Shape of inputs pixel_values:", inputs['pixel_values'].shape)
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
         outputs = self.model(**inputs, output_hidden_states=True)
         
