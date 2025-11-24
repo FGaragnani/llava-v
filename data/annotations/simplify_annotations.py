@@ -80,8 +80,6 @@ def simplify_annotations(annotation_dir=None, keep_originals=False):
             # Handle original file
             if keep_originals:
                 # Copy to original/ subdirectory
-            if keep_originals:
-                # Copy to original/ subdirectory
                 import shutil
                 original_dir.mkdir(exist_ok=True)
                 original_path = original_dir / filename
@@ -91,6 +89,8 @@ def simplify_annotations(annotation_dir=None, keep_originals=False):
                 original_dir.mkdir(exist_ok=True)
                 original_path = original_dir / filename
                 json_file.rename(original_path)
+            
+        except Exception as e:
             tqdm.write(f"  ✗ ERROR processing {filename}: {e}")
     
     print(f"\n✓ Done! Simplified files saved to: {simple_dir}")
