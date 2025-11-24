@@ -97,26 +97,15 @@ class GranDDataset(Dataset):
             try:
                 with open(ann_path, "r", encoding="utf-8") as f:
                     ann_file = json.load(f)
-                # Some annotation JSONs are a dict keyed by image_name; others are directly the annotation dict
-                if isinstance(ann_file, dict) and image_name in ann_file:
-                    ann = ann_file.get(image_name, {})
-                else:
-                    ann = ann_file
+                ann = ann_file.get(image_name + ".jpg")
             except Exception:
                 ann = {}
         else:
             ann = {}
 
         dense = ann.get("dense_caption", {})
-        if isinstance(dense, dict):
-            dense_caption_text = dense.get("caption", "")
-            details = dense.get("details", [])
-        elif isinstance(dense, str):
-            dense_caption_text = dense
-            details = []
-        else:
-            dense_caption_text = ""
-            details = []
+        dense_caption_text = dense.get("caption", "")
+        details = dense.get("details", [])
 
         # Image
         image_path = os.path.join(self.image_dir, entry.get("image_file", image_name + ".jpg"))
@@ -127,33 +116,17 @@ class GranDDataset(Dataset):
         dense_labels: List[str] = []
         bboxes: List[Tuple[int, int, int, int]] = []
         
-        if isinstance(details, list):
-            for d in details:
-                if not isinstance(d, dict):
-                    continue
-
-                # Extract phrase or fallback textual field
-                text = None
-                for k in ("phrase", "caption", "text", "detail", "value", "description"):
-                    v = d.get(k)
-                    if isinstance(v, str) and v.strip():
-                        text = v.strip()
-                        break
-
-                # Extract bbox for this detail (annotation may store nested list of bboxes)
-                bbox_values = d.get("bbox")
-                if bbox_values and text:
-                    # Some annotations store [[l,t,r,b]]
-                    if isinstance(bbox_values, list) and len(bbox_values) == 1 and isinstance(bbox_values[0], list):
-                        bbox_values = bbox_values[0]
-                    try:
-                        l, t, r, b = map(int, bbox_values)
-                        area = max(0, r - l) * max(0, b - t)
-                        if area > 0 and self.check_area_fn(img_area, area):
-                            dense_labels.append(text)
-                            bboxes.append((l, t, r, b))
-                    except Exception:
-                        pass  # Skip invalid bbox
+        for d in details:
+            v = d.get("phrase")
+            text = v.strip()
+            bbox_values = d.get("bbox")
+            if bbox_values and text:
+                bbox_values = bbox_values[0]
+                l, t, r, b = map(int, bbox_values)
+                area = max(0, r - l) * max(0, b - t)
+                if area > 0 and self.check_area_fn(img_area, area):
+                    dense_labels.append(text)
+                    bboxes.append((l, t, r, b))
 
         if self.image_processor is None:
             image_tensor = F.to_tensor(image)
