@@ -77,10 +77,15 @@ class PatchEmbedder(nn.Module):
         """
         # Preprocess and move to device
         inputs = self.processor(images=patches, return_tensors="pt")
-        print("Shape of inputs pixel_values:", inputs['pixel_values'].shape)
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
-        outputs = self.model(**inputs, output_hidden_states=True)
-        
+        try:
+            outputs = self.model(**inputs, output_hidden_states=True)
+        except RuntimeError as e:
+            print("RuntimeError during model forward pass:", e)
+            print("Input tensor shape:", inputs['pixel_values'].shape)
+            print("Input dtype: ", inputs['pixel_values'].dtype)
+            print("Model device: ", next(self.model.parameters()).device)
+
         # Hidden states -> last layer embeddings
         last_hidden = outputs.last_hidden_state  # [N, num_tokens, D]
         cls_token = last_hidden[:, 0, :]         # [N, D]
