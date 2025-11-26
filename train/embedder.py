@@ -98,6 +98,7 @@ class PatchEmbedder(nn.Module):
             print("Input tensor shape:", inputs['pixel_values'].shape)
             print("Input dtype: ", inputs['pixel_values'].dtype)
             print("Model device: ", next(self.model.parameters()).device)
+            print("Sharded?", any(hasattr(p, "ds_id") for p in self.model.parameters()))
 
         # Hidden states -> last layer embeddings
         last_hidden = outputs.last_hidden_state  # [N, num_tokens, D]

@@ -144,6 +144,8 @@ class LLaVATrainer(Trainer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         object.__setattr__(self, "patch_embedder", PatchEmbedder(agg_mode="cls"))
+        for p in self.patch_embedder.parameters():
+            p.ds_status = "ignore"
         self.patch_embedder.freeze()
         self.patch_embedder.to("cuda" if torch.cuda.is_available() else "cpu")
 
