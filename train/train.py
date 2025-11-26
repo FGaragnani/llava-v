@@ -1054,7 +1054,7 @@ def train(attn_implementation=None):
     data_module = make_supervised_data_module(tokenizer=tokenizer,
                                               data_args=data_args)
     patch_embedder = PatchEmbedder(agg_mode=data_args.patch_agg_mode)
-    patch_embedder.to(training_args.device)
+    patch_embedder.to(device="cuda")
     if training_args.fsdp:
         from torch.distributed.fsdp.wrap import auto_wrap
         patch_embedder = auto_wrap(patch_embedder, ignored_modules=[patch_embedder])
