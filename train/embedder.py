@@ -61,6 +61,7 @@ class PatchEmbedder(nn.Module):
             self.processor = AutoImageProcessor.from_pretrained(model_name)
             self.model = AutoModel.from_pretrained(model_name)
         self.model.eval()
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.agg_mode = agg_mode
         self.dim = self.model.config.hidden_size
         if self.agg_mode == "attn":
@@ -79,6 +80,7 @@ class PatchEmbedder(nn.Module):
         self.model.to(device)
         if self.attn_block is not None:
             self.attn_block.to(device)
+        self.device = device
 
     @torch.no_grad()
     def forward(self, patches):
