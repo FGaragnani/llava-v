@@ -27,6 +27,7 @@ import torch.nn as nn
 
 import transformers
 import tokenizers
+from embedder import PatchEmbedder
 
 from llava.constants import IGNORE_INDEX, IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
 from torch.utils.data import Dataset, ConcatDataset
@@ -1051,9 +1052,11 @@ def train(attn_implementation=None):
 
     data_module = make_supervised_data_module(tokenizer=tokenizer,
                                               data_args=data_args)
+    patch_embedder = PatchEmbedder(agg_mode=data_args.patch_agg_mode)
     trainer = LLaVATrainer(model=model,
                     tokenizer=tokenizer,
                     args=training_args,
+                    patch_embedder=patch_embedder,
                     **data_module)
 
     if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):
