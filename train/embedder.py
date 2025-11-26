@@ -46,7 +46,7 @@ class PatchEmbedder(nn.Module):
           - "attn": learn a small attention block, return first token [B, D]
           - "tokens": return patch tokens [B, P, D] (no aggregation)
     """
-    def __init__(self, model_name="facebook/dinov2-base", agg_mode="mean", device="cuda"):
+    def __init__(self, model_name="facebook/dinov2-base", agg_mode="mean"):
         super().__init__()
         """
         model_name: name of the pretrained model from HuggingFace
@@ -55,19 +55,30 @@ class PatchEmbedder(nn.Module):
         """
         try:
             self.processor = AutoImageProcessor.from_pretrained(model_name)
-            self.model = AutoModel.from_pretrained(model_name).to(device)
+            self.model = AutoModel.from_pretrained(model_name)
         except Exception as e:
             model_name = "/work/tesi_fgaragnani/checkpoints/facebook/dinov2-base"
             self.processor = AutoImageProcessor.from_pretrained(model_name)
-            self.model = AutoModel.from_pretrained(model_name).to(device)
+            self.model = AutoModel.from_pretrained(model_name)
         self.model.eval()
         self.agg_mode = agg_mode
-        self.device = device
         self.dim = self.model.config.hidden_size
         if self.agg_mode == "attn":
-            self.attn_block = TransformerBlock(self.dim, num_heads=8, mlp_ratio=4.0).to(self.device)
+            self.attn_block = TransformerBlock(self.dim, num_heads=8, mlp_ratio=4.0)
         else:
             self.attn_block = None
+
+    def freeze(self):
+        for param in self.model.parameters():
+            param.requires_grad = False
+        if self.attn_block is not None:
+            for param in self.attn_block.parameters():
+                param.requires_grad = False
+
+    def to_device(self, device):
+        self.model.to(device)
+        if self.attn_block is not None:
+            self.attn_block.to(device)
 
     @torch.no_grad()
     def forward(self, patches):
