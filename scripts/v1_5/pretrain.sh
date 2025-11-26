@@ -107,4 +107,5 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     --report_to wandb \
     --use_glamm True \
     --grand_image_dir /work/tesi_fgaragnani/dataset/GLAMM/images \
-    --grand_annotation_dir /work/tesi_fgaragnani/dataset/GLAMM/annotations/annotations/simple/
+    --grand_annotation_dir /work/tesi_fgaragnani/dataset/GLAMM/annotations/annotations/simple/ \
+    --patch_agg_mode cls 

@@ -82,6 +82,7 @@ class DataArguments:
     use_glamm: bool = field(default=False, metadata={"help": "Whether to include GranDDataset (GLAMM) during training."})
     grand_image_dir: Optional[str] = field(default=None, metadata={"help": "Directory containing GLAMM/GranD images."})
     grand_annotation_dir: Optional[str] = field(default=None, metadata={"help": "Directory containing GLAMM/GranD annotation JSON files."})
+    patch_agg_mode: str = field(default="cls", metadata={"help": "Patch aggregation mode for PatchEmbedder: cls, mean, max, attn."})
 
 @dataclass
 class TrainingArguments(transformers.TrainingArguments):
