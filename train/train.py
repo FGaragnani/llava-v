@@ -1054,10 +1054,35 @@ def train(attn_implementation=None):
     data_module = make_supervised_data_module(tokenizer=tokenizer,
                                               data_args=data_args)
     patch_embedder = PatchEmbedder(agg_mode=data_args.patch_agg_mode)
-    patch_embedder.to(device="cuda")
-    if training_args.fsdp:
-        from torch.distributed.fsdp.wrap import auto_wrap
-        patch_embedder = auto_wrap(patch_embedder, ignored_modules=[patch_embedder])
+
+    # Attach the patch_embedder as an attribute on the model so it can be
+    # referenced by name by FSDP's `ignored_modules` during wrapping. Move
+    # it to the training device (GPU) so it runs on GPU but remains
+    # unsharded if FSDP is configured to ignore it.
+    try:
+        setattr(model, "_patch_embedder_for_fsdp_ignored", patch_embedder)
+        # If FSDP config present, try to inject the attribute name into
+        # its `ignored_modules` list so HF/accelerate will exclude it.
+        fsdp_cfg = getattr(training_args, "fsdp", None)
+        if fsdp_cfg:
+            try:
+                if isinstance(fsdp_cfg, dict):
+                    ignored = fsdp_cfg.get("ignored_modules", [])
+                    if not isinstance(ignored, list):
+                        ignored = [ignored]
+                    if "_patch_embedder_for_fsdp_ignored" not in ignored:
+                        ignored.append("_patch_embedder_for_fsdp_ignored")
+                    training_args.fsdp["ignored_modules"] = ignored
+                elif isinstance(fsdp_cfg, list):
+                    if "_patch_embedder_for_fsdp_ignored" not in fsdp_cfg:
+                        training_args.fsdp.append("_patch_embedder_for_fsdp_ignored")
+                else:
+                    rank0_print("Warning: unexpected fsdp config type; cannot auto-inject ignored_modules")
+            except Exception as e:
+                rank0_print("Warning: failed injecting ignored_modules into fsdp config:", e)
+    except Exception:
+        pass
+
     trainer = LLaVATrainer(model=model,
                     tokenizer=tokenizer,
                     args=training_args,
