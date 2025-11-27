@@ -145,8 +145,6 @@ class LLaVATrainer(Trainer):
         super().__init__(*args, **kwargs)
         self.patch_embedder = patch_embedder if patch_embedder is not None else PatchEmbedder()
         self.patch_embedder.freeze()
-        device_str = "cuda" if torch.cuda.is_available() else "cpu"
-        self.patch_embedder.to(device_str)
 
     def _get_train_sampler(self) -> Optional[torch.utils.data.Sampler]:
         if self.train_dataset is None or not has_length(self.train_dataset):

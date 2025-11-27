@@ -46,7 +46,7 @@ class PatchEmbedder(nn.Module):
           - "attn": learn a small attention block, return first token [B, D]
           - "tokens": return patch tokens [B, P, D] (no aggregation)
     """
-    def __init__(self, model_name="facebook/dinov2-base", agg_mode="mean"):
+    def __init__(self, model_name="facebook/dinov2-base", agg_mode="mean", device="cpu"):
         super().__init__()
         """
         model_name: name of the pretrained model from HuggingFace
@@ -61,7 +61,7 @@ class PatchEmbedder(nn.Module):
             self.processor = AutoImageProcessor.from_pretrained(model_name)
             self.model = AutoModel.from_pretrained(model_name)
         self.model.eval()
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(device)
         self.agg_mode = agg_mode
         self.dim = self.model.config.hidden_size
         if self.agg_mode == "attn":
@@ -89,6 +89,7 @@ class PatchEmbedder(nn.Module):
         returns: [N, D] aggregated patch embeddings
         """
         # Preprocess and move to device
+        original_device = patches.device if isinstance(patches, torch.Tensor) else None
         inputs = self.processor(images=patches, return_tensors="pt")
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
         try:
@@ -122,7 +123,9 @@ class PatchEmbedder(nn.Module):
         else:
             raise ValueError(f"Unknown agg_mode: {self.agg_mode}")
 
-        return agg  # [N, D]
+        if original_device is not None:
+            agg = agg.to(original_device)
+        return agg # [N, D]
     
     def _get_model_image_size(self):
         try:
