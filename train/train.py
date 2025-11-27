@@ -1020,7 +1020,6 @@ def train(attn_implementation=None):
     if getattr(data_args, "use_glamm", False):
         in_dim = model_args.alignment_crop_size
         if in_dim is None:
-            # Common fallback for dinov2-base
             in_dim = 768
         hidden_dim = model.config.hidden_size
         projector_dim = getattr(data_args, "glamm_projector_dim", 2048)
@@ -1028,11 +1027,11 @@ def train(attn_implementation=None):
             # TODO: Maybe change the alignment_encoder
             if getattr(model.get_model(), "alignment_encoder", None) is None:
                 model.get_model().alignment_encoder = nn.Sequential(
-                    nn.Linear(in_dim, projector_dim),
+                    nn.Linear(hidden_dim, projector_dim),
                     nn.SiLU(),
                     nn.Linear(projector_dim, projector_dim),
                     nn.SiLU(),
-                    nn.Linear(projector_dim, hidden_dim)
+                    nn.Linear(projector_dim, in_dim)
                 )
                 rank0_print("alignment_encoder correctly loaded")
         except Exception as e:

@@ -365,7 +365,6 @@ class LLaVATrainer(Trainer):
                         crop_total += len(crops)
                         with torch.no_grad():
                             patch_embeds = self.patch_embedder(crops)  # [N, dim_patch]
-                        # Alignment encoder projection
                         try:
                             base_model = model.get_model() if hasattr(model, 'get_model') else model
                             align_enc = getattr(base_model, 'alignment_encoder', None)
@@ -375,7 +374,6 @@ class LLaVATrainer(Trainer):
                             logger.warning("Alignment encoder not found in model; skipping GranD loss.")
                             continue
                         patch_embeds = patch_embeds.to(hidden_states.device)
-                        aligned_vecs = align_enc(patch_embeds)  # [N, hidden]
 
                         crop_losses = []
                         phrases = grand_dense_labels[b_idx] if b_idx < len(grand_dense_labels) else []
@@ -406,13 +404,19 @@ class LLaVATrainer(Trainer):
                                     break
                             if matched_embed is None:
                                 continue
-                            if crop_i >= aligned_vecs.size(0):
+                            if crop_i >= patch_embeds.size(0):
                                 continue
                             matched_phrase_total += 1
                             matched_crop_total += 1
-                            aligned_vec = aligned_vecs[crop_i]
-                            sim = F.cosine_similarity(F.normalize(aligned_vec.unsqueeze(0), dim=-1),
-                                                      F.normalize(matched_embed.unsqueeze(0), dim=-1)).mean()
+
+                            try:
+                                projected_text = align_enc(matched_embed.to(patch_embeds.device))
+                            except Exception:
+                                projected_text = align_enc(matched_embed.unsqueeze(0).to(patch_embeds.device)).squeeze(0)
+
+                            img_vec = patch_embeds[crop_i]
+                            sim = F.cosine_similarity(F.normalize(projected_text.unsqueeze(0), dim=-1),
+                                                      F.normalize(img_vec.unsqueeze(0), dim=-1)).mean()
                             crop_losses.append(1 - sim)
                         if getattr(self.args, 'local_rank', 0) in (-1, 0):
                             logger.debug(f"[GrandAlignDebug] sample b={b_idx} crop_losses_count={len(crop_losses)}")
