@@ -1053,7 +1053,7 @@ def train(attn_implementation=None):
 
     data_module = make_supervised_data_module(tokenizer=tokenizer,
                                               data_args=data_args)
-    patch_embedder = PatchEmbedder(agg_mode=data_args.patch_agg_mode)
+    patch_embedder = PatchEmbedder(agg_mode=data_args.patch_agg_mode, device="cpu")
 
     trainer = LLaVATrainer(model=model,
                     tokenizer=tokenizer,

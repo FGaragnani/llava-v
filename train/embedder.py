@@ -68,6 +68,8 @@ class PatchEmbedder(nn.Module):
             self.attn_block = TransformerBlock(self.dim, num_heads=8, mlp_ratio=4.0)
         else:
             self.attn_block = None
+        # Move model to specified device
+        self.to_device(self.device)
 
     def freeze(self):
         for param in self.model.parameters():
