@@ -97,7 +97,7 @@ class PatchEmbedder(nn.Module):
         try:
             outputs = self.model(**inputs, output_hidden_states=True)
         except RuntimeError as e:
-            print("RuntimeError during model forward pass:", e)
+            print("RuntimeError:", e)
             print("Input tensor shape:", inputs['pixel_values'].shape)
             print("Input dtype: ", inputs['pixel_values'].dtype)
             print("Model device: ", next(self.model.parameters()).device)

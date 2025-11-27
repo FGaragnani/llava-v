@@ -2,6 +2,8 @@ import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from PIL import Image
+import bitsandbytes
 
 from torch.utils.data import Sampler
 
@@ -242,8 +244,6 @@ class LLaVATrainer(Trainer):
 
             self.optimizer = optimizer_cls(optimizer_grouped_parameters, **optimizer_kwargs)
             if optimizer_cls.__name__ == "Adam8bit":
-                import bitsandbytes
-
                 manager = bitsandbytes.optim.GlobalOptimManager.get_instance()
 
                 skipped = 0
@@ -316,7 +316,7 @@ class LLaVATrainer(Trainer):
                 try:
                     logger.debug(f"[GrandAlignDebug] grand_mask_any={grand_mask.any().item()} grand_mask_sum={grand_mask.sum().item()}")
                 except Exception:
-                    logger.debug("[GrandAlignDebug] grand_mask statistics unavailable")
+                    ...
             if grand_mask.any():
                 # Obtain last hidden states
                 hidden_states = None
@@ -338,7 +338,6 @@ class LLaVATrainer(Trainer):
                                 logger.debug(f"[GrandAlignDebug] skip_sample b={b_idx} reason=no_bboxes_or_path")
                             continue
                         label_row = labels[b_idx]
-                        # Mask for generated caption tokens (assistant response)
                         token_mask = (label_row != IGNORE_INDEX) & (label_row != -100)
                         if token_mask.sum() == 0:
                             if getattr(self.args, 'local_rank', 0) in (-1, 0):
@@ -348,7 +347,6 @@ class LLaVATrainer(Trainer):
                         generated_indices = torch.nonzero(token_mask, as_tuple=False).squeeze(-1).tolist()
                         # Load image and crop patches
                         try:
-                            from PIL import Image
                             img = Image.open(image_path).convert('RGB')
                         except Exception as e:  # capture error for logging
                             if getattr(self.args, 'local_rank', 0) in (-1, 0):
@@ -390,8 +388,7 @@ class LLaVATrainer(Trainer):
                             if not phrase:
                                 continue
                             attempted_phrase_total += 1
-                            # Try multiple text variants to handle capitalization differences
-                            variants = [phrase, phrase.lower(), phrase.capitalize()]
+                            variants = [phrase]
                             matched_embed = None
                             for variant in variants:
                                 if self.tokenizer is None:
