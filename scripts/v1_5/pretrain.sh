@@ -73,7 +73,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     --model_name_or_path $language_model \
     --version plain \
     --data_path ./playground/data/LLaVA-Pretrain/blip_laion_cc_sbu_558k.json \
-    --image_folder ./playground/data/LLaVA-Pretrain/images \
+    --image_folder ./playground/data/LLaVA-Pretrain/images/images \
     --vision_tower $clip_model_name_or_path \
     --mm_projector_type mlp2x_gelu \
     --tune_mm_mlp_adapter True \
