@@ -418,11 +418,12 @@ class LLaVATrainer(Trainer):
                             img_vecs = patch_embeds[matched_crop_indices]
                             img_norm = F.normalize(img_vecs, dim=-1)
                             sims = (proj_norm * img_norm).sum(dim=-1)
-                            crop_losses.extend((1 - sims).tolist())
+                            crop_losses = 1 - sims  # tensor of shape [M]
                         if getattr(self.args, 'local_rank', 0) in (-1, 0):
-                            logger.debug(f"[GrandAlignDebug] sample b={b_idx} crop_losses_count={len(crop_losses)}")
-                        if crop_losses:
-                            per_sample_losses.append(torch.stack(crop_losses).mean())
+                            count = int(crop_losses.numel()) if isinstance(crop_losses, torch.Tensor) else 0
+                            logger.debug(f"[GrandAlignDebug] sample b={b_idx} crop_losses_count={count}")
+                        if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
+                            per_sample_losses.append(crop_losses.mean())
                     if per_sample_losses:
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
                         if getattr(self.args, 'local_rank', 0) in (-1, 0):
