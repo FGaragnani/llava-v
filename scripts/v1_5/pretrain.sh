@@ -1,15 +1,15 @@
 #!/bin/bash
 #SBATCH --job-name=llava-v_s1
-#SBATCH --output=/work/tesi_fgaragnani/logs/%x_%j.out
-#SBATCH --error=/work/tesi_fgaragnani/logs/%x_%j.err
+#SBATCH --output=/leonardo_scratch/large/userexternal/fgaragna/logs/%x-%j.out
+#SBATCH --error=/leonardo_scratch/large/userexternal/fgaragna/logs/%x-%j.err
 #SBATCH --open-mode=truncate
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus-per-node=4
-#SBATCH --mem=240G
+#SBATCH --mem=480G
 #SBATCH --cpus-per-task=32
-#SBATCH --partition=all_usr_prod
-#SBATCH --account=tesi_fgaragnani
+#SBATCH --partition=boost_usr_prod
+#SBATCH --account=IscrB_MLLM-RAG
 #SBATCH --time=8:00:00
 
 module load anaconda3/2022.05
@@ -18,23 +18,20 @@ module load cuda/11.8
 module unload gcc 
 module load gcc/11.3.0
 
-source activate llava-v
+source activate viral
 
-PROJECT_ROOT="/work/tesi_fgaragnani"
+PROJECT_ROOT="$HOME/llava-v"
 export PYTHONPATH="$PROJECT_ROOT/:$PROJECT_ROOT/llava/:$PYTHONPATH"
 
 export PYTHONUNBUFFERED=1
-export FLASH_ATTENTION_2=0
-
 # export TORCH_HOME="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys"
 export TRANSFORMERS_VERBOSITY=info
 export TOKENIZERS_PARALLELISM=false
 export WANDB_MODE=offline
 export WANDB_PROJECT=jeppetto
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
-# export HF_HUB_CACHE="/leonardo_scratch/large/userexternal/fcocchi0/rag_mlmm/hf_models"
-export HF_HUB_CACHE="/work/tesi_fgaragnani/checkpoints/"
-export HF_HOME="/work/tesi_fgaragnani/checkpoints/"
+export HF_HUB_CACHE="/leonardo_scratch/large/userexternal/fcocchi0/rag_mlmm/hf_models"
+export HF_HUB_CACHE="/leonardo_scratch/large/userexternal/fcocchi0/rag_mlmm/hf_models"
 export HF_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 
@@ -45,14 +42,15 @@ export MASTER_PORT=`comm -23 <(seq 5000 6000 | sort) <(ss -Htan | awk '{print $4
 learning_rate=2e-4
 mm_projector_lr=2e-5
 run_name="${SLURM_JOB_NAME}"
-# output_dir="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/${run_name}"
-output_dir="/work/tesi_fgaragnani/checkpoints/llava-v/${run_name}"
+output_dir="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/${run_name}"
+# output_dir="/work/tesi_fgaragnani/checkpoints/llava-v/${run_name}"
 
 per_device_train_batch_size=8
 gradient_accumulation_steps=4
 
-# language_model="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/vicuna-7b-v1.5"
-language_model="/work/tesi_fgaragnani/checkpoints/lmsys/vicuna-7b-v1.5"
+language_model="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/vicuna-7b-v1.5"
+# language_model="/work/tesi_fgaragnani/checkpoints/lmsys/vicuna-7b-v1.5"
+clip_model_name_or_path="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/openai/clip-vit-large-patch14"
 
 ((ws = $SLURM_NNODES * $SLURM_GPUS_PER_NODE))
 export WORLD_SIZE=$ws
@@ -76,7 +74,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     --version plain \
     --data_path ./playground/data/LLaVA-Pretrain/blip_laion_cc_sbu_558k.json \
     --image_folder ./playground/data/LLaVA-Pretrain/images \
-    --vision_tower /work/tesi_fgaragnani/checkpoints/openai/clip-vit-large-patch14 \
+    --vision_tower $clip_model_name_or_path \
     --mm_projector_type mlp2x_gelu \
     --tune_mm_mlp_adapter True \
     --mm_vision_select_layer -2 \
@@ -106,6 +104,6 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     --lazy_preprocess True \
     --report_to wandb \
     --use_glamm True \
-    --grand_image_dir /work/tesi_fgaragnani/dataset/GLAMM/images \
-    --grand_annotation_dir /work/tesi_fgaragnani/dataset/GLAMM/annotations/annotations/simple/ \
+    --grand_image_dir /leonardo_scratch/large/userexternal/fgaragna/dataset/GLAMM/images/ \
+    --grand_annotation_dir /leonardo_scratch/large/userexternal/fgaragna/dataset/GLAMM/annotations/simple/ \
     --patch_agg_mode cls
