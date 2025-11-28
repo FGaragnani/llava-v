@@ -20,7 +20,7 @@ module load gcc/11.3.0
 
 source activate viral
 
-PROJECT_ROOT="$HOME/llava-v"
+PROJECT_ROOT="$HOME"
 export PYTHONPATH="$PROJECT_ROOT/:$PROJECT_ROOT/llava/:$PYTHONPATH"
 
 export PYTHONUNBUFFERED=1
