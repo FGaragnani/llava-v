@@ -380,44 +380,45 @@ class LLaVATrainer(Trainer):
                         full_caption_text = grand_dense_captions[b_idx] if b_idx < len(grand_dense_captions) else ""
                         if getattr(self.args, 'local_rank', 0) in (-1, 0):
                             logger.debug(f"[GrandAlignDebug] sample b={b_idx} bboxes={len(sample_bboxes)} crops={len(crops)} phrases={len(phrases)}")
-
+                        # Batch-match phrases to text spans, then batch project with alignment encoder
+                        matched_text_embeds = []
+                        matched_crop_indices = []
                         for crop_i, phrase in enumerate(phrases):
                             phrase = phrase.strip()
                             if not phrase:
                                 continue
                             attempted_phrase_total += 1
-                            variants = [phrase]
-                            matched_embed = None
-                            for variant in variants:
-                                if self.tokenizer is None:
-                                    break
-                                variant_tokens = self.tokenizer(variant, add_special_tokens=False).input_ids
-                                # Subsequence search
-                                for start in range(len(generated_token_ids) - len(variant_tokens) + 1):
-                                    if generated_token_ids[start:start+len(variant_tokens)] == variant_tokens:
-                                        orig_span = generated_indices[start:start+len(variant_tokens)]
-                                        span_embeds = hidden_states[b_idx][orig_span]
-                                        if span_embeds.numel() > 0:
-                                            matched_embed = span_embeds.mean(dim=0)
-                                        break
-                                if matched_embed is not None:
-                                    break
-                            if matched_embed is None:
-                                continue
                             if crop_i >= patch_embeds.size(0):
                                 continue
-                            matched_phrase_total += 1
-                            matched_crop_total += 1
+                            if self.tokenizer is None:
+                                continue
+                            variant_tokens = self.tokenizer(phrase, add_special_tokens=False).input_ids
+                            found = False
+                            for start in range(len(generated_token_ids) - len(variant_tokens) + 1):
+                                if generated_token_ids[start:start+len(variant_tokens)] == variant_tokens:
+                                    orig_span = generated_indices[start:start+len(variant_tokens)]
+                                    span_embeds = hidden_states[b_idx][orig_span]
+                                    if span_embeds.numel() > 0:
+                                        matched_text_embeds.append(span_embeds.mean(dim=0))
+                                        matched_crop_indices.append(crop_i)
+                                        found = True
+                                    break
+                            if found:
+                                matched_phrase_total += 1
+                                matched_crop_total += 1
 
+                        if matched_text_embeds:
+                            text_batch = torch.stack(matched_text_embeds, dim=0).to(patch_embeds.device)
                             try:
-                                projected_text = align_enc(matched_embed.to(patch_embeds.device))
+                                projected_text_batch = align_enc(text_batch)
                             except Exception:
-                                projected_text = align_enc(matched_embed.unsqueeze(0).to(patch_embeds.device)).squeeze(0)
-
-                            img_vec = patch_embeds[crop_i]
-                            sim = F.cosine_similarity(F.normalize(projected_text.unsqueeze(0), dim=-1),
-                                                      F.normalize(img_vec.unsqueeze(0), dim=-1)).mean()
-                            crop_losses.append(1 - sim)
+                                projected_text_batch = align_enc(text_batch).squeeze(0)
+                            # Compute cosine similarity batch-wise against corresponding image vectors
+                            proj_norm = F.normalize(projected_text_batch, dim=-1)
+                            img_vecs = patch_embeds[matched_crop_indices]
+                            img_norm = F.normalize(img_vecs, dim=-1)
+                            sims = (proj_norm * img_norm).sum(dim=-1)
+                            crop_losses.extend((1 - sims).tolist())
                         if getattr(self.args, 'local_rank', 0) in (-1, 0):
                             logger.debug(f"[GrandAlignDebug] sample b={b_idx} crop_losses_count={len(crop_losses)}")
                         if crop_losses:
