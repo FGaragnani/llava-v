@@ -6,6 +6,7 @@ from PIL import Image
 import bitsandbytes
 import torch.distributed as dist
 import os
+import time
 
 from torch.utils.data import Sampler
 
@@ -325,8 +326,24 @@ class LLaVATrainer(Trainer):
         if grand_mask is not None and 'output_hidden_states' not in inputs:
             inputs['output_hidden_states'] = True
 
+        def _maybe_barrier(tag: str):
+            LLAVA_DEBUG_BARRIER = 1
+            try:
+                if LLAVA_DEBUG_BARRIER != '1':
+                    return
+                if not (dist.is_available() and dist.is_initialized()):
+                    return
+                r = dist.get_rank()
+                logger.debug(f"[Barrier] before {tag} rank={r} ts={time.time()}")
+                # use a short timeout behaviour by sleeping briefly then barrier
+                dist.barrier()
+                logger.debug(f"[Barrier] after {tag} rank={r} ts={time.time()}")
+            except Exception as e:
+                logger.debug(f"[Barrier] {tag} rank_exception={getattr(self.args, 'local_rank', 'NA')} error={e}")
+
         labels = inputs.get('labels', None)
         outputs = model(**inputs)
+        _maybe_barrier('post_forward')
         base_loss = outputs.loss if hasattr(outputs, 'loss') else outputs[0]
         # Log device/dtype of base_loss to ensure it's on CUDA for all ranks
         try:
@@ -348,6 +365,8 @@ class LLaVATrainer(Trainer):
                 except Exception:
                     ...
             if grand_mask.any():
+                # Optional env-gated barrier to detect divergence/hangs. Enable with LLAVA_DEBUG_BARRIER=1
+                _maybe_barrier('start_compute_loss')
                 # Obtain last hidden states
                 hidden_states = None
                 if hasattr(outputs, 'hidden_states') and outputs.hidden_states is not None:
@@ -356,7 +375,9 @@ class LLaVATrainer(Trainer):
                     hidden_states = outputs[2]
                 if getattr(self.args, 'local_rank', 0) in (-1, 0):
                     logger.warning(f"[GrandAlignDebug] hidden_states_found={hidden_states is not None}")
+                _maybe_barrier('after_hidden_states')
                 if hidden_states is not None:
+                    _maybe_barrier('after_base_loss')
                     per_sample_losses = []
                     for b_idx, is_grand in enumerate(grand_mask):
                         if not is_grand:
@@ -375,10 +396,10 @@ class LLaVATrainer(Trainer):
                             continue
                         generated_token_ids = label_row[token_mask].tolist()
                         generated_indices = torch.nonzero(token_mask, as_tuple=False).squeeze(-1).tolist()
-                        # Load image and crop patches
+                        _maybe_barrier('before_image_open')
                         try:
                             img = Image.open(image_path).convert('RGB')
-                        except Exception as e:  # capture error for logging
+                        except Exception as e:
                             if getattr(self.args, 'local_rank', 0) in (-1, 0):
                                 logger.warning(f"[GrandAlignDebug] skip_sample b={b_idx} reason=image_open_fail error={repr(e)}")
                             continue
@@ -394,14 +415,15 @@ class LLaVATrainer(Trainer):
                             continue
                         crop_total += len(crops)
                         with torch.no_grad():
-                            patch_embeds = self.patch_embedder(crops)  # [N, dim_patch]
+                            patch_embeds = self.patch_embedder(crops)
+                        _maybe_barrier('after_patch_embedder')
                         try:
                             base_model = model.get_model() if hasattr(model, 'get_model') else model
                             align_enc = getattr(base_model, 'alignment_encoder', None)
                         except Exception:
                             align_enc = None
                         if align_enc is None:
-                            logger.warning("Alignment encoder not found in model; skipping GranD loss.")
+                            logger.warning("Alignment encoder not found; skipping GranD loss.")
                             continue
                         patch_embeds = patch_embeds.to(hidden_states.device)
                         if getattr(self.args, 'local_rank', 0) in (-1, 0):
@@ -410,10 +432,8 @@ class LLaVATrainer(Trainer):
                                 logger.warning(f"[GrandAlignDebug] devices hidden={hidden_states.device} patch_embeds={patch_embeds.device} align_enc={ae_dev}")
                             except Exception:
                                 ...
-
                         crop_losses = []
                         phrases = grand_dense_labels[b_idx] if b_idx < len(grand_dense_labels) else []
-                        full_caption_text = grand_dense_captions[b_idx] if b_idx < len(grand_dense_captions) else ""
                         if getattr(self.args, 'local_rank', 0) in (-1, 0):
                             logger.warning(f"[GrandAlignDebug] sample b={b_idx} bboxes={len(sample_bboxes)} crops={len(crops)} phrases={len(phrases)}")
                         # Batch-match phrases to text spans, then batch project with alignment encoder
@@ -465,6 +485,7 @@ class LLaVATrainer(Trainer):
                             logger.warning(f"[GrandAlignDebug] sample b={b_idx} crop_losses_count={count}")
                         if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
                             per_sample_losses.append(crop_losses.mean())
+                        _maybe_barrier('end_sample_iter')
                     if per_sample_losses:
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
                         if getattr(self.args, 'local_rank', 0) in (-1, 0):
@@ -486,6 +507,7 @@ class LLaVATrainer(Trainer):
 
         weight = getattr(self.args, 'grand_alignment_loss_weight', 0.5)
         total_loss = base_loss + (grand_extra_loss * weight)
+        _maybe_barrier('end_compute_loss')
         if return_outputs:
             return total_loss, outputs
         return total_loss
