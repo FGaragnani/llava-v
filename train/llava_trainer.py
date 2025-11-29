@@ -354,6 +354,34 @@ class LLaVATrainer(Trainer):
         except Exception:
             ...
 
+        # Masked unification path: always touch alignment_encoder with a masked batch to keep graph consistent.
+        # Enable via GRAND_FORCE_MASK=1. This avoids per-rank parameter 'unused' divergence without adding real loss.
+        if os.environ.get("GRAND_FORCE_MASK", "0") == "1":
+            try:
+                base_model = model.get_model() if hasattr(model, 'get_model') else model
+                align_enc = getattr(base_model, 'alignment_encoder', None)
+                hidden_seq = getattr(outputs, 'hidden_states', None)
+                hidden_last = None
+                if isinstance(hidden_seq, (list, tuple)) and len(hidden_seq) > 0 and isinstance(hidden_seq[-1], torch.Tensor):
+                    hidden_last = hidden_seq[-1]
+                elif isinstance(outputs, (list, tuple)) and len(outputs) > 2 and isinstance(outputs[2], torch.Tensor):
+                    hidden_last = outputs[2]
+                if align_enc is not None and isinstance(hidden_last, torch.Tensor) and hidden_last.size(1) > 0:
+                    dummy_tokens = hidden_last[:, 0, :]
+                    mask_vec = grand_mask.bool() if grand_mask is not None else torch.ones(dummy_tokens.size(0), dtype=torch.bool, device=dummy_tokens.device)
+                    mask_float = mask_vec.float().unsqueeze(-1)
+                    masked_input = dummy_tokens * mask_float
+                    dummy_out = align_enc(masked_input)
+                    base_loss = base_loss + dummy_out.mean() * 0.0
+                    if getattr(self.args, 'local_rank', 0) in (-1, 0):
+                        logger.warning(f"[GrandAlignDebug] Masked unification applied batch={dummy_tokens.shape[0]} hidden_dim={dummy_tokens.shape[-1]}")
+                else:
+                    if getattr(self.args, 'local_rank', 0) in (-1, 0):
+                        logger.warning("[GrandAlignDebug] Masked unification skipped (no alignment_encoder or hidden_states)")
+            except Exception as e:
+                if getattr(self.args, 'local_rank', 0) in (-1, 0):
+                    logger.warning(f"[GrandAlignDebug] Masked unification error: {repr(e)}")
+
         grand_extra_loss = torch.zeros((), device=base_loss.device)
         attempted_phrase_total = 0
         matched_phrase_total = 0
