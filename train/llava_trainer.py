@@ -327,7 +327,7 @@ class LLaVATrainer(Trainer):
             inputs['output_hidden_states'] = True
 
         def _maybe_barrier(tag: str):
-            LLAVA_DEBUG_BARRIER = '1'
+            LLAVA_DEBUG_BARRIER = 0
             if LLAVA_DEBUG_BARRIER != '1':
                 return
             if not (dist.is_available() and dist.is_initialized()):
