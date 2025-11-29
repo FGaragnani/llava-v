@@ -334,12 +334,12 @@ class LLaVATrainer(Trainer):
                 if not (dist.is_available() and dist.is_initialized()):
                     return
                 r = dist.get_rank()
-                logger.debug(f"[Barrier] before {tag} rank={r} ts={time.time()}")
+                logger.warning(f"[Barrier] before {tag} rank={r} ts={time.time()}")
                 # use a short timeout behaviour by sleeping briefly then barrier
                 dist.barrier()
-                logger.debug(f"[Barrier] after {tag} rank={r} ts={time.time()}")
+                logger.warning(f"[Barrier] after {tag} rank={r} ts={time.time()}")
             except Exception as e:
-                logger.debug(f"[Barrier] {tag} rank_exception={getattr(self.args, 'local_rank', 'NA')} error={e}")
+                logger.warning(f"[Barrier] {tag} rank_exception={getattr(self.args, 'local_rank', 'NA')} error={e}")
 
         labels = inputs.get('labels', None)
         outputs = model(**inputs)
