@@ -328,20 +328,22 @@ class LLaVATrainer(Trainer):
 
         def _maybe_barrier(tag: str):
             LLAVA_DEBUG_BARRIER = 1
+            if LLAVA_DEBUG_BARRIER != '1':
+                return
+            if not (dist.is_available() and dist.is_initialized()):
+                return
             try:
-                if LLAVA_DEBUG_BARRIER != '1':
-                    return
-                if not (dist.is_available() and dist.is_initialized()):
-                    return
                 r = dist.get_rank()
-                print(f"[Barrier] before {tag} rank={r} ts={time.time()}")
-                # use a short timeout behaviour by sleeping briefly then barrier
+                t0 = time.time()
+                logger.warning(f"[Barrier] before {tag} rank={r} ts={t0:.6f}")
                 dist.barrier()
-                print(f"[Barrier] after {tag} rank={r} ts={time.time()}")
+                t1 = time.time()
+                logger.warning(f"[Barrier] after {tag} rank={r} waited={(t1 - t0):.3f}s ts={t1:.6f}")
             except Exception as e:
-                print(f"[Barrier] {tag} rank_exception={getattr(self.args, 'local_rank', 'NA')} error={e}")
+                logger.warning(f"[Barrier] {tag} error={e}")
 
         labels = inputs.get('labels', None)
+        _maybe_barrier('pre_forward')
         outputs = model(**inputs)
         _maybe_barrier('post_forward')
         base_loss = outputs.loss if hasattr(outputs, 'loss') else outputs[0]
@@ -365,8 +367,8 @@ class LLaVATrainer(Trainer):
                 except Exception:
                     ...
             if grand_mask.any():
+                _maybe_barrier('grand_branch_enter')
                 # Optional env-gated barrier to detect divergence/hangs. Enable with LLAVA_DEBUG_BARRIER=1
-                _maybe_barrier('start_compute_loss')
                 # Obtain last hidden states
                 hidden_states = None
                 if hasattr(outputs, 'hidden_states') and outputs.hidden_states is not None:
@@ -397,13 +399,18 @@ class LLaVATrainer(Trainer):
                         generated_token_ids = label_row[token_mask].tolist()
                         generated_indices = torch.nonzero(token_mask, as_tuple=False).squeeze(-1).tolist()
                         _maybe_barrier('before_image_open')
+                        open_start = time.time()
                         try:
                             img = Image.open(image_path).convert('RGB')
                         except Exception as e:
                             if getattr(self.args, 'local_rank', 0) in (-1, 0):
                                 logger.warning(f"[GrandAlignDebug] skip_sample b={b_idx} reason=image_open_fail error={repr(e)}")
                             continue
+                        open_dur = time.time() - open_start
+                        if getattr(self.args, 'local_rank', 0) in (-1, 0):
+                            logger.warning(f"[GrandAlignDebug] image_open_time={open_dur:.3f}s path={image_path}")
                         crops = []
+                        crop_start = time.time()
                         for (l, t, r, b) in sample_bboxes:
                             try:
                                 crops.append(img.crop((l, t, r, b)))
@@ -415,7 +422,11 @@ class LLaVATrainer(Trainer):
                             continue
                         crop_total += len(crops)
                         with torch.no_grad():
+                            pe_start = time.time()
                             patch_embeds = self.patch_embedder(crops)
+                            pe_dur = time.time() - pe_start
+                        if getattr(self.args, 'local_rank', 0) in (-1, 0):
+                            logger.warning(f"[GrandAlignDebug] patch_embedder_time={pe_dur:.3f}s num_crops={len(crops)}")
                         _maybe_barrier('after_patch_embedder')
                         try:
                             base_model = model.get_model() if hasattr(model, 'get_model') else model
@@ -464,6 +475,7 @@ class LLaVATrainer(Trainer):
                                 matched_crop_total += 1
 
                         if matched_text_embeds:
+                            proj_start = time.time()
                             text_batch = torch.stack(matched_text_embeds, dim=0).to(patch_embeds.device)
                             try:
                                 projected_text_batch = align_enc(text_batch)
@@ -480,6 +492,9 @@ class LLaVATrainer(Trainer):
                             img_norm = F.normalize(img_vecs, dim=-1)
                             sims = (proj_norm * img_norm).sum(dim=-1)
                             crop_losses = 1 - sims  # tensor of shape [M]
+                            proj_dur = time.time() - proj_start
+                            if getattr(self.args, 'local_rank', 0) in (-1, 0):
+                                logger.warning(f"[GrandAlignDebug] projection_time={proj_dur:.3f}s matched={len(matched_text_embeds)}")
                         if getattr(self.args, 'local_rank', 0) in (-1, 0):
                             count = int(crop_losses.numel()) if isinstance(crop_losses, torch.Tensor) else 0
                             logger.warning(f"[GrandAlignDebug] sample b={b_idx} crop_losses_count={count}")
@@ -504,6 +519,7 @@ class LLaVATrainer(Trainer):
                 f"[GrandAlign] step={step} base_loss={base_loss.item():.4f} align_loss={grand_extra_loss.item():.4f} "
                 f"phrases_attempted={attempted_phrase_total} phrases_matched={matched_phrase_total} crops_total={crop_total} crops_matched={matched_crop_total}"
             )
+        _maybe_barrier('grand_branch_exit')
 
         weight = getattr(self.args, 'grand_alignment_loss_weight', 0.5)
         total_loss = base_loss + (grand_extra_loss * weight)
