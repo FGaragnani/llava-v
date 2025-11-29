@@ -1034,6 +1034,24 @@ def train(attn_implementation=None):
                     nn.Linear(projector_dim, in_dim)
                 )
                 rank0_print("alignment_encoder correctly loaded")
+            # Ensure alignment encoder is on the training device with proper dtype
+            try:
+                enc = getattr(model.get_model(), "alignment_encoder", None)
+                if enc is not None and hasattr(enc, "to"):
+                    enc.to(
+                        device=training_args.device,
+                        dtype=(torch.bfloat16 if training_args.bf16 else (torch.float16 if training_args.fp16 else torch.float32))
+                    )
+                    try:
+                        first_param = next(enc.parameters()) if hasattr(enc, "parameters") else None
+                        if first_param is not None:
+                            rank0_print(f"alignment_encoder device: {first_param.device}")
+                    except Exception:
+                        ...
+                else:
+                    rank0_print("WARNING: alignment_encoder missing or has no .to method")
+            except Exception as e:
+                rank0_print(f"WARNING: Failed moving alignment encoder to device {training_args.device}: {e}")
         except Exception as e:
             rank0_print(f"WARNING: Failed creating alignment encoder: {e}")
 
@@ -1053,6 +1071,10 @@ def train(attn_implementation=None):
     data_module = make_supervised_data_module(tokenizer=tokenizer,
                                               data_args=data_args)
     patch_embedder = PatchEmbedder(agg_mode=data_args.patch_agg_mode, device="cuda")
+    try:
+        rank0_print(f"PatchEmbedder device: {patch_embedder.device}")
+    except Exception:
+        ...
 
     trainer = LLaVATrainer(model=model,
                     tokenizer=tokenizer,
