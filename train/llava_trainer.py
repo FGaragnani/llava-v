@@ -371,6 +371,13 @@ class LLaVATrainer(Trainer):
                     mask_vec = grand_mask.bool() if grand_mask is not None else torch.ones(dummy_tokens.size(0), dtype=torch.bool, device=dummy_tokens.device)
                     mask_float = mask_vec.float().unsqueeze(-1)
                     masked_input = dummy_tokens * mask_float
+                    # Ensure dtype matches alignment encoder parameters to avoid matmul dtype mismatch
+                    try:
+                        param_dtype = next(align_enc.parameters()).dtype
+                        if masked_input.dtype != param_dtype:
+                            masked_input = masked_input.to(param_dtype)
+                    except Exception:
+                        pass
                     dummy_out = align_enc(masked_input)
                     base_loss = base_loss + dummy_out.mean() * 0.0
                     if getattr(self.args, 'local_rank', 0) in (-1, 0):
