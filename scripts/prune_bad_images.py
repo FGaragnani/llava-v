@@ -6,9 +6,7 @@ from tqdm import tqdm
 
 def is_image_ok(path: str) -> bool:
     try:
-        with Image.open(path) as im:
-            im.convert("RGB")
-            im.load()
+        im = Image.open(path)
         return True
     except Exception:
         return False
@@ -41,6 +39,7 @@ def main():
             print(f"[{i}/{total}] {'OK' if ok else 'BAD'} - {path}")
         if not ok:
             bad.append(path)
+            print("Found bad image: ", path)
 
     if not bad:
         print("No bad images found.")
