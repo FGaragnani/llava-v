@@ -297,62 +297,13 @@ class LLaVATrainer(Trainer):
         grand_dense_captions = inputs.pop('grand_dense_captions', None)
         grand_dense_labels = inputs.pop('grand_dense_labels', None)
 
-        try:
-            dist_ok = dist.is_available() and dist.is_initialized()
-        except Exception:
-            dist_ok = False
-        if dist_ok:
-            try:
-                cur_rank = dist.get_rank()
-                world_size = dist.get_world_size()
-            except Exception:
-                cur_rank = getattr(self.args, 'local_rank', 0)
-                world_size = getattr(self.args, 'world_size', 1)
-        else:
-            cur_rank = getattr(self.args, 'local_rank', 0)
-            world_size = getattr(self.args, 'world_size', 1)
-
-        if getattr(self.args, 'local_rank', 0) in (-1, 0):
-            logger.warning(f"[NCCLDebug] dist_init={dist_ok} rank={cur_rank} world_size={world_size} batch_keys={list(inputs.keys())} has_grand_mask={grand_mask is not None} has_bboxes={grand_bboxes is not None} has_paths={grand_image_paths is not None} has_captions={grand_dense_captions is not None} has_labels={grand_dense_labels is not None}")
-            # Log device/dtype for tensor inputs (non-recursive)
-            try:
-                for k, v in list(inputs.items())[:10]:
-                    if isinstance(v, torch.Tensor):
-                        logger.warning(f"[NCCLDebug] input {k}: shape={tuple(v.shape)} device={v.device} dtype={v.dtype}")
-            except Exception:
-                ...
-
         # Request hidden states if any grand samples present
         if grand_mask is not None and 'output_hidden_states' not in inputs:
             inputs['output_hidden_states'] = True
 
-        def _maybe_barrier(tag: str):
-            LLAVA_DEBUG_BARRIER = 0
-            if LLAVA_DEBUG_BARRIER != '1':
-                return
-            if not (dist.is_available() and dist.is_initialized()):
-                return
-            try:
-                r = dist.get_rank()
-                t0 = time.time()
-                logger.warning(f"[Barrier] before {tag} rank={r} ts={t0:.6f}")
-                dist.barrier()
-                t1 = time.time()
-                logger.warning(f"[Barrier] after {tag} rank={r} waited={(t1 - t0):.3f}s ts={t1:.6f}")
-            except Exception as e:
-                logger.warning(f"[Barrier] {tag} error={e}")
-
         labels = inputs.get('labels', None)
-        _maybe_barrier('pre_forward')
         outputs = model(**inputs)
-        _maybe_barrier('post_forward')
         base_loss = outputs.loss if hasattr(outputs, 'loss') else outputs[0]
-        # Log device/dtype of base_loss to ensure it's on CUDA for all ranks
-        try:
-            if getattr(self.args, 'local_rank', 0) in (-1, 0):
-                logger.warning(f"[NCCLDebug] base_loss: device={base_loss.device} dtype={base_loss.dtype}")
-        except Exception:
-            ...
 
         # Masked unification path: always touch alignment_encoder with a masked batch to keep graph consistent.
         # Enable via GRAND_FORCE_MASK=1. This avoids per-rank parameter 'unused' divergence without adding real loss.
@@ -380,14 +331,8 @@ class LLaVATrainer(Trainer):
                         pass
                     dummy_out = align_enc(masked_input)
                     base_loss = base_loss + dummy_out.mean() * 0.0
-                    if getattr(self.args, 'local_rank', 0) in (-1, 0):
-                        logger.warning(f"[GrandAlignDebug] Masked unification applied batch={dummy_tokens.shape[0]} hidden_dim={dummy_tokens.shape[-1]}")
-                else:
-                    if getattr(self.args, 'local_rank', 0) in (-1, 0):
-                        logger.warning("[GrandAlignDebug] Masked unification skipped (no alignment_encoder or hidden_states)")
             except Exception as e:
-                if getattr(self.args, 'local_rank', 0) in (-1, 0):
-                    logger.warning(f"[GrandAlignDebug] Masked unification error: {repr(e)}")
+                logger.warning(f"[GrandAlignDebug] Masked unification error: {repr(e)}")
 
         grand_extra_loss = torch.zeros((), device=base_loss.device)
         attempted_phrase_total = 0
@@ -396,13 +341,7 @@ class LLaVATrainer(Trainer):
         matched_crop_total = 0
         if grand_mask is not None and labels is not None and grand_bboxes is not None and grand_image_paths is not None and grand_dense_labels is not None and grand_dense_captions is not None:
             grand_mask = grand_mask.bool()
-            if getattr(self.args, 'local_rank', 0) in (-1, 0):
-                try:
-                    logger.warning(f"[GrandAlignDebug] grand_mask_any={grand_mask.any().item()} grand_mask_sum={grand_mask.sum().item()}")
-                except Exception:
-                    ...
             if grand_mask.any():
-                _maybe_barrier('grand_branch_enter')
                 # Optional env-gated barrier to detect divergence/hangs. Enable with LLAVA_DEBUG_BARRIER=1
                 # Obtain last hidden states
                 hidden_states = None
@@ -410,11 +349,7 @@ class LLaVATrainer(Trainer):
                     hidden_states = outputs.hidden_states[-1]
                 elif isinstance(outputs, tuple) and len(outputs) > 2:
                     hidden_states = outputs[2]
-                if getattr(self.args, 'local_rank', 0) in (-1, 0):
-                    logger.warning(f"[GrandAlignDebug] hidden_states_found={hidden_states is not None}")
-                _maybe_barrier('after_hidden_states')
                 if hidden_states is not None:
-                    _maybe_barrier('after_base_loss')
                     per_sample_losses = []
                     for b_idx, is_grand in enumerate(grand_mask):
                         if not is_grand:
@@ -422,28 +357,20 @@ class LLaVATrainer(Trainer):
                         sample_bboxes = grand_bboxes[b_idx] if b_idx < len(grand_bboxes) else []
                         image_path = grand_image_paths[b_idx] if b_idx < len(grand_image_paths) else None
                         if not sample_bboxes or image_path is None:
-                            if getattr(self.args, 'local_rank', 0) in (-1, 0):
-                                logger.warning(f"[GrandAlignDebug] skip_sample b={b_idx} reason=no_bboxes_or_path")
                             continue
                         label_row = labels[b_idx]
                         token_mask = (label_row != IGNORE_INDEX) & (label_row != -100)
                         if token_mask.sum() == 0:
-                            if getattr(self.args, 'local_rank', 0) in (-1, 0):
-                                logger.warning(f"[GrandAlignDebug] skip_sample b={b_idx} reason=empty_token_mask")
                             continue
                         generated_token_ids = label_row[token_mask].tolist()
                         generated_indices = torch.nonzero(token_mask, as_tuple=False).squeeze(-1).tolist()
-                        _maybe_barrier('before_image_open')
                         open_start = time.time()
                         try:
                             img = Image.open(image_path).convert('RGB')
                         except Exception as e:
-                            if getattr(self.args, 'local_rank', 0) in (-1, 0):
-                                logger.warning(f"[GrandAlignDebug] skip_sample b={b_idx} reason=image_open_fail error={repr(e)}")
+                            logger.warning(f"[GrandAlignDebug] skip_sample b={b_idx} reason=image_open_fail error={repr(e)}")
                             continue
                         open_dur = time.time() - open_start
-                        if getattr(self.args, 'local_rank', 0) in (-1, 0):
-                            logger.warning(f"[GrandAlignDebug] image_open_time={open_dur:.3f}s path={image_path}")
                         crops = []
                         crop_start = time.time()
                         for (l, t, r, b) in sample_bboxes:
@@ -452,17 +379,12 @@ class LLaVATrainer(Trainer):
                             except Exception:
                                 continue
                         if not crops:
-                            if getattr(self.args, 'local_rank', 0) in (-1, 0):
-                                logger.warning(f"[GrandAlignDebug] skip_sample b={b_idx} reason=no_valid_crops")
                             continue
                         crop_total += len(crops)
                         with torch.no_grad():
                             pe_start = time.time()
                             patch_embeds = self.patch_embedder(crops)
                             pe_dur = time.time() - pe_start
-                        if getattr(self.args, 'local_rank', 0) in (-1, 0):
-                            logger.warning(f"[GrandAlignDebug] patch_embedder_time={pe_dur:.3f}s num_crops={len(crops)}")
-                        _maybe_barrier('after_patch_embedder')
                         try:
                             base_model = model.get_model() if hasattr(model, 'get_model') else model
                             align_enc = getattr(base_model, 'alignment_encoder', None)
@@ -472,16 +394,8 @@ class LLaVATrainer(Trainer):
                             logger.warning("Alignment encoder not found; skipping GranD loss.")
                             continue
                         patch_embeds = patch_embeds.to(hidden_states.device)
-                        if getattr(self.args, 'local_rank', 0) in (-1, 0):
-                            try:
-                                ae_dev = next(align_enc.parameters()).device if hasattr(align_enc, 'parameters') else 'unknown'
-                                logger.warning(f"[GrandAlignDebug] devices hidden={hidden_states.device} patch_embeds={patch_embeds.device} align_enc={ae_dev}")
-                            except Exception:
-                                ...
                         crop_losses = []
                         phrases = grand_dense_labels[b_idx] if b_idx < len(grand_dense_labels) else []
-                        if getattr(self.args, 'local_rank', 0) in (-1, 0):
-                            logger.warning(f"[GrandAlignDebug] sample b={b_idx} bboxes={len(sample_bboxes)} crops={len(crops)} phrases={len(phrases)}")
                         # Batch-match phrases to text spans, then batch project with alignment encoder
                         matched_text_embeds = []
                         matched_crop_indices = []
@@ -516,11 +430,6 @@ class LLaVATrainer(Trainer):
                                 projected_text_batch = align_enc(text_batch)
                             except Exception:
                                 projected_text_batch = align_enc(text_batch).squeeze(0)
-                            if getattr(self.args, 'local_rank', 0) in (-1, 0):
-                                try:
-                                    logger.warning(f"[GrandAlignDebug] projected_text_batch device={projected_text_batch.device} dtype={projected_text_batch.dtype}")
-                                except Exception:
-                                    ...
                             # Compute cosine similarity batch-wise against corresponding image vectors
                             proj_norm = F.normalize(projected_text_batch, dim=-1)
                             img_vecs = patch_embeds[matched_crop_indices]
@@ -528,37 +437,14 @@ class LLaVATrainer(Trainer):
                             sims = (proj_norm * img_norm).sum(dim=-1)
                             crop_losses = 1 - sims  # tensor of shape [M]
                             proj_dur = time.time() - proj_start
-                            if getattr(self.args, 'local_rank', 0) in (-1, 0):
-                                logger.warning(f"[GrandAlignDebug] projection_time={proj_dur:.3f}s matched={len(matched_text_embeds)}")
-                        if getattr(self.args, 'local_rank', 0) in (-1, 0):
-                            count = int(crop_losses.numel()) if isinstance(crop_losses, torch.Tensor) else 0
-                            logger.warning(f"[GrandAlignDebug] sample b={b_idx} crop_losses_count={count}")
+                        
                         if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
                             per_sample_losses.append(crop_losses.mean())
-                        _maybe_barrier('end_sample_iter')
                     if per_sample_losses:
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
-                        if getattr(self.args, 'local_rank', 0) in (-1, 0):
-                            logger.warning(f"[GrandAlignDebug] per_sample_losses_count={len(per_sample_losses)} grand_extra_loss={grand_extra_loss.item():.6f}")
-                    else:
-                        if getattr(self.args, 'local_rank', 0) in (-1, 0):
-                            logger.warning("[GrandAlignDebug] no_per_sample_losses grand_extra_loss=0")
-
-        # Logging summary (rank 0 only to avoid spam)
-        if (grand_extra_loss > 0) and (getattr(self.args, 'local_rank', 0) in (-1, 0)):
-            try:
-                step = getattr(self.state, 'global_step', None)
-            except Exception:
-                step = None
-            print(
-                f"[GrandAlign] step={step} base_loss={base_loss.item():.4f} align_loss={grand_extra_loss.item():.4f} "
-                f"phrases_attempted={attempted_phrase_total} phrases_matched={matched_phrase_total} crops_total={crop_total} crops_matched={matched_crop_total}"
-            )
-        _maybe_barrier('grand_branch_exit')
 
         weight = getattr(self.args, 'grand_alignment_loss_weight', 0.5)
         total_loss = base_loss + (grand_extra_loss * weight)
-        _maybe_barrier('end_compute_loss')
         if return_outputs:
             return total_loss, outputs
         return total_loss
