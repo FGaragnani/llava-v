@@ -442,6 +442,7 @@ class LLaVATrainer(Trainer):
                             per_sample_losses.append(crop_losses.mean())
                     if per_sample_losses:
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
+                        print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f} attempted_phrases={attempted_phrase_total} matched_phrases={matched_phrase_total} total_crops={crop_total} matched_crops={matched_crop_total}")
 
         weight = getattr(self.args, 'grand_alignment_loss_weight', 0.5)
         total_loss = base_loss + (grand_extra_loss * weight)
