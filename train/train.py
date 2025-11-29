@@ -118,6 +118,7 @@ class TrainingArguments(transformers.TrainingArguments):
     lora_bias: str = "none"
     mm_projector_lr: Optional[float] = None
     group_by_modality_length: bool = field(default=False)
+    grand_alignment_loss_weight: float = field(default=0.5)
 
 
 def maybe_zero_3(param, ignore_status=False, name=None):

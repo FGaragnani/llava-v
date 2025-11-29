@@ -46,7 +46,7 @@ class PatchEmbedder(nn.Module):
           - "attn": learn a small attention block, return first token [B, D]
           - "tokens": return patch tokens [B, P, D] (no aggregation)
     """
-    def __init__(self, model_name="facebook/dinov2-base", agg_mode="mean", device="cpu"):
+    def __init__(self, model_name="facebook/dinov2-base", agg_mode="mean", device="cuda"):
         super().__init__()
         """
         model_name: name of the pretrained model from HuggingFace

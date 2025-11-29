@@ -107,4 +107,5 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     --use_glamm True \
     --grand_image_dir /leonardo_scratch/large/userexternal/fgaragna/dataset/GLAMM/images/images/ \
     --grand_annotation_dir /leonardo_scratch/large/userexternal/fgaragna/dataset/GLAMM/annotations/simple/ \
-    --patch_agg_mode cls
+    --patch_agg_mode cls \
+    --grand_alignment_loss_weight 0.5 

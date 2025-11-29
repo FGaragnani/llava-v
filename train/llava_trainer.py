@@ -424,7 +424,6 @@ class LLaVATrainer(Trainer):
                                 matched_crop_total += 1
 
                         if matched_text_embeds:
-                            proj_start = time.time()
                             text_batch = torch.stack(matched_text_embeds, dim=0).to(patch_embeds.device)
                             try:
                                 projected_text_batch = align_enc(text_batch)
@@ -436,13 +435,12 @@ class LLaVATrainer(Trainer):
                             img_norm = F.normalize(img_vecs, dim=-1)
                             sims = (proj_norm * img_norm).sum(dim=-1)
                             crop_losses = 1 - sims  # tensor of shape [M]
-                            proj_dur = time.time() - proj_start
                         
                         if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
                             per_sample_losses.append(crop_losses.mean())
                     if per_sample_losses:
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
-                        print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f} attempted_phrases={attempted_phrase_total} matched_phrases={matched_phrase_total} total_crops={crop_total} matched_crops={matched_crop_total}")
+                        print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")
 
         weight = getattr(self.args, 'grand_alignment_loss_weight', 0.5)
         total_loss = base_loss + (grand_extra_loss * weight)
