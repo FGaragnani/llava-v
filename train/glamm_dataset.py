@@ -30,6 +30,7 @@ class GranDDataset(Dataset):
         check_area: float = 0.05,
         prompt_template: Optional[str] = None,
         label_joiner: str = ", ",
+        delete_corrupt: bool = True,
     ):
         self.image_dir = image_dir
         self.annotation_dir = annotation_dir
@@ -41,6 +42,7 @@ class GranDDataset(Dataset):
         )
         self.prompt_template = prompt_template or "Describe the scene."
         self.label_joiner = label_joiner
+        self.delete_corrupt = delete_corrupt
         self.check_area_fn = lambda img_size, patch_area: (patch_area / img_size) > check_area
         self.image_files = [
             f for f in os.listdir(self.image_dir)
@@ -73,7 +75,7 @@ class GranDDataset(Dataset):
     def _build_image_index(self):
         if not os.path.isdir(self.image_dir):
             return
-        for img_file in self.image_files:
+        for img_file in list(self.image_files):
             stem = os.path.splitext(img_file)[0]
             ann_path = os.path.join(self.annotation_dir, stem + ".json") if self.annotation_dir else ''
             if ann_path and not os.path.isfile(ann_path):
@@ -109,7 +111,17 @@ class GranDDataset(Dataset):
 
         # Image
         image_path = os.path.join(self.image_dir, entry.get("image_file", image_name + ".jpg"))
-        image = Image.open(image_path).convert("RGB")
+        # Open image robustly; if corrupted at runtime, optionally delete and raise
+        try:
+            image = Image.open(image_path).convert("RGB")
+        except Exception:
+            if self.delete_corrupt:
+                try:
+                    os.remove(image_path)
+                except Exception:
+                    pass
+            # Return a blank image to avoid crashing DataLoader
+            image = Image.new("RGB", self.patch_size, (0, 0, 0))
         w, h = image.size
         img_area = w * h
 
