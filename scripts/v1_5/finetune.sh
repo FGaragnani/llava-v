@@ -68,7 +68,6 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     --vision_tower $clip_model_name_or_path \
     --report_to wandb \
     --pretrain_mm_mlp_adapter $model_name \
-    --instruction_tuning \
     --data_path $train_data_path \
     --image_folder $train_image_folder \
     --remove_unused_columns False \
