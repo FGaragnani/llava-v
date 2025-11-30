@@ -57,7 +57,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     --nnodes=$SLURM_NNODES --nproc-per-node=$SLURM_GPUS_PER_NODE --rdzv-endpoint=$MASTER_ADDR --master-port=$MASTER_PORT --rdzv-id=$SLURM_JOB_NAME --rdzv-backend=c10d \
     train/train.py \
     --seed 42 \
-    --deepspeed deepspeed/zero3.json \
+    --deepspeed ./scripts/zero3.json \
     --gradient_checkpointing True \
     --save_steps 500 \
     --save_total_limit 1 \
