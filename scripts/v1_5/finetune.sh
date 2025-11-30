@@ -46,6 +46,8 @@ learning_rate=2e-5
 per_device_train_batch_size=4
 gradient_accumulation_steps=2
 
+dataloader_num_workers=4
+
 model_name="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/pretrain/llava-v_s1"
 train_data_path="/leonardo_scratch/large/userexternal/fcocchi0/rag_mlmm/dataset/second_stage_LLaVA/llava_v1_5_mix665k.json"
 train_image_folder="/leonardo_scratch/large/userexternal/fcocchi0/rag_mlmm/dataset"
