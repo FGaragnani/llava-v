@@ -261,6 +261,7 @@ class LLaVATrainer(Trainer):
         return self.optimizer
 
     def _save_checkpoint(self, model, trial, metrics=None):
+        model.generation_config.do_sample = True
         if getattr(self.args, 'tune_mm_mlp_adapter', False):
             from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
             checkpoint_folder = f"{PREFIX_CHECKPOINT_DIR}-{self.state.global_step}"
