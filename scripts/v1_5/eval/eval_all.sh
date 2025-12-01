@@ -44,7 +44,7 @@ task_list=(gqa scienceqa_img mmmu_val seedbench ai2d textvqa_val pope mme)
 # task_list=(textvqa_val)
 echo ${task_list[$SLURM_ARRAY_TASK_ID]}
 
-checkpoint_path="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2"
+checkpoint_path="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2/checkpoint-20500/"
 base_model="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/vicuna-7b-v1.5"
 
 srun -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
