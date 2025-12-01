@@ -21,7 +21,6 @@ module load gcc/11.3.0
 
 source activate viral
 
-cd ~/llava
 REPO_ROOT="$HOME/llava"
 export PYTHONPATH="${REPO_ROOT}:$REPO_ROOT/lmms-eval:$PYTHONPATH"
 
