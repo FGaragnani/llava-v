@@ -35,3 +35,4 @@ serve_images/
 *.fdb_latexmk
 *.fls
 *.gz
+*.aux
