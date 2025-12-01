@@ -913,8 +913,7 @@ def train(attn_implementation=None):
             torch_dtype=(torch.bfloat16 if training_args.bf16 else None),
             **bnb_model_from_pretrained_args
         )
-    model.config.use_cache = False
-    # Avoid NCCL hangs when some ranks skip modules (e.g., alignment path)
+        
     try:
         training_args.ddp_find_unused_parameters = True
         rank0_print("Enabled ddp_find_unused_parameters=True to prevent hangs on unused grads.")
