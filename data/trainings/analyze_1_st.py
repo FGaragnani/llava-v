@@ -92,7 +92,7 @@ def plot_losses(gl_avgs, raw_losses, out_path: str):
 
 	l1, = ax1.plot(x, raw_losses, color="tab:blue", marker="o", linestyle="-", linewidth=1.2, markersize=3,
 				   label="CE Loss")
-	ax1.set_xlabel("Epoch")
+	ax1.set_xlabel("Batch")
 	ax1.set_ylabel("CE Loss", color="tab:blue")
 	ax1.tick_params(axis='y', labelcolor='tab:blue')
 
