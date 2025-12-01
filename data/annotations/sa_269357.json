@@ -1,0 +1,213 @@
+{
+    "sa_269357.jpg": {
+        "objects": [
+            {
+                "bbox": [
+                    238,
+                    0,
+                    904,
+                    1497
+                ],
+                "labels": [
+                    "a sign on a door",
+                    "sign"
+                ],
+                "attributes": [
+                    "red sign with black characters"
+                ],
+                "id": 0,
+                "depth": 5824.83,
+                "label": "a sign on a door",
+                "segmentation": {
+                    "size": [
+                        1500,
+                        2250
+                    ],
+                    "counts": "Tom:e3Pm05^SOTNU4ROPL^OD`4ng0\\KPXO`2=[5k0V1Qe0T?bGWXOYB8K@2H\\1Zl0:gSO[NQ1g9TP1XGjQOQOnL63Q7lQ1WIT<K6M2O1O100O2O0O1O100L400000000000000000000000000000000000000000001O000000000000000000000000000000000000000000SI<bnNDXQ1Q1YnNoNTQ12QiN\\1g5cNcP1\\2\\oNdMbo0_3]POaL[n0h4dQOXKml0W6SSOiIXk0l7hTOTHkj0Z8TUOfG^j0h8bUOXGmi0Y9SVOgFWi0o9iVOQF_h0g:aWOYEmg0Y;SXOgDag0e;_XO[Dbf0d<^YO\\CQf0U=oYOkB]d07]VOf=V5SBPd0V?P\\Oj@bc0d?^\\O\\@Qc0U`0o\\Ok_Obb0d`0^]O\\_OUb0Qa0k]Oo^Oca0ca0]^O]^Oh`0^b0X_Ob]O[`0kb0e_OU]Oc?cc0]@]\\Oo>Wd0RAh[OV>Pe0jAP[OR=Tf0nBlYOa<ef0_C[YOR<Tg0nClXO];ig0cDWXOS:Si0mEmVOh9^i0XFbVOb5S1`Gah0m2]VO_5h1UFhh0\\4`UO]5im0cJWRO\\5jm0dJVRO[5km0eJUROZ5lm0fJTROZ5lm0fJTROZ5lm0fJTROY5mm0gJSROY5mm0gJSROY5mm0gJSROY5mm0gJSROX5nm0hJRROX5nm0hJRROX5nm0hJRROX5nm0hJRROX5nm0hJRROX5nm0hJRROX5nm0hJRROX5nm0hJRROW5om0iJQROW5om0iJQROW5om0iJQROW5om0iJQROW5om0iJQROW5om0iJQROW5om0iJQROW5om0iJQROW5om0iJQROW5om0iJQROW5om0iJQROW5om0iJQROW5om0iJQROW5nm0jJRROV5nm0jJRROV5nm0kJQROU5om0kJQROU5om0kJQROU5om0kJQROU5om0kJQROU5om0kJQROU5om0kJQROU5om0kJQROU5om0jJRROV5nm0jJRROV5nm0jJRROV5nm0jJRROU5om0kJQROU5nm0lJRROT5nm0lJRROT5nm0lJRROT5nm0lJRROT5nm0lJRROT5nm0lJRROT5nm0lJRROT5nm0lJRROT5nm0lJRROT5nm0lJRROT5nm0lJRROT5nm0lJRROT5nm0lJRROT5nm0lJRROT5nm0lJRROT5nm0lJRROT5nm0lJRROT5nm0lJRROT5nm0lJRROT5nm0lJRROT5nm0lJRROU5mm0kJSROU5mm0kJSROU5mm0kJSROU5mm0kJSROU5mm0kJSROU5mm0kJSROU5mm0kJSROU5mm0kJSROU5mm0kJSROU5mm0kJSROU5mm0kJSROU5mm0kJSROU5mm0kJSROU5mm0kJSROU5mm0kJSROU5mm0kJSROU5mm0kJSROU5mm0kJSROU5mm0kJSROU5mm0kJSROU5lm0lJTROT5lm0lJTROT5lm0lJTROT5lm0lJTROS5mm0mJSROS5mm0mJSROS5mm0mJSROS5mm0mJSROS5mm0mJSROS5mm0mJSROS5mm0mJSROS5mm0mJSROS5mm0mJSROS5mm0mJSROT5lm0lJTROT5lm0lJTROT5lm0lJTROT5lm0lJTROT5lm0lJTROT5lm0lJTROT5lm0lJTROT5lm0lJTROT5lm0lJTROT5lm0lJTROS5mm0mJSROS5mm0mJSROS5mm0mJSROS5mm0mJSROS5mm0mJSROS5mm0mJSROS5mm0mJSROS5mm0mJSROS5mm0mJSROS5mm0mJSROS5mm0mJSROS5mm0mJSROS5mm0mJSROS5mm0mJSROT5lm0lJTROT5lm0lJTROT5lm0lJTROT5lm0lJTROT5lm0lJTROT5lm0lJTROT5lm0lJTROU5km0kJUROU5km0kJUROU5km0kJUROU5km0kJUROU5km0kJUROU5km0kJUROU5km0kJUROU5km0kJUROU5km0kJUROU5km0kJUROU5km0kJUROU5km0kJUROU5km0kJUROU5km0kJUROU5km0kJUROU5km0kJUROU5km0kJUROU5km0kJUROU5km0kJUROU5km0kJUROU5km0kJUROU5km0kJUROV5jm0jJVROV5jm0jJVROV5jm0jJVROV5jm0jJVROV5jm0jJVROV5jm0jJVROV5jm0jJVROV5jm0jJVROV5jm0jJVROV5jm0jJVROV5jm0jJVROV5jm0jJVROV5jm0jJVROV5jm0jJVROV5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROU5im0kJWROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5hm0jJXROV5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROU5gm0kJYROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROV5fm0jJZROW5em0iJ[ROW5em0iJ[ROW5em0iJ[ROW5em0iJ[ROW5em0iJ[ROW5em0iJ[ROW5em0iJ[ROW5em0iJ[ROW5em0iJ[ROW5em0iJ[ROW5em0iJ[ROW5em0iJ[ROW5em0iJ[ROW5em0iJ[ROW5em0iJ[ROW5em0iJ[ROW5em0iJ[ROW5em0iJ[ROW5em0iJ[ROW5em0iJ[ROW5em0iJ[ROW5em0iJ[ROW5em0iJ[ROW5dm0jJ\\ROV5dm0jJ\\ROV5dm0jJ\\ROV5dm0jJ\\ROV5dm0jJ\\ROV5dm0jJ\\ROV5dm0jJ\\ROV5dm0jJ\\ROV5dm0jJ\\ROV5dm0jJ\\ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROW5cm0iJ]ROX5bm0hJ^ROX5bm0hJ^ROX5bm0hJ^ROX5bm0hJ^ROX5bm0hJ^ROX5bm0hJ^ROX5bm0hJ^ROX5bm0hJ^ROX5bm0hJ^ROX5bm0hJ^ROX5bm0hJ^ROX5bm0hJ^ROX5bm0hJ^ROX5bm0hJ^ROX5bm0hJ^ROX5bm0hJ^ROX5bm0hJ^ROY5am0gJ_ROY5am0gJ_ROY5am0gJ_ROY5am0gJ_ROZ5`m0fJ`ROZ5`m0fJ`ROZ5`m0fJ`ROZ5`m0fJ`RO[5_m0eJaRO[5_m0eJaRO[5_m0eJaRO[5_m0eJaRO[5_m0eJaRO\\5^m0dJbRO\\5^m0dJbRO\\5^m0dJbRO\\5^m0dJbRO]5]m0cJcRO]5]m0cJcRO]5]m0cJcRO]5]m0cJcRO]5]m0cJcRO^5\\m0bJdRO^5\\m0bJdRO^5\\m0bJdRO^5\\m0bJdRO^5\\m0bJdRO^5\\m0bJdRO^5\\m0bJdRO^5\\m0bJdRO^5\\m0bJdRO^5\\m0bJdRO^5\\m0bJdRO^5\\m0bJdRO^5\\m0bJdRO_5[m0aJeRO_5[m0aJeRO_5[m0aJeRO_5[m0aJeRO_5[m0aJeRO_5[m0aJeRO_5[m0aJeRO_5[m0aJeRO_5[m0aJeRO_5[m0aJeRO_5[m0aJeRO_5[m0aJeRO_5[m0aJeRO_5[m0aJeRO_5[m0aJeRO`5Zm0`JfRO`5Zm0`JfRO`5Zm0`JfRO`5Zm0`JfRO`5Zm0`JfRO`5Zm0`JfRO`5Zm0`JfRO`5Zm0`JfRO`5Zm0`JfRO`5Zm0`JfRO`5Zm0`JfRO`5Zm0`JfRO`5Zm0`JfRO`5Zm0`JfRO`5Zm0`JfRO`5Zm0`JfRO`5Zm0`JfRO`5Zm0`JfRO`5Zm0`JfRO`5Zm0`JfROa5Ym0_JgROa5Ym0_JgROa5Ym0_JgROa5Ym0_JgROa5Ym0_JgROa5Ym0_JgROa5Ym0_JgROa5Ym0_JgROa5Ym0_JgROa5Ym0_JgROa5Ym0_JgROa5Ym0_JgROa5Ym0_JgROa5Ym0_JgROa5Ym0_JgROa5Xm0`JhROa5Wm0_JiROa5Wm0_JiROa5Wm0_JiROa5Wm0_JiROa5Wm0_JiROa5Wm0_JiROa5Wm0_JlRO^5Tm0bJmRO]5Sm0cJmRO]5Sm0cJnRO\\5Rm0dJoRO[5Qm0eJoRO[5Qm0eJPSOZ5Pm0fJRSOX5nl0hJSSOX5ll0hJXSOT5gl0mJhSOd4Xl0\\KiTOXJXNj8nl0oLoUO]2Qj0cMfVOf1Xi0\\NbWOi0Zh0\\O[XOOVg0`0iYOaN\\d0Z3[\\OnKWb0a5T_OTIe:PMdAX;_4nFc7WO]_OS24bLNZ<a9TEQ5bNaAnc0n9h\\Oa2\\OcC`0M^d0ef0nZO]YOYg0Zf0i0\\Od0QOo0M3M300O1001O1O2N2N3M4aVOS[OJ18Ifg0\\g0UXOeXOif0[h0]YObWO10od0Qj0oZOQVOmc0dj0Q\\O[UO]c0ek0]Oa0_O6a]OiSOma0Qm0B5KS1mN=Ch0XOQ1oNQ1oNg0YOR1nNa0_Oa0_O`0@i0WOm0SOc0\\Oo0ROc0\\Oe0\\On0ROg0XOh0XOa0_OP1oNe0mN_i`m1"
+                },
+                "segmentation_source": "SAM"
+            }
+        ],
+        "floating_objects": [
+            {
+                "bbox": [
+                    303.0,
+                    354.0,
+                    856.0,
+                    1309.0
+                ],
+                "labels": [
+                    "a warning or a message in the area"
+                ],
+                "attributes": null,
+                "id": 1,
+                "segmentation": {
+                    "size": [
+                        1500,
+                        2250
+                    ],
+                    "counts": "^Sm=7R^1j0TOg0TOk0jNV1nNQ1ZNg1eNZ1_Oa0A?ZOg0A=B?D<C=^Ob0WOi0YOg0YNg1F:H8[Oe0F:\\Od0@`0ROo0YOf0_Oa0\\Od0hNX1YOg0B>\\Od0TObXOkYOmg0Pa0]XOkBch0R=YXOcAYh0[>`XOP@^h0o?X3O1O100O1000000O10O1000000000000000O1000000000000000O1000000000000000000000000000000000000000000000000000000000000000000O1001O0000000000000000000000O100000000000001O0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001O0000000000000000000000000O1000000000000000000000000000000000000000000000000000000000000000000000000000001O00000000000000000000000000000000000000000000000000000000000000000000000O1001O0000000000000000000000000000O10000000000000000000001O00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001O0000000000000000000000000O1000000000000000000000000000000000000000000000000000000000000000001O000000000000000000000000000000000000000000000000000000000000000000000000001O000000000000001O0000001O00000000001O0000001O000000001O000000001O00000000000000001O00000000000000000000000000000000001O00000000000000000000000000000000001O00000000000000000000000000000000001O00000000000O1000000000000O100O100O2N1O1M4oMQ2lNU1kNU1RJkYO[Ang0Q;n7QLPPOYEQU1K[kNMGf09@Oj2e[io1"
+                },
+                "segmentation_source": "SAM"
+            }
+        ],
+        "floating_attributes": [
+            {
+                "bbox": [
+                    8.93,
+                    7.04,
+                    2250.0,
+                    1497.08
+                ],
+                "labels": [],
+                "score": 0.6,
+                "attributes": [
+                    "the wall is white"
+                ]
+            },
+            {
+                "bbox": [
+                    315.39,
+                    332.0,
+                    851.32,
+                    1309.76
+                ],
+                "labels": [],
+                "score": 0.59,
+                "attributes": [
+                    "red square with clock"
+                ]
+            }
+        ],
+        "landmark": {
+            "category": "Indoor scene",
+            "fine_category": "Living space"
+        },
+        "affordances": {},
+        "id_counter": 3,
+        "relationships": {
+            "object_ids": [
+                0
+            ],
+            "floating_object_ids": [
+                1
+            ],
+            "grounding": [
+                {
+                    "phrase": "a sign on a door",
+                    "object_ids": [
+                        0
+                    ]
+                },
+                {
+                    "phrase": "a green and white sign with chinese characters and a red sign with a warning message",
+                    "object_ids": [
+                        0
+                    ]
+                },
+                {
+                    "phrase": "a warning or a message in the area",
+                    "object_ids": [
+                        1
+                    ]
+                }
+            ]
+        },
+        "short_captions": [
+            {
+                "caption": "a sign on a door",
+                "details": [
+                    {
+                        "phrase": "a sign on a door",
+                        "tokens_positive": [
+                            0,
+                            16
+                        ],
+                        "id": 0,
+                        "bbox": [
+                            260.97,
+                            6.96,
+                            926.34,
+                            1486.93
+                        ]
+                    }
+                ]
+            },
+            {
+                "caption": "a green and white sign with chinese characters and a red sign with a warning message is posted on a door, indicating a warning or a message in the area.",
+                "details": [
+                    {
+                        "phrase": "a green and white sign with chinese characters and a red sign with a warning message",
+                        "tokens_positive": [
+                            0,
+                            84
+                        ],
+                        "id": 0,
+                        "bbox": [
+                            260.97,
+                            6.96,
+                            926.34,
+                            1486.93
+                        ]
+                    },
+                    {
+                        "phrase": "a warning or a message in the area",
+                        "tokens_positive": [
+                            117,
+                            151
+                        ],
+                        "id": 1,
+                        "bbox": [
+                            315.63,
+                            381.39,
+                            889.91,
+                            1315.27
+                        ]
+                    }
+                ]
+            }
+        ],
+        "dense_caption": {
+            "caption": "A green and white sign with Chinese characters and a red sign with a warning message is posted on a door, indicating a warning or a message in the area.",
+            "details": [
+                {
+                    "phrase": "a green and white sign with chinese characters and a red sign with a warning message",
+                    "tokens_positive": [
+                        0,
+                        84
+                    ],
+                    "ids": [
+                        0
+                    ],
+                    "bbox": [
+                        [
+                            238,
+                            0,
+                            904,
+                            1497
+                        ]
+                    ]
+                },
+                {
+                    "phrase": "a warning or a message in the area",
+                    "tokens_positive": [
+                        117,
+                        151
+                    ],
+                    "ids": [
+                        1
+                    ],
+                    "bbox": [
+                        [
+                            303.0,
+                            354.0,
+                            856.0,
+                            1309.0
+                        ]
+                    ]
+                }
+            ]
+        },
+        "additional_context": "Red signs with black characters are often used in indoor spaces, such as living rooms, to indicate the location of important items or areas. This type of signage has been used for centuries as a way to communicate information in a clear and concise manner. In modern times, red signs with black characters are often used in living spaces to indicate the location of emergency exits, fire alarms, and other important safety features. While these signs are generally safe to use, there is a potential danger in relying too heavily on them as a sole means of communication. For example, if the sign is not clearly visible or if the information it conveys is not accurate, it could lead to confusion or even harm. Additionally, the use of red signs with black characters in living spaces has become increasingly popular in recent years, as it adds a bold and stylish touch to the d\u00e9cor."
+    }
+}

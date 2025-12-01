@@ -1,0 +1,578 @@
+{
+    "sa_242666.jpg": {
+        "objects": [
+            {
+                "bbox": [
+                    884.14,
+                    746.02,
+                    2030.75,
+                    1499.12
+                ],
+                "labels": [
+                    "computer_keyboard",
+                    "keyboard",
+                    "laptop keyboard"
+                ],
+                "score": 0.99,
+                "attributes": [
+                    "a laptop with a gift card on it"
+                ],
+                "id": 0,
+                "depth": 6658.39,
+                "label": "laptop keyboard",
+                "segmentation": {
+                    "size": [
+                        1500,
+                        2250
+                    ],
+                    "counts": "RiRY13h^12N2N1O2N2N1O2N1O1O2N1O1N2O2N1N2O1N3N1N2N2N2N3L3N2N2N2N3M2N2M3N2N2O2N1O1O1O1O1O2O0O1O100O1O100O2O000O10000O100O10O10O100O100O100O100O1O100O100O1O100O1O1O100O1O100O100O100O10000O10000001O0000000000000000001O0000000000000000001O00000000000000001O00000O100000001O001O001O001O001O001O001O001O001O001O001O00001O001O00001O00001O00001O00001O00001O00001O001O001O001O001O001O1O001O1O1O001O1O1O001O1O001O001O001O001O001O00001O00010O00000000001O01O0000000010O00000001O0001O01O0000001O01O01O00001O00010O00001O0010O01O001O010O1O100O100O2N100O2O0O2O1N2O1N3N1NR1oNl6TI[1dN?B;E3M3L4M2M3N1N3N1lnNSCUP1k=01N100O1O100O0010N1O1O1N3N1O1RO^oN`CeP1]<n0N2N2M4L3M3M3M4K4I7F;E:M3M3N3M2O1N3N1N2O1O2N1O1O2N1O1O2N100O1O2O0O1O2O0O2O0O101N101N101N101O0O2O0O2O001N101O0O101O001N10001O0O101O000O2O0000001N1000001N100O2O0O101N100O2O0O101N1O1O2N100O2N1N3N101N1O1O2N101N101N101N101N101N101O0O2O1O001N101O001O1O0O101O001O001N101O00001N10001O000O2O00001N10001O0O10001O0O10001O0O101N101N1O2O0O2N1O2O0O2N2N101N2N2O1N2O1N2O0O2O1N101O1N101O0O2O000O2O001O0O101O000O101O000O10001N100O101O0O100O2O0O100O2N100O2N1O1O2N100O2N1O2N1O101N101N101N101N101N101O1O001O1N101O001O001O0O2O001O00001O0O2O00001O001O0O10001O00001O0O101O0000001O00001O001O001O001O0O2O001O1O001O1O1O1O1O001O1O1O001O1O001O001O001O001O00001O00001O0001O001O0010O01O001O1O001O100O1O1O1O1O2N1O2O0O2N1O1O1O1O1O100O1O001O1O0010O01O001O010O00100O0010O0100O100O101N3N2N3L4M3M4K5L4L4K5L3M3L2O0O10O0100O1O010O10O01O010O001O00010O1O001O001O100O001O1O1O1O2O0O1foNlIjg0V6\\WOdJbh0n5TVOkJki0c5aTOeK]k0b4aSOZL^l0n3nRO_LQm0g3\\ROhLcm0]3jQOQMUn0U3[QOVMdn0o2oPOZMPo0k2dPO]M[o0g2ZPO`Mfo0l8O100O001O1O001O0010O01O10O010O0100O010O1000O01000O100O10000O1O100O010O10O01O10O01O0010O00010O01O000010O0001O00001O001O001O001O001O001O1O001O1O1O1O001O1O1O1O1O001O1O001O001O001O00001O00001O00001O00001O00001O00001O001O00001O001O001O001O1O001O001O1O1O001O1O1O001O1O001O001O00001O00001O00001O00001O00001O0000001O0000001O0000001O0000001O000000001O0000001O00001O001O00001O1O001O001O1O001O1O1O1O1O001O1O1O001O001O0O2O001O001O001O00001O000000001N10000O10001O0O10000O101N100O10001N1O100O101N1O100O1N3N1O1O1N3N1O1O1O2N1O101N1O2N1O2N1O2M3N1O2M3N2M3L3N3L4L3M4L4K4L5F9H9G8K5N3M2N3M2O1N3N1N2O2N1O1O1O2N1O1O1O2N1O1O1O101N1N2O1O2N1O1N2O2M2N2N2N3M2M3H9XOg0I7I8H7L4O2N1O2N1O1O2N1O2N101N2O0O2N101N2O0O2O0O2O0O2N101N1O2N1O2N1O2N1O2M2I8I6H8J7K4L5L3M3M4M2M4M2N2O2N1O1O2N100O2N1O101N101N1O2O0O2N2N1O2N2N2N2N4L6J5J7J7HXQT:"
+                },
+                "segmentation_source": "EVA"
+            },
+            {
+                "bbox": [
+                    0.0,
+                    6.0,
+                    2249.0,
+                    1495.0
+                ],
+                "labels": [
+                    "table",
+                    "laptop computer",
+                    "laptop_computer",
+                    "laptop"
+                ],
+                "score": 0.98,
+                "attributes": [
+                    "a laptop with a gift card and a present on it",
+                    "a laptop computer"
+                ],
+                "id": 1,
+                "depth": 6207.99,
+                "label": "laptop computer",
+                "segmentation": {
+                    "size": [
+                        1500,
+                        2250
+                    ],
+                    "counts": "ha0nl0na000000O1O1O1O1O1O2N1O1O100O00100O100O1O1O100O1O1O100O1O1O1O1O100O1O1O100O100O1O1O1O100O1O1O100O1O100O1O1O1O100O1O1O1O1O1O100O1O1O100O1O100O100O100O1O100O1O1O1O1O100O1O1O100O1O100O1O100O1O1O100O1O1O1O1O1O1O1O100O100O1O100O1O1O1O1O100O1O100O100O1O1O100O1O1O100O1O1O1O1O1O100O1O100O100O100O100O1O1O1O1O1O1O1O1O100O100O1O100O1O100O1O100O1O1O1O1O1O1O100O1O1O100O100O1O1O1O100O1O1O100O100O1O1O100O1O1O1O1O1O1O100O1O1O1O100O100O100O100O1O100O1O1O1O1O1O100O1O100O100O100O1O1O100O1O1O1O100O1O1O1O1O1O100O100O1O1O1O100O1O1O100O1O100O100O100O1O1O1O100O1O1O1O100O1O1O100O1O100O100O1O100O1O1O1O1O1O1O1O100O100O1O100O100O1O1O1O100O1O1O1O1O100O1O1O100O100O[JlEdVOS:Zi0TFbVOk9\\i0[FaVOe9^i0^F`VOa9`i0aF_VO^9`i0fF^VOY9ai0jF^VOU9`i0PG^VOP9`i0SG_VOl8`i0WG_VOh8ai0ZG^VOf8ai0\\G^VOc8bi0^G^VOb8ai0`G^VO_8ai0dG^VO[8bi0gG]VOY8bi0hG^VOW8ai0lG^VOS8bi0oG]VOP8bi0SH]VOl7ci0VH\\VOi7di0YH[VOf7di0]H[VOb7ei0`HZVO_7fi0cHYVO]7fi0eHYVOZ7fi0iHYVOV7gi0lHXVOT7fi0oHYVOP7gi0RIXVOm6hi0VIVVOj6ii0XIVVOg6ji0[IUVOe6ji0^ITVOa6ki0bITVO^6ki0cIUVO\\6ki0fITVOZ6ki0gIUVOX6ji0kIUVOT6ki0mIUVOR6ki0PJTVOP6ki0RJTVOm5ki0UJUVOj5ki0XJTVOg5li0[JSVOd5mi0^JRVOa5ni0`JRVO`5li0cJSVO\\5mi0eJSVOZ5mi0hJRVOX5mi0jJRVOU5mi0mJSVOS5li0oJSVOP5mi0QKSVOn4mi0TKRVOk4mi0WKSVOh4mi0ZKRVOf4mi0\\KRVOc4ni0^KRVOa4ni0aKQVO^4oi0dKPVO\\4ni0fKRVOY4ni0iKQVOV4oi0kKQVOU4ni0lKRVOS4ni0oKQVOP4oi0QLQVOn3oi0TLPVOl3ni0VLRVOi3ni0YLRVOe3ni0\\LRVOc3ni0_LQVO`3oi0aLQVO^3oi0dLPVO[3Pj0fLPVOY3oi0jLPVOV3oi0kLQVOT3ni0oLQVOP3oi0RMPVOn2oi0SMQVOl2oi0VMPVOj2oi0WMQVOh2oi0ZMPVOf2oi0[MQVOd2ni0_MQVOa2ni0`MRVO_2ni0cMQVO\\2oi0eMQVO[2ni0fMRVOY2ni0iMQVOV2ni0lMRVOS2ni0oMQVOP2oi0QNQVOn1oi0TNPVOk1oi0XNPVOg1Pj0ZNPVOf1oi0\\NPVOc1Pj0_NoUO`1Qj0aNoUO^1Qj0dNnUO\\1Qj0fNnUOY1Rj0iNmUOW1Rj0jNnUOU1Rj0mNmUOR1Sj0POlUOP1Rj0ROnUOm0Rj0UOmUOj0Rj0XOnUOh0Qj0ZOnUOe0Qj0]OoUOb0Qj0@nUO`0Qj0AoUO>Qj0CoUO<Qj0FnUO9Rj0HnUO7Rj0KmUO4Rj0NnUO1Rj01mUOORj03mUOLSj05mUOJRj09mUOGRj0:nUOERj0=mUOCQj0?oUO@Qj0b0nUO]ORj0d0nUO[ORj0g0mUOYOQj0i0oUOVOQj0l0nUOSORj0n0nUOQOQj0R1nUOmNRj0U1mUOjNSj0W1mUOhNSj0Z1lUOfNSj0[1mUOdNSj0]1nUObNPj0a1oUO^NQj0c1oUO]Nni0g1QVOXNmi0l1RVOSNmi0o1SVOQNli0Q2SVOnMni0R2RVOmMni0U2QVOjMPj0V2PVOiMPj0Y2oUOfMQj0[2oUOeMPj0\\2PVOcMPj0_2oUO`MPj0b2PVO]MPj0e2oUO[MPj0f2PVOYMPj0i2oUOWMPj0k2oUOTMQj0m2oUOSMPj0o2oUOPMPj0R3PVOmLPj0U3oUOkLPj0V3PVOiLPj0X3PVOgLPj0[3oUOeLoi0^3PVOaLPj0`3PVO^LQj0d3nUO[LQj0g3oUOXLQj0j3mUOVLRj0m3nUORLQj0P4nUOoKRj0S4mUOlKSj0U4mUOkKRj0W4mUOhKRj0[4mUOeKRj0]4mUOcKRj0^4nUOaKRj0a4mUO_KRj0b4nUO]KRj0d4nUO[KRj0g4mUOXKSj0i4mUOVKSj0l4lUOTKSj0m4mUORKRj0P5nUOoJRj0S5mUOmJQj0U5oUOjJQj0X5nUOgJRj0Z5nUOeJRj0]5mUObJSj0_5mUO`JSj0b5lUO^JTj0c5kUO\\JUj0e5kUOZJUj0h5jUOXJTj0j5lUOUJSj0n5lUOQJTj0P6lUOoITj0S6kUOlIUj0U6kUOkITj0W6kUOhITj0[6kUOdIUj0]6jUOcIUj0`6jUO_IVj0b6jUO^ITj0e6kUOZIUj0g6kUOYITj0i6lUOUITj0l6lUOTISj0n6lUOQITj0Q7kUOoHTj0R7lUOmHTj0U7kUOkHSj0W7mUOhHSj0Z7lUOeHTj0\\7lUOcHTj0_7kUO_HUj0c7kUO\\HUj0e7kUO[HTj0g7kUOXHUj0j7jUOUHUj0m7kUORHUj0P8jUOPHUj0R8jUOmGVj0T8jUOlGUj0V8jUOiGUj0Y8jUOgGVj0[8iUOeGVj0\\8jUOcGVj0_8iUOaGVj0`8jUO_GUj0d8jUO[GVj0g8iUOXGWj0j8hUOVGWj0l8hUOSGXj0o8fUOQGZj0Q9eUOnFZj0U9eUOjF[j0X9dUOgF[j0[9dUOeF\\j0]9cUObF]j0_9cUOaF\\j0a9cUO^F]j0d9bUO[F^j0f9bUOZF]j0h9bUOWF^j0j9aUOWF^j0k9aUOTF_j0n9`UOQF`j0P:`UOPF_j0R:_UOnE`j0U:^UOkEbj0W?0001N10001O00001O000000001O000O10001O0000001O000010O01O010O010O000O2O00000O1000010O001O0010O01O0O10001O0O10001O0O10000001OO101O001N100O1O1O2N100O101O0O2N1O2M201N10001N10000O10001N1O10001O00001N1O2O0O2O01O01O01O00O10000O10001O00001O001N101N1O101O0000000O101N100O2O000O2O00001O0O1000001N10000O2O001O0O101O001O000O100000000O100O2O001O001O001O0O2O00001O000O2O0O10001O00001O001O001O000O2O001O1N101O0O2O001O1O001O1O1O0O2O1N2O1O0O2O1O1O1O1O1O001O1N2O1O1O1O1N2O1O1O1O1N2O001O1O1O1O1O1O1N2O1N2O1N200O1O1O1O1O1O1O1O1O1O1O2N1O1N2O1O1O1O1O001O1O1N2O1O1O100O1O100O1O1N2O100O1O100O1O1O1O1O1O100O2N100O1O1O1O1O001O1O1O1O1O100O1O1O100O1O1O1O1O100O1O1O1O100O1O100O100O100O2N100O1O010O100O100O1O100O1N2L4YOg0J6G9L4I7F:H8I7L4J6A?I7J6H8E;G9J6I7H8K5H8I7J6H8I7I7H8I7G9H8E;G9I7I7K5J6K5G9J6D<L4J6H8G9J6J6I7A?I7I7H8H8J6J6J6H8H8J6F:J6I7G9H8F:G9F:H8H8I7J6L4J7G8K5H9G:DSSdb1I\\m[]N4K5K4L3N3M3M2M3M4M2N2O1N1O2N2O1N2M3N2M3M3N2N2N3M2M3N2N2N2N2N2M3N2N2M3M3M3N2N2M3N2M3N2N2N2N2N2N2N1O2N2N2M3M3N2M3M3N2N2N2O1M3M3M3N2N2N2O1M3N2N2M3M3N2N2N2N2N2N2N2N2N2M3N2M3N2N2N2M3M3N2N2N2N2N2M3N2N2N2N2M3N2O1N2N2N2M3M3N2N2N2N2N2O1N2N2M3M3N2M3N2M3L4L4K5G9ZOf0M3N200O1O100O1O1O1O1O1O1O1O1O1O1N2O1N2N2N2O1N2000000elN"
+                },
+                "segmentation_source": "SAM"
+            },
+            {
+                "bbox": [
+                    763.0,
+                    847.0,
+                    1099.0,
+                    1144.0
+                ],
+                "labels": [
+                    "bow",
+                    "bow_(decorative_ribbons)",
+                    "gift wrap"
+                ],
+                "score": 0.98,
+                "attributes": [
+                    "a red bow on a present",
+                    "red ribbon tied in a bow"
+                ],
+                "id": 2,
+                "depth": 7371.52,
+                "label": "gift wrap",
+                "segmentation": {
+                    "size": [
+                        1500,
+                        2250
+                    ],
+                    "counts": "_dnR14f^14hcNMbY15[fNObY13[fN0cY12ZfN1dY11YfN1fY11WfN2gY11VfN0iY12TfN1jY11SfN1lY11QfN1oY10neN2QZ1OmeN3RZ1OkeN3TZ1OieN3VZ1NheN4WZ1NfeN4YZ1MfeN4YZ1NdeN4[Z1MceN4]Z1MbeN4]Z1N`eN4]Y1fNgfNW1J5[Y1kNhfNQ1J6\\Y1lNhfNo0J7]Y1lNgfNn0J8^Y1mNefNm0J7aY1nNcfNl0J8cY1mNafNl0J9dY1nN_fNk0K8fY1nN]fNk0K9hY1mN[fNk0L9iY1mNYfNo2fY1UMUfNm2kY1R100O1000O10O1000000O10000O1]OTKVgNk4eX1aKTgN`4jX1j0O1O1000O10O1000O1000001O02N<D2O0O001O100O001O01O01O010O01O01O0001O01O0001O0001O00010O001O00010O00000O1O1M3L4M3L3N3M2N3M2N3N1O1N3N101O0010O010O010000O2O1O1O1O1O1O010O1O100O100O010O100O01000O10000000O0100000000O10O1000O1000O0100O1000O01000000O01000000O1000O10O100O01O1O000O2O0O1O100O1O1O100O1O10O01O1O000001O0O1N2M4K4K5L4M4L3M3N2M3N3M2M3M3M4L3N2J6I700010O001O1O100O1O10000O1000000000O10001O001O1O4nJggNY3_X1WLkgNi3dY1000001O0000000000001O00001O1O1O2N<E2M3M4L6J1O0000001O0O11O0000O100000001O0O100O1O2O0O1O100O1[O[dNSNf[1l1[dNRNf[1n1[dNQNe[1n1^dNPNb[1P2_dNnMb[1R2_dNlMc[1S2_dNiMc[1W2a0000000000001O00000O2O001O001O1O1N2O1O1O001N101O2N6J8G8I9G3L4L6J7Gkbcd1"
+                },
+                "segmentation_source": "SAM"
+            },
+            {
+                "bbox": [
+                    681.0,
+                    841.0,
+                    1172.0,
+                    1306.0
+                ],
+                "labels": [
+                    "box",
+                    "gift box",
+                    "gift wrap"
+                ],
+                "score": 0.95,
+                "attributes": [
+                    "a red gift box",
+                    "a red box with a ribbon tied in it"
+                ],
+                "id": 3,
+                "depth": 7333.99,
+                "label": "gift wrap",
+                "segmentation": {
+                    "size": [
+                        1500,
+                        2250
+                    ],
+                    "counts": "ZgVo0=h]1l0YOf0XOg0\\Od0[Oe0\\Oe0[Od0]Od0^Oa0ZOf0^Oc0^Od0@a0B>E7H:WNbF`mNl9PR1iF]mNd9XR1h1G7I7I7K6I6K5M2N2N2N101O0O101O00000000000000000000000O10000000000000O100000000000000000O100000000000O1000000000000000000000000000O1000O10000000000000000000000000000O010000000000000000000O1000000000000000O1000000000000000O1000O10000000000000000000000000000000O100000O100000000000000000O100000000000O1000000000000000O1000000000000000000000000000001N100000O100O10000O10000O100000O1000O1001O00001O00001O0000000O2OO1000000000000000000O10000000000000000O10000O10O10O1000000000000000000000000001O000000000000000O100000O100000000000000000O10000000000000000000O100000O1000000000000O100000O1000000000000000000O10000000O10000000000000O1000000O100000000000000000O1000000000000000O10000000000000000000O1000000000000000000000000O10O100000000000000000000000000000000000000000O10000000000000000000000000000000O10000000000000000000000000000000O1000000000000000000000000000000000000000000000000000001O001O1O1O1O1O1O2N2N4L3M4L7I7YCmmNW<dR1H<D>A?B4L4Kf0[O=Be0[O8G=aGliN]7SW1mHchNU6nX1cITgN;KS4_Z1DT1fNk0QOo0ZNj_Xa1"
+                },
+                "segmentation_source": "SAM"
+            },
+            {
+                "bbox": [
+                    1235.0,
+                    1231.0,
+                    1636.0,
+                    1435.0
+                ],
+                "labels": [
+                    "coaster",
+                    "envelope"
+                ],
+                "score": 0.94,
+                "attributes": [
+                    "a credit card logo"
+                ],
+                "id": 4,
+                "depth": 7221.39,
+                "label": "envelope",
+                "segmentation": {
+                    "size": [
+                        1500,
+                        2250
+                    ],
+                    "counts": "n]bh1?S^1>C:H8F:G9F9H9G8M3O101O01O2N1O1O2N2N2N2N1O2O1N1O2N2N2N1O2N2N2N1O2N3M1O1O1O1O101N1O1O2N1O1O2N2N001O00001O000000000001O000000000O100000000O101N10000O10000O100O100O101O000O1000000O10000000000O100O10000O100O10000O100O100O10000O100O100O10000O2O0O100O100O10000O100O100O10000O100O100O2O000O100O100O10000O100O101O0O100O100O10000O100O100O2O000O100O100O100O10000O100O101O0O100O100O100O100O10000O100O10000O101N10000O100O100O10000O100O2O0O100O100O10000O100O10000O100O2O000O1O10000O1000000O10000O10000O1O100O100O100O101OO0100O10000O100O100O100O10000O1O100O100O10001N100O10000O100O2O000O100O100O10001N100O100O2O000O100O2O000O2O0O10000O101N10000O101O0O100O2O000O100O2O0O100O100O10000O2O000O100O10000O100O100O10000O10000O100O100O2O000O100O10O02O000O100O10000O100O01000O100O100O10O010000O010O0001O00O01N2ZOg0[Of0_O`0H9\\Nd1YOh0[Od0CShPl0"
+                },
+                "segmentation_source": "SAM"
+            },
+            {
+                "bbox": [
+                    922.0,
+                    0.0,
+                    2249.0,
+                    1146.0
+                ],
+                "labels": [
+                    "laptop computer",
+                    "monitor_(computer_equipment) computer_monitor"
+                ],
+                "score": 0.9,
+                "attributes": [
+                    "a laptop with an amazon logo",
+                    "computer screen is black"
+                ],
+                "id": 5,
+                "depth": 6132.92,
+                "label": "laptop computer",
+                "segmentation": {
+                    "size": [
+                        1500,
+                        2250
+                    ],
+                    "counts": "XUWZ1e0l]1?D:G9D<F9F:I6J7J5H8G:H7I7G:C<I7J7J5I7E<H7H8H9D;H8L4L5I6H8H9I6H8F;F9K5K5G:H7E;J6F;H7H9I6L4I8G8H8H9H7I8H7I7I8I6H9I6C=H9J5J7F9H9I6K6I6C>F9J7F9I8F9K5D=K4K5J7L3O1N3N1O1O2N10001O001O00001O001O001N2O0M4O001O00001cVO^[O^h0bd0aWOc[O[h0]d0bWOh[O\\h0Xd0bWOk[O]h0Vd0_WOn[O`h0Rd0^WOP\\Obh0Qd0ZWOS\\Ohh0od0010O0001O001O001O010O0O2O001O001O001O001O001O1O001O1O00001O001O00001O0000001O000000001O0000001O0000001O001O001O1O001O1O001O001O00001O001O001O0010O0001O00001O0000001O0000001O0O101O00001O001O1O001O1O001O00001O00001O000010O0001O001O001O001O00001O0O2O00001O00001O001O00001O00001O001O00001O0010O01O00001O001O001O001O001O001O001O00001N10001O00001O00001O0000001O01O01O001O00001O001O001O001O001O001O001O001O001O001O001O00001O0000001O000000001O0000001O0000001O00001O001O1O001O1N101O001O001O001O00001O010O00001O001O00001O0000001O00001O00001O00001O1N101O1O001O001O00001O01O01O00001O001O001O001O00001O001O0000001O00001O0O2O00001O00001O00001O001O00001O001O010O001O001O001O001O001O001N10001O001O00001O0000001O0000001O00001O001O00001O001O001O001O001O001O001O001O001O1O001O00001O00001O0000001O000000001O0000001O0000001O00001O1O001O1O001O001O001O001O001O00001O001O000010O01O00001O0000001O0000001O00001O001O1O001O1O001O00001O0O2O00001O000010O01O001O00001O0O101O00001O00001O001O00001O001O001O00001O001O001O00001O001O001O001O001O001O001O00001O00001O00001O0O2O00000M4O0000001O00001O03NO0010O01O001O00001O001O001O001O001O001O001O001O0000001O00001O000000001O01O0001O00001O00001O001O001O001O1O001O001O00001O001O001O001O001O00001O00001O0000001O00001O00001O00001O00001O1N101O001O001O00001O001O00001O00001O001O001O00001O00001O0000001O00001O001O001O00001O001O001O001O00001O0010O01O001O1O001O001O001O001O000O2O001O001O001O00001O00001O001O010O001O001O1O00001O00001O001O00001O001O00001O001O0000001N10001O000010O000001O00001O00001O001O001O001O001O001O001O001O001N110O00001O00001O00001O00001O000010O0001O00001O00001O001O001O1O1O001O001O001O001O001O001O00001O00001O0000001O0000001O00001O0000001O001O001O001O001O001O001O001O00001O001O001O001O001O001O00001O00001O0000001O001O001O0000001O0000001O001O001O1O001O001O001O00001O001O001O001O00001O001O00001O0000001O00001O0000001O001O001O001O001O1O001O001O001O001O001O001O00001O00001O0000001O00001O00001O001O001O00001O001O1O001O001O001O001O1O001O001O00001O00001O00001O00001O00001O0000001O00001O00001O001O1N101O1O00001O000001O000000000O100O1O1O1O1O1O2O0O1O1O1O1O1N2O1N2N2M3O1N2O1O1N2O2O00000001O010O0000010O001O01O01O00010O0000001O00000010O01O1O1O001O100O001O01O01O010O0010O0001O010O0010O01O01O01O01O00010O0000010O01O0010O01O01O01O0010O0001O01O01O010O00010O01O01O0010O01O0010O01O01O010O0010O01O01O0010O01O00010O00100O001O10O01O10O01O100O00100O001O10O01O0010O01O10O00001O0O2N1O1O1O2O0O1O2N1O1O1O2N1O1N3N1O1N3M2N2M4M2L5J5N2N2O1000YN"
+                },
+                "segmentation_source": "SAM"
+            },
+            {
+                "bbox": [
+                    1188,
+                    1062,
+                    1636,
+                    1434
+                ],
+                "labels": [
+                    "envelope"
+                ],
+                "score": 0.76,
+                "attributes": [
+                    "a gift card for amazon",
+                    "a mouse pad on a keyboard"
+                ],
+                "id": 6,
+                "depth": 6846.06,
+                "label": "envelope",
+                "segmentation": {
+                    "size": [
+                        1500,
+                        2250
+                    ],
+                    "counts": "m\\]f11h^19H4M4L2N2O2M3M3N2M3N2M2O2N2M2O2M3N2N2M2O2N2M3N2N1O2M3N2M2O2N3M2M3N1N3N1N3N2M3N1N3N2M3N1N3N2N2igNkLbT1W3RkNWMkT1k2kjN^MSU1e2djNcM[U1^2]jNjMaU1Y2UjNPNjU1R2kiNXNSV1k1biN^N^V1d1YiNcNgV1_1SiNfNkV1]1SiNcNmV1_1QiNaNnV1b1ohN`NPW1e1khN[NTW1g40000O100O100O10000O101N10000O10000O1O100O100O100O100O2O00000O1O100O10000O100O10000O10001N100O10000O100O10000O101N100O10000O100O10000O100O2O000O10000O10000O100O100O100O100O10000O100O100O10000O100O10000O10000O2N10000O100O10000O10000O100O100O10000O2O0O100O1000000O10000O100O10000O2O0O100O100O100O100O10000O1000000O2O000O1000000O100O10000O101O0O100O1O10000O100O100O10000O101O0O10000O10000O10000O100O2N10000O100O1000000O100O100O10000O2O0O1000000O10000O100O100O1000000O100O10000O10000O100O100O10000O100O1000000O10000O100O2O00000000000000000010O001O001O1O1O101N1O2N2N1O1O101N1O2N2N1O2O1N2N1O2O1N2N1O2N1O1O1O2O0O2N100O1O2N2N101N2N1O2N2N100O3M1O1O1O1O2N1O1O2N2N1O1O2N101N1O1O2N1O2N2N1O2N1O2N1O2N1O1O2N1O2N2N1O2N1O1O1O2N1O2N2N2N2N2N1O2N2N2N1N3N1O2N1O1O1N3M2O2L3N3M3M5H5[Of0XOg0_Oa0G9]Nc1WOi0]Od0AThPl0"
+                },
+                "segmentation_source": "SAM"
+            },
+            {
+                "bbox": [
+                    1395.0,
+                    33.0,
+                    2081.0,
+                    552.0
+                ],
+                "labels": [
+                    "monitor (computer equipment) computer monitor"
+                ],
+                "score": 0.72,
+                "attributes": [
+                    "the laptop is on",
+                    "the screen is blue"
+                ],
+                "id": 7,
+                "depth": 6808.52,
+                "label": "monitor (computer equipment) computer monitor",
+                "segmentation": {
+                    "size": [
+                        1500,
+                        2250
+                    ],
+                    "counts": "Viko15`^19J6I6J6J5L5K4K6I6I7I8K4K6K4L4L5I6K5L5J5I7J6M4K4I7J7J5M4J5I7J6K6I6K5K6J5K5J7K4L4G:I6K5M4J5J7I6M4K4K5K5J7J5J6K6J5K6K4M3N3N1O100O2O00001O001O000010O00010O01O010O010O0001O01O01O01O001O010O00010O0001O01O010O0010O0001O00010O0010O0000010O00010O0010O000010O000001O01O01O010O0010O00010O00010O0001O010O0000010O00010O010O00010O0000010O00010O0010O00010O0001O010O000010O0001O01O01O010O0001O01O000010O0010O0010O01O00010O00010O00010O000010O0001O01O01O01O01O01O01O01O01O010O0010O00010O00010O0001O010O000010O00010O0001O01O01O00010O00010O0010O00010O00010O0001O01O01O01O01O00010O00010O00010O00010O00010O0010O010O0001O01O00010O01O00010O000010O00010O00010O01O00010O000010O0010O00010O000010O00010O01O00010O000010O00010O01O01O01O01O01O01O01O0010O000010O00010O010O00010O000010O00010O01O010O00010O0000010O0010O0001O01O01O01O01O01O0001O010O00010O00010O0010O000010O00010O00010O00010O000010O0010O0010O00010O01O00010O0010O00010O0000010O00010O01O00010O00010O0001O01O010O000010O01O01O01O010O00010O00010O0001O01O00010O00010O00010O0010O0001O010O00010O01O01O01O01O01O01O00010O001O01O01O01O01O01O01O01O01O0010O00010O0010O001O01O01O01O0001O01O01O01O01O00010O010O000010O01O01O00010O010O0010O0001O0001O01O0000001O000O101O0O1O2M2N2M4L3M3M3L5L3M3L4M4K4M4L3L4L5L3L4M4K4M3L4M4M2L4L5K4M3M3L5L3M3M4K4L4M4K4L4M4L3L4M4M2L4L5L3L5L3L4M4L3M3L5K4M3M3M4K4M3K5M4M2L4M4L3K5M4L3M3L4L5K4M3M4M2L4M3L5K4M4K4L5K4M4K4M4M3K4M5J5K6IQle7"
+                },
+                "segmentation_source": "SAM"
+            },
+            {
+                "bbox": [
+                    1333.52,
+                    383.1,
+                    1995.25,
+                    757.19
+                ],
+                "labels": [
+                    "amazon 's new website",
+                    "logo"
+                ],
+                "attributes": [
+                    "the word amazon on a laptop"
+                ],
+                "id": 8,
+                "depth": 6020.32,
+                "label": "amazon 's new website",
+                "segmentation": {
+                    "size": [
+                        1500,
+                        2250
+                    ],
+                    "counts": "ZUmn1e0T^16J5M2N2N2N2M3N2N2O0VOdNSdN^1j[1eNUdN[1j[1fNVdN[1g[1hNWdNZ1g[1gNYdNZ1e[1hNZdNX1e[1jNYdNX1e[1iN[dNX1c[1iN]dNX1a[1jN^dNV1a[1kN_dNU1`[1lN`dNT1_[1nN`dNS1^[1oNadNQ1_[1QO^dNP1a[1RO^dNn0b[1SO]dNm0c[1SO]dNm0c[1SO]dNm0c[1SO]dNm0c[1SO]dNn0b[1QO_dN1LKe[14^dN10Ib[15_dN12H_[17_dN04H][17`dN13H][16adN22H][16adN31G^[15cdN3OG_[15cdN6JGc[13cdN8DIi[1OddNR1\\[1mNedNS1[[1mNfdNQ1[[1oNedNQ1[[1oNedNQ1[[1POddNQ1[[1POddNP1][1oNcdNR1\\[1PObdNP1^[1QObdNo0][1RObdNP1][1PObdNQ1][1POadNS1^[1mNadNU1][1mN_dNV1a[1R11O01O01O001O001O1O001N101O001N3M2[OPdN\\NQ\\1Y1]dNaNg[1Y1_dNdNd[1V1bdNfNa[1U1V1K6H7I:E^kn0HoTQO3O0O11Oli^10SVaN3N02LZ`d0Ll_[O0Sm^13jRaN000oaa00VP]O8_\\12VcN4g\\12obN4P]1l01M3L4WOj0HVZVn0"
+                },
+                "segmentation_source": "HQ_SAM"
+            }
+        ],
+        "floating_objects": [
+            {
+                "bbox": [
+                    0.0,
+                    6.0,
+                    990.0,
+                    1494.0
+                ],
+                "labels": [
+                    "table"
+                ],
+                "score": 0.55,
+                "attributes": null,
+                "id": 9,
+                "segmentation": {
+                    "size": [
+                        1500,
+                        2250
+                    ],
+                    "counts": "ha0ml0oa000000O1O1O1O1O1O100O1O100O1O100O1O1O100O1O1O100O1O1O1O1O100O1O1O100O1O100O001O100O2N1O1O100O1O100O1O100O1O1O100O1O1O1O100O1O1O1O100O1O1O100O100O1O100O1O1O100O1O1O100O1O100O1O100O1O1O100O1O1O1O1O1O100O1O1O100O1O100O010O1O1O2N1O1O100O1O100O100O1O1O10O01O1O100O2N1O1O1O1O100O1O100O1O010O100O1O1O1O100O1O2N100O1O10O01O1O100O1O1O100O1O1O1O1O2O0O1O1O00100O1O100O1O100O1O1O1O100O1O100O1O100O1O1O1O100O1O1O1O1O100O1O1O1O100O1O100O100O1O100O1O100O1O1O100O1O100O1O100O1O1O100O1O1O1O1O100O1O1O100O1O100O100O1O1O100O1O1O1O1O100O100O1O100O1O100O1O1O100O1O1O1O1O100O1O1O100O1O100O1O100O1O1O100O1O1O100O1O1O100O1O100O1O1O100O1O1O1O1O1O100O1O100O1O100O100OaJfE^VOY:^i0oE_VOP:`i0UF]VOj9ai0[F]VOe9ai0^F^VOa9ai0cF]VO\\9bi0hF\\VOW9bi0nF\\VOQ9ci0RG\\VOn8bi0UG]VOj8ci0XG\\VOh8ci0YG]VOf8ci0\\G\\VOc8di0^G\\VOb8bi0aG]VO^8ci0cG]VO\\8ci0fG\\VOY8ci0jG\\VOU8di0mG[VOR8ei0PHZVOP8di0SH[VOl7ei0WHYVOh7gi0ZHXVOe7hi0]HWVOb7ii0`HVVO`7hi0cHWVO\\7ii0fHVVOY7ii0jHVVOV7hi0mHWVOR7ii0PIVVOo6ji0SIUVOm6ji0UIUVOj6ki0XITVOh6ji0[IUVOd6ki0^ITVOa6li0aISVO_6li0bITVO]6li0eISVOZ6mi0hIRVOX6li0jITVOU6li0mISVOR6li0QJSVOn5mi0TJRVOl5li0WJSVOh5mi0ZJRVOe5ni0]JQVOb5oi0_JQVOa5mi0aJSVO^5mi0dJRVO[5ni0fJRVOZ5mi0hJRVOW5ni0jJRVOU5ni0mJQVOS5ni0nJRVOQ5ni0QKQVOn4oi0SKQVOl4oi0VKPVOi4oi0YKQVOf4oi0\\KPVOc4Pj0_KoUOa4oi0bKPVO]4Pj0dKPVO[4Pj0gKoUOY4oi0iKQVOV4oi0lKPVOT4oi0mKQVOR4oi0PLPVOo3Pj0RLPVOn3oi0TLPVOk3Pj0VLPVOi3Pj0YLoUOg3oi0[LRVOc3ni0_LQVO`3oi0bLPVO]3Pj0dLPVO[3oi0hLPVOW3Pj0kLoUOU3oi0mLQVOR3oi0PMPVOo2Pj0RMPVOn2oi0TMPVOk2Pj0VMPVOj2oi0XMPVOg2Pj0ZMPVOe2Pj0\\MPVOd2ni0_MQVO`2oi0aMQVO^2oi0cMQVO\\2oi0fMPVOY2Pj0hMPVOX2oi0jMPVOU2Pj0lMPVOS2Pj0oMoUOP2Qj0QNoUOo1Pj0SNoUOl1Pj0WNoUOh1Qj0ZNnUOe1Rj0]NmUOb1Sj0_NmUO`1Sj0bNlUO^1Sj0dNlUO[1Tj0fNlUOY1Sj0jNlUOU1Tj0lNlUOT1Sj0nNlUOQ1Tj0QOkUOn0Tj0TOlUOl0Sj0VOlUOi0Tj0XOlUOg0Sj0\\OlUOd0Sj0^OlUOa0Tj0@mUO>Sj0DlUO<Rj0FnUO9Rj0ImUO6Sj0KmUO4Rj0NnUO2Qj00nUOORj02nUOMRj05mUOKRj06nUOIRj08nUOGRj0;mUOERj0<nUOCRj0?mUO@Sj0b0lUO]OTj0d0lUO[OTj0g0kUOXOUj0j0jUOUOUj0m0kUOROUj0P1jUOPOTj0S1kUOlNUj0U1kUOjNTj0Y1kUOgNTj0Z1lUOeNTj0]1kUObNTj0`1lUO`NSj0b1lUO]NSj0e1mUO[NQj0h1nUOWNQj0k1oUOTNPj0o1oUOQNPj0P2PVOoMQj0R2nUOmMRj0T2nUOkMRj0W2mUOhMSj0Y2mUOfMRj0\\2nUOdMQj0^2nUOaMRj0`2nUO_MRj0c2mUO]MRj0d2nUO[MRj0g2mUOYMRj0h2nUOWMRj0k2mUOTMSj0m2mUOSMRj0n2nUOQMQj0R3nUOmLRj0T3nUOkLRj0W3mUOiLRj0X3nUOgLRj0[3mUOdLRj0^3nUOaLRj0a3mUO^LRj0e3mUOZLRj0i3mUOWLRj0k3mUOTLSj0n3lUOQLTj0Q4kUOoKTj0R4lUOmKTj0U4kUOkKTj0W4kUOhKUj0Y4kUOgKTj0Z4mUOdKSj0^4lUObKRj0`4nUO_KRj0c4mUO\\KSj0e4mUOZKSj0h4lUOWKTj0j4lUOVKRj0l4mUOTKSj0n4lUOQKTj0P5lUOoJSj0T5lUOkJTj0V5lUOjJRj0Y5mUOfJTj0Z5lUOeJTj0]5kUObJUj0_5kUOaJTj0a5kUO^JUj0c5kUO\\JUj0f5jUOZJUj0g5kUOXJTj0k5kUOTJUj0n5jUOQJVj0P6jUOPJUj0R6jUOmIVj0U6iUOjIWj0W6iUOhIVj0[6iUOdIWj0^6hUOaIWj0b6hUO^IVj0d6jUO[IVj0g6iUOXIVj0j6jUOVIUj0l6jUOSIVj0n6jUORIUj0P7jUOoHVj0R7jUOnHUj0S7kUOlHUj0V7iUOjHWj0W7iUOhHWj0Z7hUOfHWj0[7iUOdHVj0_7iUO`HWj0a7iUO^HVj0e7iUO[HVj0g7iUOXHVj0j7jUOUHVj0m7iUOSHUj0P8jUOoGVj0R8jUOmGVj0U8hUOlGWj0U8iUOjGWj0X8hUOgGXj0Z8hUOfGWj0\\8hUOcGXj0_8gUO`GYj0c8dUO]G\\j0e8cUOZG]j0h8bUOXG]j0j8aUOVG^j0n8_UORGaj0R9\\UOmFdj0e>O10001O0000001O00000O2O000O10001N10001O00001O001O0000001O0000001O000000000010O00010O01O001O00001O0O10001O00001O01O01O00001O00001O0O100000001O0000001O00001O000O2O0O101N100O1O1O101O001N1N3N10001O0O101N1O100O2O000O1O101N11O0001N1O1O101O01O01O0000001O0O101O01O01O0O101N10001O0O1000000O2O000O1O2N101N100O2O0000001N10000O1O2O000O2O001O00001O00000O10001N10000O101O00001O001N101O001O0O10001O0O10001O00001O001O0O2O001O001O001O001O0O2O001N101O1O001N2O001O1N2O1O001O1N2O1O1N2O1O001O1O1O1O1O1O100O1N2O1O0O2O1O1N2O1O1O1O1O1O1N2O1O1N2O1O1O1O1O1O1O2N1O1O1O1O1O1O1O1O1N200O1O1O1N2O1O1N200O1O100O1O1O1O1O1O1O1O100O1O1O1O1O1O100O1O10000O1O1O1O1O1O1O1O1O1O1O1O1O1O1O1O1O100O1O1O100O1O1O1O100O1O100O1O100O1O100O1O10000O100O100O1O100]OeTOa]O_k0Tb0j0H8I7L3K6H8L4E;K5K5E;G9H8I7H8E;I7E<H7L4K5H8K5J6I7K5I6H9I7G9H8C=H8G9I7I7J6H8J6K5F:L4I7H8H8H8K5F:E;H8F:H8I7J6I7H8I7L4L4F:K5H8I7H8F:G9F:H9D;H8I7K5H8J7H8I7I:]OeWdi1"
+                },
+                "segmentation_source": "SAM"
+            },
+            {
+                "bbox": [
+                    2087.0,
+                    1119.0,
+                    2249.0,
+                    1497.0
+                ],
+                "labels": [
+                    "mouse (computer equipment)"
+                ],
+                "score": 0.54,
+                "attributes": null,
+                "id": 10,
+                "segmentation": {
+                    "size": [
+                        1500,
+                        2250
+                    ],
+                    "counts": "hbbo24e^14M2N2N3M2N2N2N2N2M3N2N2N2M3N2M3N2N2N2M3N2N2N2M3N2M3N2M3N2N2N2N2N2N2N2N2M3N2N2N2M3N2M3N2N2N2N2N2N2M3N2N2M3N2N2M3M3N2N2M3N2N2N2N2M3N2N2M3N2N2M3N2N2N2N2N2N2N2M3N2N2N2M3N2N2M3O0N3N3M2N2M3N2N2N2N2M3N2N2M3N2M3N2M3O1M3N2N2N2N2N2M3N2N2N2M3N2N2N2M3N2N2N2M3N2N2M3M3N2M3M3N2M3oNaF`lNd9^S1dFUlNc9jS1h0O100O1O1O100O1O1O1O1O1O1O1O1O1O1N2N2O1N2N2N2M3M3M3O1QmN"
+                },
+                "segmentation_source": "SAM"
+            },
+            {
+                "bbox": [
+                    1903.0,
+                    1194.0,
+                    2154.0,
+                    1497.0
+                ],
+                "labels": [
+                    "computer keyboard"
+                ],
+                "score": 0.52,
+                "attributes": null,
+                "id": 11,
+                "segmentation": {
+                    "size": [
+                        1500,
+                        2250
+                    ],
+                    "counts": "hQUg22b^19M2N2M4M2O1O1L5M2N2N2N2N2N2M3N2O1N2M3N2N2N2N2N2N2N2M3O1O1O1M3M3N2N2M3N2O1M3N2O1O1N2M3N2N2M3N2N2N2N2N2O1N2N2M3N2M3N2N2N2M3N2N2O1N2M3O1N2M3O1M3N2N2N3N1N1O2M3N2N3M1N3N2N2N3M2O1O0N3N2N2O1M3N2N2N2M3N3M1O2N2N2N2N2N2N2N2M3N3N1N2N2N2N2N2N2N2M2O2N3L3O1N2N1O2M3N2N2N2N2N2M3N2N2N1O1O1O1OO101O1N3O0N3N2N3M2N2M3N3M2M4M2N2N3L3N3M2N2N3M2N3M2M3N3M2N3M2N3M2N3M2N2N3L3N3M2N3M2N2N3M2N3M2N2M4M2N3M2M4M2N2N3M2N3M2M4L3N2N3L3N3M2N2M4N1N3L3N3M2N3L3N2N3M2N3M2N2M4M2N3M2N2M4M2N3M2N3M2M3N3M2M4M2N2N3M2N2N3M2N2M4M2N3M2N3M2N3L4M4J`nY4"
+                },
+                "segmentation_source": "SAM"
+            },
+            {
+                "bbox": [
+                    1209.0,
+                    1160.0,
+                    1303.0,
+                    1221.0
+                ],
+                "labels": [
+                    "credit card"
+                ],
+                "score": 0.31,
+                "attributes": null,
+                "id": 12,
+                "segmentation": {
+                    "size": [
+                        1500,
+                        2250
+                    ],
+                    "counts": "UU\\g12h^15L3N2M2N3N1N3N2N2M2O2M2O2M3N1N101O0O100O1000O010O0100O0100O010O10O0100O10000O010O01O00100O010O0100O010O001O0010O100O10O10O100O01000O010O010O10O100O10000O101N102M2O1O2M3N1N3N2M3N1N3N2M2O2MibX[1"
+                },
+                "segmentation_source": "SAM"
+            }
+        ],
+        "floating_attributes": [
+            {
+                "bbox": [
+                    1353.4,
+                    394.28,
+                    1973.75,
+                    736.09
+                ],
+                "labels": [],
+                "score": 0.42,
+                "attributes": [
+                    "a computer monitor display"
+                ]
+            }
+        ],
+        "landmark": {
+            "category": "Indoor scene",
+            "fine_category": "Living space"
+        },
+        "affordances": {
+            "Contain-1": {
+                "description": "Containers that can hold a variety of household items and miscellaneous goods.",
+                "object_ids": [
+                    3
+                ],
+                "labels": [
+                    "gift box"
+                ]
+            }
+        },
+        "id_counter": 14,
+        "relationships": {
+            "object_ids": [
+                8,
+                1,
+                6
+            ],
+            "floating_object_ids": [],
+            "grounding": [
+                {
+                    "phrase": "amazon 's new website",
+                    "object_ids": [
+                        8
+                    ]
+                },
+                {
+                    "phrase": "a laptop computer with a gift card and a credit card sitting on top of it",
+                    "object_ids": [
+                        1
+                    ]
+                },
+                {
+                    "phrase": "a wrapped present",
+                    "object_ids": [
+                        6
+                    ]
+                },
+                {
+                    "phrase": "the amazon logo",
+                    "object_ids": [
+                        8
+                    ]
+                }
+            ]
+        },
+        "short_captions": [
+            {
+                "caption": "amazon's new website is a mess",
+                "details": []
+            },
+            {
+                "caption": "a laptop computer with a gift card and a credit card sitting on top of it, along with a wrapped present, is showcasing the amazon logo.",
+                "details": [
+                    {
+                        "phrase": "a laptop computer with a gift card and a credit card sitting on top of it",
+                        "tokens_positive": [
+                            0,
+                            73
+                        ],
+                        "id": 1,
+                        "bbox": [
+                            330.03,
+                            1.3,
+                            2245.45,
+                            1499.74
+                        ]
+                    },
+                    {
+                        "phrase": "a wrapped present",
+                        "tokens_positive": [
+                            86,
+                            103
+                        ],
+                        "id": 6,
+                        "bbox": [
+                            1196.76,
+                            1056.31,
+                            1634.75,
+                            1425.83
+                        ]
+                    },
+                    {
+                        "phrase": "the amazon logo",
+                        "tokens_positive": [
+                            119,
+                            134
+                        ],
+                        "id": 8,
+                        "bbox": [
+                            1333.52,
+                            383.1,
+                            1995.25,
+                            757.19
+                        ]
+                    }
+                ]
+            }
+        ],
+        "dense_caption": {
+            "caption": "A laptop computer with a gift card, a credit card, and a wrapped present on it displays the Amazon logo. The present has a red bow and a red gift box.",
+            "details": [
+                {
+                    "phrase": "a laptop computer with a gift card",
+                    "tokens_positive": [
+                        0,
+                        34
+                    ],
+                    "ids": [
+                        0
+                    ],
+                    "bbox": [
+                        [
+                            884.14,
+                            746.02,
+                            2030.75,
+                            1499.12
+                        ]
+                    ]
+                },
+                {
+                    "phrase": "a red bow and a red gift box",
+                    "tokens_positive": [
+                        121,
+                        149
+                    ],
+                    "ids": [
+                        3
+                    ],
+                    "bbox": [
+                        [
+                            681.19,
+                            840.35,
+                            1176.93,
+                            1310.08
+                        ]
+                    ]
+                },
+                {
+                    "phrase": "a wrapped present on it",
+                    "tokens_positive": [
+                        55,
+                        78
+                    ],
+                    "ids": [
+                        6
+                    ],
+                    "bbox": [
+                        [
+                            1196.76,
+                            1056.31,
+                            1634.75,
+                            1425.83
+                        ]
+                    ]
+                },
+                {
+                    "phrase": "a laptop computer",
+                    "tokens_positive": [
+                        0,
+                        17
+                    ],
+                    "ids": [
+                        1
+                    ],
+                    "bbox": [
+                        [
+                            330.03,
+                            1.3,
+                            2245.45,
+                            1499.74
+                        ]
+                    ]
+                },
+                {
+                    "phrase": "the amazon logo",
+                    "tokens_positive": [
+                        88,
+                        103
+                    ],
+                    "ids": [
+                        8
+                    ],
+                    "bbox": [
+                        [
+                            1333.52,
+                            383.1,
+                            1995.25,
+                            757.19
+                        ]
+                    ]
+                },
+                {
+                    "phrase": "a credit card",
+                    "tokens_positive": [
+                        36,
+                        49
+                    ],
+                    "ids": [
+                        1
+                    ],
+                    "bbox": [
+                        [
+                            330.03,
+                            1.3,
+                            2245.45,
+                            1499.74
+                        ]
+                    ]
+                }
+            ]
+        }
+    }
+}

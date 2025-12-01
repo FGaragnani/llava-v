@@ -1,0 +1,61 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{ebgaramond}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{subcaption}
+\usepackage{caption}
+\captionsetup[table]{labelfont=bf,font=small}
+\captionsetup[figure]{labelfont=bf,font=small}
+\renewcommand{\arraystretch}{1.2}
+
+\title{LLaVA-v}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{table}[htbp]
+	\centering
+	\caption{Training Losses}
+	\begin{tabular}{lcc}
+        \toprule
+		& CE Loss & Alignment Loss \\
+		\midrule
+		First Stage & 2.046 & 0.514 \\
+		Second Stage &  & --- \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+	\centering
+	% First figure (top)
+	\begin{subfigure}{0.95\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{first_stage_losses.png}
+		\caption{First Stage Losses}
+	\end{subfigure}
+
+	\vspace{0.75em}
+
+	% Second figure (bottom) — compiles even if file is missing
+	\begin{subfigure}{0.95\linewidth}
+		\centering
+		\IfFileExists{second_stage_losses.png}{%
+			\includegraphics[width=\linewidth]{second_stage_losses.png}%
+		}{%
+			\fbox{\parbox[c][2in][c]{0.95\linewidth}{\centering Placeholder for second\_stage\_losses.png}}%
+		}
+		\caption{Second Stage Losses}
+	\end{subfigure}
+
+	\caption{Loss curves for the two stages.}
+	\label{fig:losses}
+\end{figure}
+
+\end{document}
+
