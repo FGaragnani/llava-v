@@ -39,17 +39,17 @@
 			\toprule
 			\textbf{Dataset} & \textbf{Perception Score} & \textbf{Cognition Score} & \textbf{LLaVA Baseline} \\
 			\midrule
-			mme & & & \textcolor{green!50!black}{1510.8/348.2} \\
+			mme & \textcolor{red}{293.2\,$\downarrow$} & \textcolor{red}{1459.4\,$\downarrow$} & 348.2/1510.8\\
 			\midrule
 			\textbf{Dataset} & \textbf{Exact Match} & \textbf{stderr} & \textbf{LLaVA Baseline} \\
 			\midrule
-			ai2d & & & \textcolor{green!50!black}{0.548\, $\uparrow$} \\
+			ai2d & \textcolor{green!50!black}{0.5521\, $\uparrow$} & 0.009 & 0.548 \\
 			\addlinespace[6pt]
-			scienceqa\_img & & & \textcolor{green!50!black}{0.704\, $\uparrow$} \\
+			scienceqa\_img & \textcolor{red}{0.6891\, $\downarrow$} & 0.0103 & 0.704 \\
 			\addlinespace[6pt]
-			gqa & & & \textcolor{green!50!black}{0.620\, $\uparrow$} \\
+			gqa & \textcolor{red}{0.6189\,$\downarrow$} & 0.0043 & 0.620 \\
 			\addlinespace[6pt]
-			textvqa\_val & & & \\
+			textvqa\_val & 0.5174 & 0.0068 & ? \\
 			\midrule
 			\textbf{Dataset} & \textbf{Accuracy} & & \textbf{LLaVA Baseline} \\
 			\midrule
@@ -57,7 +57,7 @@
 			\midrule
 			\textbf{Dataset} & \textbf{Accuracy} & \textbf{F1 Score} & \textbf{LLaVA Baseline}\\
 			\midrule
-			pope & & & \textcolor{green!50!black}{0.859\, $\uparrow$} \\
+			pope & 0.8616 & 0.8500 & ? \\
 			\bottomrule
 		\end{tabular}
 	\end{table}
