@@ -3,10 +3,12 @@
 \usepackage[T1]{fontenc}
 \usepackage{ebgaramond}
 \usepackage{microtype}
+\usepackage{xcolor}
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{subcaption}
 \usepackage{caption}
+\usepackage{array}
 \captionsetup[table]{labelfont=bf,font=small}
 \captionsetup[figure]{labelfont=bf,font=small}
 \renewcommand{\arraystretch}{1.2}
@@ -16,7 +18,7 @@
 \date{}
 
 \begin{document}
-\maketitle
+\section*{Results}
 
 \begin{table}[htbp]
 	\centering
@@ -30,6 +32,43 @@
 		\bottomrule
 	\end{tabular}
 \end{table}
+	
+	\begin{table}[h]
+		\centering
+		\begin{tabular}{@{} l >{\centering\arraybackslash}p{2.5cm} >{\centering\arraybackslash}p{2.5cm} c @{}}
+			\toprule
+			\textbf{Dataset} & \textbf{Perception Score} & \textbf{Cognition Score} & \textbf{LLaVA Baseline} \\
+			\midrule
+			mme & & & \textcolor{green!50!black}{1510.8/348.2} \\
+			\midrule
+			\textbf{Dataset} & \textbf{Exact Match} & \textbf{stderr} & \textbf{LLaVA Baseline} \\
+			\midrule
+			ai2d & & & \textcolor{green!50!black}{0.548\, $\uparrow$} \\
+			\addlinespace[6pt]
+			scienceqa\_img & & & \textcolor{green!50!black}{0.704\, $\uparrow$} \\
+			\addlinespace[6pt]
+			gqa & & & \textcolor{green!50!black}{0.620\, $\uparrow$} \\
+			\addlinespace[6pt]
+			textvqa\_val & & & \\
+			\midrule
+			\textbf{Dataset} & \textbf{Accuracy} & & \textbf{LLaVA Baseline} \\
+			\midrule
+			mmmu\_val & \textcolor{green!50!black}{0.3611$\,\uparrow$} & & 0.353 \\
+			\midrule
+			\textbf{Dataset} & \textbf{Accuracy} & \textbf{F1 Score} & \textbf{LLaVA Baseline}\\
+			\midrule
+			pope & & & \textcolor{green!50!black}{0.859\, $\uparrow$} \\
+			\bottomrule
+		\end{tabular}
+	\end{table}
+	\begin{table}[h]
+		\centering
+		\begin{tabular}{@{} l c c c c}
+			\toprule
+			\textbf{Dataset} & \textbf{seed\_all} & \textbf{image} & \textbf{video} & \textbf{LLaVA Baseline}\\ \midrule
+			seedbench & & & & 60.5 \\
+		\end{tabular}
+	\end{table}
 
 \begin{figure}[htbp]
 	\centering
@@ -52,8 +91,6 @@
 		}
 		\caption{Second Stage Losses}
 	\end{subfigure}
-
-	\caption{Loss curves for the two stages.}
 	\label{fig:losses}
 \end{figure}
 
