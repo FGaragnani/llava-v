@@ -31,8 +31,7 @@ from lmms_eval.utils import (
     make_table,
     simple_parse_args_string,
 )
-from llava.model.builder import load_pretrained_model
-from llava.mm_utils import get_model_name_from_path
+
 
 def _int_or_none_list_arg_type(min_len: int, max_len: int, defaults: str, value: str, split_char: str = ","):
     def parse_value(item):

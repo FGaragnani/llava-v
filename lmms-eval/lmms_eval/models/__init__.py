@@ -5,6 +5,8 @@ import sys
 import hf_transfer
 from loguru import logger
 
+from .mllm import MLLM
+
 os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
 
 logger.remove()
@@ -62,7 +64,6 @@ AVAILABLE_MODELS = {
     "videollama3": "VideoLLaMA3",
     "video_llava": "VideoLLaVA",
     "vila": "VILA",
-    "viral": "VIRAL",
     "vita": "VITA",
     "vllm": "VLLM",
     "xcomposer2_4KHD": "XComposer2_4KHD",

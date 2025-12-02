@@ -181,7 +181,7 @@ def simple_evaluate(
                 "device": device,
             },
         )
-    else:
+    elif isinstance(model, lmms_eval.api.model.lmms):
         lm = model
 
     # helper function to recursively apply config overrides to leaf subtasks, skipping their constituent groups.
@@ -201,7 +201,7 @@ def simple_evaluate(
                     group, task_obj = task_obj
                     if task_obj is None:
                         continue
-                # lm.task_dict[task_name] = task_obj.dataset
+                lm.task_dict[task_name] = task_obj.dataset
                 if "generate_until" in task_obj.get_config("output_type"):
                     if gen_kwargs is not None:
                         task_obj.set_config(key="generation_kwargs", value=gen_kwargs, update=True)
@@ -261,7 +261,7 @@ def simple_evaluate(
         cli_args=cli_args,
     )
 
-    if hasattr(lm, "rank") and lm.rank == 0:
+    if lm.rank == 0:
         if isinstance(model, str):
             model_name = model
         elif hasattr(model, "config") and hasattr(model.config, "_name_or_path"):
@@ -442,39 +442,6 @@ def evaluate(
             padding_requests[reqtype] += numpad
 
     ### Run LMM on inputs, get all outputs ###
-    # Build a minimal mapping of tasks -> {split: list_of_docs} so model wrappers
-    # can index documents via lm.task_dict[task_name][split][doc_id]. Some
-    # models (e.g. VIRAL) rely on this mapping during generation/loglikelihood.
-    try:
-        if not hasattr(lm, "task_dict") or lm.task_dict is None:
-            lm.task_dict = {}
-        for task_output in eval_tasks:
-            task_obj = task_output.task
-            task_name = task_output.task_name
-            if task_obj is None:
-                continue
-            # pick test split if available, otherwise validation
-            if task_obj.has_test_docs():
-                split_name = task_obj.config.test_split
-                docs = list(task_obj.test_docs())
-            else:
-                split_name = task_obj.config.validation_split
-                docs = list(task_obj.validation_docs())
-
-            # allow possibility of multiple splits in the future by wrapping in dict
-            lm.task_dict[task_name] = {split_name: docs}
-            # also register by the task.config.task string if available (some wrappers
-            # index using the Task.config.task value instead of the task_name)
-            try:
-                cfg_task = getattr(task_obj.config, "task", None)
-                if cfg_task and cfg_task != task_name:
-                    lm.task_dict[cfg_task] = {split_name: docs}
-            except Exception:
-                pass
-    except Exception:
-        # don't fail evaluation here; models will raise clear errors if they need the map
-        pass
-
     # execute each type of request
     for reqtype, reqs in requests.items():
         eval_logger.info("Running {} requests".format(reqtype))

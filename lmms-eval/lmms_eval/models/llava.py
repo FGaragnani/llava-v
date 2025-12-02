@@ -68,6 +68,8 @@ class Llava(lmms):
         **kwargs,
     ) -> None:
         super().__init__()
+        # Do not use kwargs for now
+        assert kwargs == {}, f"Unexpected kwargs: {kwargs}"
 
         accelerator_kwargs = InitProcessGroupKwargs(timeout=timedelta(weeks=52))
         accelerator = Accelerator(kwargs_handlers=[accelerator_kwargs])
@@ -94,15 +96,11 @@ class Llava(lmms):
         model_name = model_name if model_name is not None else get_model_name_from_path(pretrained)
         try:
             # Try to load the model with the multimodal argument
-            self._tokenizer, self._model, self._image_processor, self._max_length = load_pretrained_model(pretrained, "/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/vicuna-7b-v1.5", model_name, device_map=self.device_map, **llava_model_args)
-            eval_logger.info(f"Loaded pretrained model (1): {model_name}")
+            self._tokenizer, self._model, self._image_processor, self._max_length = load_pretrained_model(pretrained, None, model_name, device_map=self.device_map, **llava_model_args)
         except TypeError:
             # for older versions of LLaVA that don't have multimodal argument
             llava_model_args.pop("multimodal", None)
-            self._tokenizer, self._model, self._image_processor, self._max_length = load_pretrained_model(pretrained, "/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/vicuna-7b-v1.5", model_name, device_map=self.device_map, **llava_model_args)
-            eval_logger.info(f"Loaded pretrained model (2): {model_name}")
-            if self._image_processor is None:
-                eval_logger.warning("self._image_processor is None.")
+            self._tokenizer, self._model, self._image_processor, self._max_length = load_pretrained_model(pretrained, None, model_name, device_map=self.device_map, **llava_model_args)
         self._config = self._model.config
         self.model.eval()
         if tie_weights:
@@ -389,18 +387,6 @@ class Llava(lmms):
             attention_masks = input_ids.ne(pad_token_ids).to(self.device)
             # These steps are not in LLaVA's original code, but are necessary for generation to work
             # TODO: attention to this major generation step...
-            if image_tensor is None:
-                eval_logger.warning("image_tensor is None.")
-            elif input_ids is None:
-                eval_logger.warning("input_ids is None.")
-            elif attention_masks is None:
-                eval_logger.warning("attention_masks is None.")
-            elif gen_kwargs["image_sizes"] is None:
-                eval_logger.warning("gen_kwargs['image_sizes'] is None.")
-            else:
-                eval_logger.debug(f"LLlaVa generation in lmms-eval correctly receives all inputs.")
-                eval_logger.debug(f"input_ids.shape: {input_ids.shape}")
-                eval_logger.debug(f"attention_masks.shape: {attention_masks.shape}")
             try:
                 cont = self.model.generate(
                     input_ids,

@@ -48,14 +48,14 @@ checkpoint_path="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava
 base_model="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/vicuna-7b-v1.5"
 
 srun -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
-python -u lmms-eval/lmms_eval/__main__.py \
---verbosity=DEBUG \
---task ${task_list[$SLURM_ARRAY_TASK_ID]} \
---model llava \
---model_args "pretrained=${checkpoint_path},attn_implementation=sdpa" \
---device cuda:0 \
---batch_size 1 \
---output /leonardo_scratch/large/userexternal/fgaragna/logs/lmms_eval \
---log_samples_suffix j \
---log_samples \
---timezone Europe/Paris
+    python -u lmms-eval/lmms_eval/__main__.py \
+    --verbosity=DEBUG \
+    --task ${task_list[$SLURM_ARRAY_TASK_ID]} \
+    --model llava \
+    --model_args "pretrained=${checkpoint_path},attn_implementation=sdpa" \
+    --device cuda:0 \
+    --batch_size 1 \
+    --output /leonardo_scratch/large/userexternal/fgaragna/logs/lmms_eval \
+    --log_samples_suffix j \
+    --log_samples \
+    --timezone Europe/Paris
