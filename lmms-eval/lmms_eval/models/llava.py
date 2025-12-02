@@ -105,7 +105,6 @@ class Llava(lmms):
                 eval_logger.warning("self._image_processor is None.")
         self._config = self._model.config
         self.model.eval()
-        self.model.evaluate()
         if tie_weights:
             self.model.tie_weights()
 
