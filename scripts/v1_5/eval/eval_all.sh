@@ -5,13 +5,13 @@
 #SBATCH --open-mode=truncate
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --gpus-per-node=1
-#SBATCH --mem=96G
+#SBATCH --gpus-per-node=2
+#SBATCH --mem=180G
 #SBATCH --cpus-per-task=4
 #SBATCH --partition=boost_usr_prod
 #SBATCH --account=IscrB_MLLM-RAG
 #SBATCH --array=0-0
-#SBATCH --time=06:30:00
+#SBATCH --time=08:00:00
 
 module load anaconda3/2022.05
 module load profile/deeplrn
