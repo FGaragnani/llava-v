@@ -11,7 +11,7 @@
 #SBATCH --partition=all_usr_prod
 #SBATCH --account=tesi_fgaragnani
 #SBATCH --time=02:30:00
-#SBATCH --constraint="gpu_RTX6000_24G|gpu_RTXA5000_24G|gpu_A40_48G|gpu_L40S_48G"
+#SBATCH --constraint="gpu_A40_45G|gpu_L40S_45G|gpu_RTX6000_24G|gpu_RTX_A5000_24G"
 #SBATCH --array=0-22
 
 set -e
