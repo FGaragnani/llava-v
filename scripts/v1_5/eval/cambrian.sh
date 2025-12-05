@@ -21,8 +21,8 @@ module unload cuda
 module load cuda/11.8
 
 # Environment setup
-source activate viral
-cd ~/git/cambrian
+source activate llava
+cd /work/tesi_fgaragnani/llava
 
 export TRANSFORMERS_VERBOSITY=info
 export TOKENIZERS_PARALLELISM=false
