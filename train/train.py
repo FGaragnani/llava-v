@@ -1022,7 +1022,7 @@ def train(attn_implementation=None):
         model.config.mm_use_im_patch_token = model_args.mm_use_im_patch_token
         model.initialize_vision_tokenizer(model_args, tokenizer=tokenizer)
 
-    # Initialize GLAMM alignment encoder
+    # GLAMM Alignment-Encoder
     if getattr(data_args, "use_glamm", False):
         in_dim = model_args.alignment_crop_size
         if in_dim is None:

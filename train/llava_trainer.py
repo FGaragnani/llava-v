@@ -4,9 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from PIL import Image
 import bitsandbytes
-import torch.distributed as dist
 import os
-import time
 
 from torch.utils.data import Sampler
 
@@ -307,7 +305,6 @@ class LLaVATrainer(Trainer):
         base_loss = outputs.loss if hasattr(outputs, 'loss') else outputs[0]
 
         # Masked unification path: always touch alignment_encoder with a masked batch to keep graph consistent.
-        # Enable via GRAND_FORCE_MASK=1. This avoids per-rank parameter 'unused' divergence without adding real loss.
         if os.environ.get("GRAND_FORCE_MASK", "0") == "1":
             try:
                 base_model = model.get_model() if hasattr(model, 'get_model') else model
@@ -323,7 +320,7 @@ class LLaVATrainer(Trainer):
                     mask_vec = grand_mask.bool() if grand_mask is not None else torch.ones(dummy_tokens.size(0), dtype=torch.bool, device=dummy_tokens.device)
                     mask_float = mask_vec.float().unsqueeze(-1)
                     masked_input = dummy_tokens * mask_float
-                    # Ensure dtype matches alignment encoder parameters to avoid matmul dtype mismatch
+                    # Ensure dtype match
                     try:
                         param_dtype = next(align_enc.parameters()).dtype
                         if masked_input.dtype != param_dtype:
@@ -343,7 +340,6 @@ class LLaVATrainer(Trainer):
         if grand_mask is not None and labels is not None and grand_bboxes is not None and grand_image_paths is not None and grand_dense_labels is not None and grand_dense_captions is not None:
             grand_mask = grand_mask.bool()
             if grand_mask.any():
-                # Optional env-gated barrier to detect divergence/hangs. Enable with LLAVA_DEBUG_BARRIER=1
                 # Obtain last hidden states
                 hidden_states = None
                 if hasattr(outputs, 'hidden_states') and outputs.hidden_states is not None:
@@ -365,15 +361,12 @@ class LLaVATrainer(Trainer):
                             continue
                         generated_token_ids = label_row[token_mask].tolist()
                         generated_indices = torch.nonzero(token_mask, as_tuple=False).squeeze(-1).tolist()
-                        open_start = time.time()
                         try:
                             img = Image.open(image_path).convert('RGB')
                         except Exception as e:
                             logger.warning(f"[GrandAlignDebug] skip_sample b={b_idx} reason=image_open_fail error={repr(e)}")
                             continue
-                        open_dur = time.time() - open_start
                         crops = []
-                        crop_start = time.time()
                         for (l, t, r, b) in sample_bboxes:
                             try:
                                 crops.append(img.crop((l, t, r, b)))
@@ -383,9 +376,7 @@ class LLaVATrainer(Trainer):
                             continue
                         crop_total += len(crops)
                         with torch.no_grad():
-                            pe_start = time.time()
                             patch_embeds = self.patch_embedder(crops)
-                            pe_dur = time.time() - pe_start
                         try:
                             base_model = model.get_model() if hasattr(model, 'get_model') else model
                             align_enc = getattr(base_model, 'alignment_encoder', None)
@@ -411,6 +402,7 @@ class LLaVATrainer(Trainer):
                                 continue
                             variant_tokens = self.tokenizer(phrase, add_special_tokens=False).input_ids
                             found = False
+                            # Search for phrase tokens in generated tokens
                             for start in range(len(generated_token_ids) - len(variant_tokens) + 1):
                                 if generated_token_ids[start:start+len(variant_tokens)] == variant_tokens:
                                     orig_span = generated_indices[start:start+len(variant_tokens)]
@@ -426,6 +418,7 @@ class LLaVATrainer(Trainer):
 
                         if matched_text_embeds:
                             text_batch = torch.stack(matched_text_embeds, dim=0).to(patch_embeds.device)
+                            # Align text to image
                             try:
                                 projected_text_batch = align_enc(text_batch)
                             except Exception:
