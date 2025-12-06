@@ -35,8 +35,8 @@ export HF_DATASETS_CACHE="/work/tesi_fgaragnani/datasets/"
 export TRANSFORMERS_OFFLINE=1
 export TOKENIZER_PATH="/work/tesi_fgaragnani/checkpoints/lmsys/vicuna-7b-v1.5"
 export IS_LLAVA_MORE=0
-export WORK="/work/tesi_fgaragnani/"
-export PYTHONPATH="$WORK/llava:$WORK:$PYHTHONPATH"
+export WORK="/work/tesi_fgaragnani"
+export PYTHONPATH="$WORK/llava:$WORK:$PYTHONPATH"
 
 llava_more="llava-v"
 model_name="${1:-${llava_more}}"
