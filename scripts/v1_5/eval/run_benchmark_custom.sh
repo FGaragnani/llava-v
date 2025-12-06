@@ -95,6 +95,7 @@ echo "Running with $CHUNKS chunks"
 
 current_date_time="`date "+%Y-%m-%d %H:%M:%S"`";
 echo "Starting evaluation at: $current_date_time";
+echo "model_path: $model_name";
 
 for IDX in $(seq 0 $((CHUNKS-1))); do
     {
