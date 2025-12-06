@@ -51,8 +51,8 @@ echo "Output directory: $output_dir"
 # get the dir of this script and set up paths
 script_dir=$(dirname $(realpath $0))
 echo "Script dir: ${script_dir}"
-cambrian_root="$script_dir/../.."
-cambrian_eval_dir="$cambrian_root/eval"
+cambrian_root="$script_dir"
+cambrian_eval_dir="$cambrian_root"
 
 echo "PYTHONPATH: $PYTHONPATH"
 
