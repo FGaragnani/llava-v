@@ -21,7 +21,7 @@ module unload cuda
 module load cuda/11.8
 
 # Environment setup
-source activate llava
+source activate llava-v
 cd /work/tesi_fgaragnani/llava
 
 export TRANSFORMERS_VERBOSITY=info
