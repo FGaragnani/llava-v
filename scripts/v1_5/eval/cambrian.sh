@@ -38,7 +38,7 @@ export IS_LLAVA_MORE=0
 export WORK="/work/tesi_fgaragnani"
 export PYTHONPATH="$WORK/llava:$WORK:$PYTHONPATH"
 
-llava_more="llava-v"
+llava_more="/work/tesi_fgaragnani/checkpoints/llava-v"
 model_name="${1:-${llava_more}}"
 conv_mode="${2:-llama_3_1}"
 eval_output_dir="/work/tesi_fgaragnani/logs/cambrian-eval-llava-v"
