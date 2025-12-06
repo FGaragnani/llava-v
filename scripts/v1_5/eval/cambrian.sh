@@ -102,7 +102,7 @@ benchmark_output_dir="${eval_output_dir}/${benchmark}"
 mkdir -p "$benchmark_output_dir"
 
 # Run the benchmark with custom output directory
-if bash scripts/eval/run_benchmark_custom.sh \
+if bash scripts/v1_5/eval/run_benchmark_custom.sh \
     --benchmark "$benchmark" \
     --model_name "$model_name" \
     --conv_mode "$conv_mode" \
