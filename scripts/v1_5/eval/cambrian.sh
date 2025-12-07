@@ -31,7 +31,7 @@ export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 # Cache directories - DO NOT use $HOME
 export HF_HUB_CACHE="/work/tesi_fgaragnani/checkpoints/"
 export HF_HOME="/work/tesi_fgaragnani/checkpoints/"
-export HF_DATASETS_CACHE="/work/tesi_fgaragnani/datasets/"
+export HF_DATASETS_CACHE="/work/tesi_dcaffagni/cambrian-eval-data"
 export TRANSFORMERS_OFFLINE=1
 export TOKENIZER_PATH="/work/tesi_fgaragnani/checkpoints/lmsys/vicuna-7b-v1.5"
 export IS_LLAVA_MORE=0
