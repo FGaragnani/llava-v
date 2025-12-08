@@ -73,7 +73,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     --model_name_or_path $language_model \
     --version plain \
     --data_path /leonardo_scratch/large/userexternal/fgaragna/dataset/llava_pretrain/blip_laion_cc_sbu_558k.json \
-    --image_folder /leonardo_scratch/large/userexternal/fgaragna/dataset/llava_pretrain/images/images \
+    --image_folder /leonardo_scratch/large/userexternal/fgaragna/dataset/llava_pretrain/images/ \
     --vision_tower $clip_model_name_or_path \
     --mm_projector_type mlp2x_gelu \
     --tune_mm_mlp_adapter True \
