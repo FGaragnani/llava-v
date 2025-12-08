@@ -117,9 +117,10 @@ class TrainingArguments(transformers.TrainingArguments):
     lora_weight_path: str = ""
     lora_bias: str = "none"
     mm_projector_lr: Optional[float] = None
+    # GLAMM
     group_by_modality_length: bool = field(default=False)
     grand_alignment_loss_weight: float = field(default=0.5)
-
+    text_token_pool: str = field(default="mean", metadata={"help": "Pooling method for text tokens in GLAMM alignment: mean, last."})
 
 def maybe_zero_3(param, ignore_status=False, name=None):
     from deepspeed import zero

@@ -408,7 +408,14 @@ class LLaVATrainer(Trainer):
                                     orig_span = generated_indices[start:start+len(variant_tokens)]
                                     span_embeds = hidden_states[b_idx][orig_span]
                                     if span_embeds.numel() > 0:
-                                        matched_text_embeds.append(span_embeds.mean(dim=0))
+                                        matched_text = None
+                                        if self.args.text_token_pool == 'last':
+                                            matched_text = span_embeds[-1]
+                                        elif self.args.text_token_pool == 'mean':
+                                            matched_text = span_embeds.mean(dim=0)
+                                        else:
+                                            matched_text = span_embeds.mean(dim=0)
+                                        matched_text_embeds.append(matched_text)
                                         matched_crop_indices.append(crop_i)
                                         found = True
                                     break
