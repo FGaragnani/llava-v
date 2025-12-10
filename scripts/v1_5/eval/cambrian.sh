@@ -21,7 +21,7 @@ module load cuda/11.8
 
 # Environment setup
 source activate cambrian
-cd /leonardo_scratch/large/userexternal/fgaragna/llava
+cd /leonardo/home/userexternal/fgaragna/llava
 
 export TRANSFORMERS_VERBOSITY=info
 export TOKENIZERS_PARALLELISM=false
