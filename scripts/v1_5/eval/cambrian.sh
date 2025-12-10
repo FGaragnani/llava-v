@@ -38,9 +38,11 @@ export IS_LLAVA_MORE=0
 PROJECT_ROOT="$HOME"
 export PYTHONPATH="$PROJECT_ROOT/llava:$PROJECT_ROOT:$PYTHONPATH"
 
+export IS_LLAVA=1
+
 llava_more="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2--mean"
 model_name="${1:-${llava_more}}"
-conv_mode="${2:-llama_v3}"
+conv_mode="${2:-llama_v1}"
 eval_output_dir="/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-v"
 gpu_devices="${3:-0}"
 safe_model_name=$(tr '/' '_' <<< $model_name)

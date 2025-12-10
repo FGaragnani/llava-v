@@ -15,6 +15,7 @@ handler = None
 
 IS_LLAVA_MORE = int(os.getenv("IS_LLAVA_MORE", "0"))
 IS_ROSS = int(os.getenv("IS_ROSS", "0"))
+IS_LLAVA = int(os.getenv("IS_LLAVA", "0"))
 
 # TODO: move elsewhere?
 IS_XLA_AVAILABLE = False
