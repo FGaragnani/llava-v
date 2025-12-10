@@ -10,7 +10,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --partition=boost_usr_prod
 #SBATCH --account=IscrB_MLLM-RAG
-#SBATCH --array=0-0
+#SBATCH --array=0-7
 #SBATCH --time=08:00:00
 
 module load anaconda3/2022.05
