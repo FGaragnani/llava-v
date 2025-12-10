@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=eval_viral
+#SBATCH --job-name=eval_llava_v
 #SBATCH --output=/leonardo_scratch/large/userexternal/fgaragna/logs/%x-%j
 #SBATCH --error=/leonardo_scratch/large/userexternal/fgaragna/logs/%x-%j
 #SBATCH --open-mode=truncate
@@ -38,14 +38,11 @@ export HF_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION="python"
 
-output_dir="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/viral/${run_name}"
-
-# task_list=(gqa scienceqa_img mmmu_val seedbench ai2d textvqa_val pope mme)
-task_list=(seedbench)
+task_list=(gqa scienceqa_img mmmu_val seedbench ai2d textvqa_val pope mme)
+# task_list=(seedbench)
 echo ${task_list[$SLURM_ARRAY_TASK_ID]}
 
-checkpoint_path="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2/"
-base_model="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/vicuna-7b-v1.5"
+checkpoint_path="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2--last"
 
 srun -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     python -u lmms-eval/lmms_eval/__main__.py \
