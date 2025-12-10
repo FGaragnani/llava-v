@@ -18,6 +18,8 @@ set -e
 # Module loading
 module unload cuda
 module load cuda/11.8
+module load anaconda3/2022.05
+module load profile/deeplrn
 
 # Environment setup
 source activate cambrian
