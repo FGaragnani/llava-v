@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=cambrian-eval-llava-v
-#SBATCH --output=/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-v/%x-%j.out
-#SBATCH --error=/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-v/%x-%j.err
+#SBATCH --output=/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-v/%x-%j
+#SBATCH --error=/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-v/%x-%j
 #SBATCH --open-mode=truncate
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -21,7 +21,7 @@ module load cuda/11.8
 
 # Environment setup
 source activate cambrian
-cd /work/tesi_fgaragnani/llava
+cd /leonardo_scratch/large/userexternal/fgaragna/llava
 
 export TRANSFORMERS_VERBOSITY=info
 export TOKENIZERS_PARALLELISM=false
@@ -29,7 +29,7 @@ export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
 # Cache directories - DO NOT use $HOME
 export HF_HUB_CACHE="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/"
-export HF_HOME="/work/tesi_fgaragnani/checkpoints/"
+export HF_HOME="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/"
 export HF_DATASETS_CACHE="/leonardo_scratch/large/userexternal/fcocchi0/rag_mlmm/hf_models"
 export TRANSFORMERS_OFFLINE=1
 export TOKENIZER_PATH="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/vicuna-7b-v1.5"
