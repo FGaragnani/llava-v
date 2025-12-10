@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=eval_llava_v
-#SBATCH --output=/leonardo_scratch/large/userexternal/fgaragna/logs/%x-%j
-#SBATCH --error=/leonardo_scratch/large/userexternal/fgaragna/logs/%x-%j
+#SBATCH --output=/leonardo_scratch/large/userexternal/fgaragna/logs/llava_v/%x-%j
+#SBATCH --error=/leonardo_scratch/large/userexternal/fgaragna/logs/llava_v/%x-%j
 #SBATCH --open-mode=truncate
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
