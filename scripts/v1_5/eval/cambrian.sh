@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=cambrian-eval-llava-v
-#SBATCH --output=/work/tesi_fgaragnani/logs/cambrian/%x-%j
-#SBATCH --error=/work/tesi_fgaragnani/logs/cambrian/%x-%j
+#SBATCH --output=/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-v/%x-%j.out
+#SBATCH --error=/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-v/%x-%j.err
 #SBATCH --open-mode=truncate
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
