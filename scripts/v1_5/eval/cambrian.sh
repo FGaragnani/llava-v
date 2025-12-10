@@ -29,19 +29,19 @@ export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
 # Cache directories - DO NOT use $HOME
-export HF_HUB_CACHE="/work/tesi_fgaragnani/checkpoints/"
+export HF_HUB_CACHE="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/"
 export HF_HOME="/work/tesi_fgaragnani/checkpoints/"
-export HF_DATASETS_CACHE="/work/cvcs2025/garagnani_napolitano_ricciardi/fil/"
+export HF_DATASETS_CACHE="/leonardo_scratch/large/userexternal/fcocchi0/rag_mlmm/hf_models"
 export TRANSFORMERS_OFFLINE=1
-export TOKENIZER_PATH="/work/tesi_fgaragnani/checkpoints/lmsys/vicuna-7b-v1.5"
+export TOKENIZER_PATH="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/vicuna-7b-v1.5"
 export IS_LLAVA_MORE=0
-export WORK="/work/tesi_fgaragnani"
-export PYTHONPATH="$WORK/llava:$WORK:$PYTHONPATH"
+PROJECT_ROOT="$HOME"
+export PYTHONPATH="$PROJECT_ROOT/llava:$PROJECT_ROOT:$PYTHONPATH"
 
-llava_more="/work/tesi_fgaragnani/checkpoints/llava-v"
+llava_more="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2--mean"
 model_name="${1:-${llava_more}}"
 conv_mode="${2:-llama_3_1}"
-eval_output_dir="/work/tesi_fgaragnani/logs/cambrian-eval-llava-v"
+eval_output_dir="/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-v"
 gpu_devices="${3:-0}"
 safe_model_name=$(tr '/' '_' <<< $model_name)
 
@@ -60,32 +60,32 @@ export CUDA_VISIBLE_DEVICES="$gpu_devices"
 # All Cambrian benchmarks
 benchmarks=(
     gqa
-    vizwiz
+    # vizwiz
     scienceqa
     textvqa
     pope
     mme
-    mmbench_en
-    mmbench_cn
+    # mmbench_en
+    # mmbench_cn
     seed
     # mmvet
     mmmu
-    mathvista
+    # mathvista
     ai2d
-    chartqa
+    # chartqa
     # docvqa
     # infovqa
     # stvqa
-    ocrbench
-    mmstar
-    realworldqa
-    qbench
-    blink
-    mmvp
-    vstar
-    ade
-    omni
-    coco
+    # ocrbench
+    # mmstar
+    # realworldqa
+    # qbench
+    # blink
+    # mmvp
+    # vstar
+    # ade
+    # omni
+    # coco
     # synthdog
 )
 
