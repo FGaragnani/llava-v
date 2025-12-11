@@ -79,7 +79,7 @@ if [[ $completed -eq ${#benchmarks[@]} ]]; then
     echo "Running tabulation..."
     
     # Change to the appropriate directory
-    cd $HOME/llava/cambrian
+    cd $HOME/llava
     
     # Run tabulation
     python cambrian/eval/scripts/tabulate.py \
