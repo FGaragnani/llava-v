@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=cambrian-eval-llava-v
-#SBATCH --output=/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-v/%x-%j
-#SBATCH --error=/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-v/%x-%j
+#SBATCH --job-name=cambrian-eval-llava-base
+#SBATCH --output=/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-base/%x-%j
+#SBATCH --error=/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-base/%x-%j
 #SBATCH --open-mode=truncate
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -11,7 +11,7 @@
 #SBATCH --partition=boost_usr_prod
 #SBATCH --account=IscrB_MLLM-RAG
 #SBATCH --time=02:30:00
-#SBATCH --array=0-3
+#SBATCH --array=0-22
 
 set -e
 
