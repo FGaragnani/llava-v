@@ -79,12 +79,12 @@ benchmarks=(
     ocrbench
     mmstar
     realworldqa
-    qbench
+    # qbench
     blink
     mmvp
     vstar
     ade
-    omni
+    # omni
     coco
     # synthdog
 )
