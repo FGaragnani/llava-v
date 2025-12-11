@@ -29,7 +29,7 @@ export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
 # Cache directories - DO NOT use $HOME
-export HF_HUB_CACHE="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/"
+export HF_HUB_CACHE="/leonardo_scratch/large/userexternal/fgaragna/dataset/mllm_evaluation/cvprw"
 export HF_HOME="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/"
 export HF_DATASETS_CACHE="/leonardo_scratch/large/userexternal/fgaragna/dataset/mllm_evaluation/cvprw"
 export TRANSFORMERS_OFFLINE=1
