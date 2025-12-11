@@ -34,11 +34,9 @@ export HF_HOME="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/"
 export HF_DATASETS_CACHE="/leonardo_scratch/large/userexternal/fgaragna/dataset/mllm_evaluation/cvprw"
 export TRANSFORMERS_OFFLINE=1
 export TOKENIZER_PATH="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/vicuna-7b-v1.5"
-export IS_LLAVA_MORE=0
+export IS_LLAVA_MORE=1
 PROJECT_ROOT="$HOME"
 export PYTHONPATH="$PROJECT_ROOT/llava:$PROJECT_ROOT:$PYTHONPATH"
-
-export IS_LLAVA=0
 
 llava_more="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-base/llava_s2"
 model_name="${1:-${llava_more}}"
