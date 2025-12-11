@@ -82,7 +82,7 @@ if [[ $completed -eq ${#benchmarks[@]} ]]; then
     cd $HOME/llava
     
     # Run tabulation
-    python cambrian/eval/scripts/tabulate.py \
+    python scripts/v1_5/eval/tabulate.py \
         --eval_dir "$eval_output_dir" \
         --experiment_csv experiments.csv \
         --out_pivot "${eval_output_dir}/cambrian_results.xlsx"
