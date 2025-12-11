@@ -38,7 +38,7 @@ export IS_LLAVA_MORE=0
 PROJECT_ROOT="$HOME"
 export PYTHONPATH="$PROJECT_ROOT/llava:$PROJECT_ROOT:$PYTHONPATH"
 
-export IS_LLAVA=1
+export IS_LLAVA=0
 
 llava_more="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-base/llava_s2"
 model_name="${1:-${llava_more}}"
