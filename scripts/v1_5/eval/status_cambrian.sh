@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Configuration - adjust these paths to match your setup
-eval_output_dir="${2:-/work/tesi_dcaffagni/cambrian-eval-llava-more}"
-_model_name="aimagelab_LLaVA_MORE-llama_3_1-8B-finetuning"
+eval_output_dir="${2:-/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-base}"
+_model_name="LLaVA-Base"
 model_name="${1:-${_model_name}}"
 echo "Model name: ${model_name}"
 
@@ -78,7 +78,7 @@ if [[ $completed -eq ${#benchmarks[@]} ]]; then
     echo "Running tabulation..."
     
     # Change to the appropriate directory
-    cd ~/git/jeppetto
+    cd $HOME/llava/cambrian
     
     # Run tabulation
     python cambrian/eval/scripts/tabulate.py \
