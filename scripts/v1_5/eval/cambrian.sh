@@ -40,10 +40,10 @@ export PYTHONPATH="$PROJECT_ROOT/llava:$PROJECT_ROOT:$PYTHONPATH"
 
 export IS_LLAVA=1
 
-llava_more="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2--mean"
+llava_more="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2--last"
 model_name="${1:-${llava_more}}"
 conv_mode="${2:-llava_v1}"
-eval_output_dir="/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-v"
+eval_output_dir="/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-v--last"
 gpu_devices="${3:-0}"
 safe_model_name=$(tr '/' '_' <<< $model_name)
 
