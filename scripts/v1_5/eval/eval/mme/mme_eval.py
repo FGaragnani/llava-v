@@ -20,7 +20,7 @@ elif IS_ROSS:
     from ross.conversation import conv_templates, SeparatorStyle
     from ross.mm_utils import get_model_name_from_path, process_images, tokenizer_image_token
     print("Using imports from ROSS")
-elif True:
+elif IS_LLAVA:
     from llava.model.builder import load_pretrained_model
     from llava.conversation import conv_templates, SeparatorStyle
     from llava.mm_utils import tokenizer_image_token, process_images, get_model_name_from_path
