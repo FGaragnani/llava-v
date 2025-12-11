@@ -49,9 +49,10 @@ pending=0
 for i in "${!benchmarks[@]}"; do
     benchmark="${benchmarks[$i]}"
     benchmark_output_dir="${eval_output_dir}/${benchmark}"
+    echo "Checking folder: $benchmark_output_dir"
     
     # if [[ -f "${benchmark_output_dir}/.${model_name}_completed" ]]; then
-    if [[ -f "${benchmark_output_dir}/.${model_name}_completed" ]]; then
+    if [[ -f "${benchmark_output_dir}/experiments.csv" ]]; then
         echo "[$i] $benchmark: ✅ COMPLETED"
         ((completed++))
     elif [[ -d "$benchmark_output_dir" ]]; then
