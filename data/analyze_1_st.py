@@ -115,7 +115,7 @@ def plot_losses(gl_avgs, raw_losses, out_path: str):
 
 def main():
 	here = os.path.dirname(os.path.abspath(__file__))
-	in_path = os.path.join(here, "first_stage.txt")
+	in_path = os.path.join(here, "last--trainings/llava-last-1.txt")
 	if not os.path.isfile(in_path):
 		print(f"Could not find file: {in_path}")
 		return

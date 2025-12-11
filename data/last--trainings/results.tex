@@ -1,0 +1,105 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{ebgaramond}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{subcaption}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric, shapes.symbols, calc}
+\usepackage{caption}
+\usepackage{array}
+\captionsetup[table]{labelfont=bf,font=small}
+\captionsetup[figure]{labelfont=bf,font=small}
+\renewcommand{\arraystretch}{1.2}
+
+\title{LLaVA-v}
+\author{}
+\date{}
+
+\begin{document}
+\section*{Results}
+
+\begin{table}[htbp]
+	\centering
+	\caption{Training Losses}
+	\begin{tabular}{lcc}
+        \toprule
+		& CE Loss & Alignment Loss \\
+		\midrule
+		First Stage & 2.050 & 0.522 \\
+		Second Stage & 0.820 & --- \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+	
+	\begin{table}[h]
+		\centering
+		\begin{tabular}{@{} ll >{\centering\arraybackslash}p{2.5cm} >{\centering\arraybackslash}p{2.5cm} c @{}}
+			\toprule
+			\textbf{Dataset} & \textbf{Model} & \textbf{Perception Score} & \textbf{Cognition Score} & \textbf{LLaVA Baseline} \\
+			\midrule
+			mme & & \textcolor{red}{293.2\,$\downarrow$} & \textcolor{red}{1459.4\,$\downarrow$} & 348.2/1510.8\\
+			\midrule
+			\textbf{Dataset} & \textbf{Model} & \textbf{Exact Match} & \textbf{stderr} & \textbf{LLaVA Baseline} \\
+			\midrule
+			ai2d & & \textcolor{green!50!black}{0.5521\, $\uparrow$} & 0.009 & 0.548 \\
+			\addlinespace[6pt]
+			scienceqa\_img & & \textcolor{red}{0.6891\, $\downarrow$} & 0.0103 & 0.704 \\
+			\addlinespace[6pt]
+			gqa & & \textcolor{red}{0.6189\,$\downarrow$} & 0.0043 & 0.620 \\
+			\addlinespace[6pt]
+			textvqa\_val & & 0.5174 & 0.0068 & ? \\
+			\midrule
+			\textbf{Dataset} & \textbf{Model} & \textbf{Accuracy} & & \textbf{LLaVA Baseline} \\
+			\midrule
+			mmmu\_val & & \textcolor{green!50!black}{0.3611$\,\uparrow$} & & 0.353 \\
+			\midrule
+			\textbf{Dataset} & \textbf{Model} & \textbf{Accuracy} & \textbf{F1 Score} & \textbf{LLaVA Baseline}\\
+			\midrule
+			pope & & 0.8616 & 0.8500 & ? \\
+			\bottomrule
+		\end{tabular}
+		\caption{Evaluation Results}
+	\end{table}
+
+	\begin{table}[htbp]
+		\centering
+		\begin{tabular}{@{} l c | cccc}
+			\toprule
+			\textbf{Dataset} & \textbf{Model} & \texttt{CHAIR}\,$\downarrow$ & \texttt{Cover}\,$\uparrow$ & \texttt{Hal}\,$\downarrow$ & \texttt{Cog}\,$\downarrow$ \\
+			\midrule
+			Amber & LLaVA-v & \textcolor{red}{10.1\,$\downarrow$} & \textcolor{green!50!black}{51.6\,$\uparrow$} & \textcolor{red}{44.8\,$\downarrow$} & \textcolor{red}{5.2\,$\downarrow$} \\
+			Amber & LLaVA Baseline & 3.0 & 46.6 & 14.7 & 1.3 \\
+			\bottomrule
+		\end{tabular}
+		\caption{Hallucination Results}
+	\end{table}
+
+\begin{figure}[htbp]
+	\centering
+	% First figure (top)
+	\begin{subfigure}{0.95\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{first_stage_losses.png}
+		\caption{First Stage Losses}
+	\end{subfigure}
+
+	\vspace{0.75em}
+
+	% Second figure (bottom) — compiles even if file is missing
+	\begin{subfigure}{0.95\linewidth}
+		\centering
+		\IfFileExists{second_stage_losses.png}{%
+			\includegraphics[width=\linewidth]{second_stage_losses.png}%
+		}{%
+			\fbox{\parbox[c][2in][c]{0.95\linewidth}{second_stage_losses.png}}%
+		}
+		\caption{Second Stage Losses}
+	\end{subfigure}
+	\label{fig:losses}
+\end{figure}
+
+\end{document}
