@@ -8,19 +8,19 @@ echo "Model name: ${model_name}"
 
 # All Cambrian benchmarks (should match the array in the main script)
 benchmarks=(
-    gqa
-    # vizwiz
-    scienceqa
-    textvqa
-    pope
-    mme
-    # mmbench_en
-    # mmbench_cn
-    seed
-    # mmvet
-    mmmu
+    # gqa
+    vizwiz
+    # scienceqa
+    # textvqa
+    # pope
+    # mme
+    mmbench_en
+    mmbench_cn
+    # seed
+    mmvet
+    # mmmu
     # mathvista
-    ai2d
+    # ai2d
     # chartqa
     # docvqa
     # infovqa
