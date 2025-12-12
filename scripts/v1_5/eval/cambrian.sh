@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=cambrian-eval-llava-v--last
-#SBATCH --output=/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-v--last/%x-%j
-#SBATCH --error=/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-v--last/%x-%j
+#SBATCH --job-name=cambrian-eval-llava-v--mean
+#SBATCH --output=/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-v--mean/%x-%j
+#SBATCH --error=/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-v--mean/%x-%j
 #SBATCH --open-mode=truncate
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -38,10 +38,10 @@ export IS_LLAVA_MORE=1
 PROJECT_ROOT="$HOME"
 export PYTHONPATH="$PROJECT_ROOT/llava:$PROJECT_ROOT:$PYTHONPATH"
 
-llava_more="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2--last"
+llava_more="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2--mean"
 model_name="${1:-${llava_more}}"
 conv_mode="${2:-llava_v1}"
-eval_output_dir="/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-v--last"
+eval_output_dir="/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-v--mean"
 gpu_devices="${3:-0}"
 safe_model_name=$(tr '/' '_' <<< $model_name)
 
