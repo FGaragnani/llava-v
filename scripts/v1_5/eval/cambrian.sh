@@ -59,34 +59,8 @@ export CUDA_VISIBLE_DEVICES="$gpu_devices"
 
 # All Cambrian benchmarks
 benchmarks=(
-    gqa
-    vizwiz
-    scienceqa
-    textvqa
-    pope
-    mme
-    mmbench_en
-    mmbench_cn
-    seed
-    # mmvet
-    mmmu
-    mathvista
-    ai2d
-    chartqa
-    # docvqa
-    # infovqa
-    # stvqa
-    ocrbench
-    mmstar
-    realworldqa
-    # qbench
-    blink
-    mmvp
-    vstar
-    ade
-    # omni
     coco
-    # synthdog
+    ade
 )
 
 # Select benchmark based on array task ID
