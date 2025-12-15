@@ -21,6 +21,10 @@ def load_links(file_path: Path) -> dict:
     if not file_path.exists():
         raise FileNotFoundError(f"Missing links file: {file_path}")
     links = {}
+    for i in range(7):
+        links[f"sa_00000{i}.tar"] = f"https://huggingface.co/datasets/Aber-r/SA-1B_backup/resolve/12313fba42ccec4611f44bd9a235764585b54fe7/sa_00000{i}.tar?download=true"
+    return links
+    links = {}
     with open(file_path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
