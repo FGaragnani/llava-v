@@ -7,8 +7,8 @@ from pathlib import Path
 from collections import defaultdict
 
 # ---------------- CONFIG ----------------
-OUTPUT_DIR = Path("GLAMM")
-ANNOTATIONS_DIR = OUTPUT_DIR / "annotations/annotations"
+OUTPUT_DIR = Path("/leonardo_scratch/large/userexternal/fgaragna/dataset/GLAMM")
+ANNOTATIONS_DIR = OUTPUT_DIR / "annotations/simple"
 IMAGES_DIR = OUTPUT_DIR / "images"
 TARS_DIR = OUTPUT_DIR / "tars"
 LINKS_FILE = OUTPUT_DIR / "links.txt"
