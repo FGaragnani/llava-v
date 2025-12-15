@@ -51,7 +51,7 @@ def main():
             tar_path = OUTPUT_DIR / f"../part_{part}_{idx}.tar.gz"
             if not tar_path.exists():
                 download_file(GRAND_URL.format(part=part, idx=idx), tar_path, name=f"part_{part}_{idx}.tar.gz")
-                extract_partial_tar(tar_path, OUTPUT_DIR, EXTRACT_LIMIT)
+            extract_partial_tar(tar_path, OUTPUT_DIR, EXTRACT_LIMIT)
 
 if __name__ == "__main__":
     main()
