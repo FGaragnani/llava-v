@@ -25,6 +25,7 @@ def download_file(url, dest, name=""):
 def extract_partial_tar(tar_path, dest_dir, limit):
     dest_dir.mkdir(parents=True, exist_ok=True)
     extracted_names = []
+    existing = {p.stem for p in dest_dir.glob("*.json")}
     with tarfile.open(tar_path, "r:gz") as tar:
         # json_members = [m for m in tar.getmembers() if m.name.endswith(".json")]
         # to_extract = [m for m in json_members if Path(m.name).stem not in existing][:needed]
@@ -33,7 +34,8 @@ def extract_partial_tar(tar_path, dest_dir, limit):
             if member.isdir():
                 continue
             
-            # Get just the filename (flatten directory structure)
+            if Path(member.name).stem in existing:
+                continue
             filename = Path(member.name).name
             file_stem = Path(filename).stem
             
