@@ -81,7 +81,7 @@ def main():
     IMAGES_DIR.mkdir(parents=True, exist_ok=True)
     TARS_DIR.mkdir(parents=True, exist_ok=True)
     link_map = load_links(LINKS_FILE)
-    MAX_IMAGES = 100_000
+    MAX_IMAGES = 500_000
 
     annotation_names = [p.stem for p in ANNOTATIONS_DIR.glob("*.json")]
     if not annotation_names:
