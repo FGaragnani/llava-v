@@ -37,19 +37,15 @@ def extract_partial_tar(tar_path, dest_dir, limit):
             filename = Path(member.name).name
             file_stem = Path(filename).stem
             
-            needed -= 1
-            
             # Extract file directly to dest_dir
             member.name = filename
             tar.extract(member, path=dest_dir)
             
             extracted_names.append(file_stem)
-            if needed <= 0:
-                break
     return extracted_names
 
 def main():
-    for part in range(1, 5):
+    for part in range(3, 5):
         for idx in range(1, 5):
             tar_path = OUTPUT_DIR / f"../part_{part}_{idx}.tar.gz"
             if not tar_path.exists():
