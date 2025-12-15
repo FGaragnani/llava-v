@@ -47,8 +47,7 @@ def extract_partial_tar(tar_path, dest_dir, limit):
     return extracted_names
 
 def main():
-    for part in range(3, 5):
-        for idx in range(1, 5):
+    for part, idx in [[3, 3], [3, 4], [4, 1], [4, 2], [4, 3], [4, 4]]:
             tar_path = OUTPUT_DIR / f"../part_{part}_{idx}.tar.gz"
             if not tar_path.exists():
                 download_file(GRAND_URL.format(part=part, idx=idx), tar_path, name=f"part_{part}_{idx}.tar.gz")
