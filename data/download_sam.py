@@ -118,7 +118,7 @@ def main():
 
         # Skip if all images already extracted
         remaining = [n for n in image_names if not (IMAGES_DIR / f"{n}.jpg").exists()]
-        if not remaining or len(remaining) <= 5000:
+        if not remaining or len(remaining) <= 1_000:
             continue
 
         # Download if missing
