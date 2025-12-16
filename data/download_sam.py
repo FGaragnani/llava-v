@@ -21,7 +21,7 @@ def load_links(file_path: Path) -> dict:
     if not file_path.exists():
         raise FileNotFoundError(f"Missing links file: {file_path}")
     links = {}
-    for i in range(7):
+    for i in range(1000):
         links[f"sa_{i:06d}.tar"] = f"https://huggingface.co/datasets/Aber-r/SA-1B_backup/resolve/main/sa_{i:06d}.tar?download=true"
     return links
     links = {}
