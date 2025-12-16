@@ -22,7 +22,7 @@ def load_links(file_path: Path) -> dict:
         raise FileNotFoundError(f"Missing links file: {file_path}")
     links = {}
     for i in range(7):
-        links[f"sa_00000{i}.tar"] = f"https://huggingface.co/datasets/Aber-r/SA-1B_backup/resolve/12313fba42ccec4611f44bd9a235764585b54fe7/sa_00000{i}.tar?download=true"
+        links[f"sa_{i:06d}.tar"] = f"https://huggingface.co/datasets/Aber-r/SA-1B_backup/resolve/main/sa_{i:06d}.tar?download=true"
     return links
     links = {}
     with open(file_path, "r", encoding="utf-8") as f:
@@ -118,7 +118,7 @@ def main():
 
         # Skip if all images already extracted
         remaining = [n for n in image_names if not (IMAGES_DIR / f"{n}.jpg").exists()]
-        if not remaining or len(remaining) <= 500:
+        if not remaining or len(remaining) <= 5000:
             continue
 
         # Download if missing
