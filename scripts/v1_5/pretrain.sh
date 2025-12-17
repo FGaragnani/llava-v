@@ -45,7 +45,7 @@ run_name="${SLURM_JOB_NAME}"
 output_dir="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/${run_name}"
 # output_dir="/work/tesi_fgaragnani/checkpoints/llava-v/${run_name}"
 
-per_device_train_batch_size=8
+per_device_train_batch_size=16
 gradient_accumulation_steps=4
 
 language_model="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/vicuna-7b-v1.5"

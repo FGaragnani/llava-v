@@ -344,9 +344,9 @@ class LLaVATrainer(Trainer):
                 hidden_states = None
                 if hasattr(outputs, 'hidden_states') and outputs.hidden_states is not None:
                     hidden_states = outputs.hidden_states[-1]
-                elif isinstance(outputs, tuple) and len(outputs) > 2:
-                    hidden_states = outputs[2]
-                if hidden_states is not None:
+                if hidden_states is None:
+                    logger.warning("[GrandAlignDebug] hidden_states not found in outputs; skipping GranD loss.")
+                elif hidden_states is not None:
                     per_sample_losses = []
                     for b_idx, is_grand in enumerate(grand_mask):
                         if not is_grand:
