@@ -29,4 +29,5 @@ paths=(
 path=${paths[$SLURM_ARRAY_TASK_ID]}
 echo "PATH: ${path}"
 
+cd /leonardo/home/userexternal/fgaragna/llava/scripts/data
 ./update_metadata.sh "$path"
