@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=llava-v_s2--mean
+#SBATCH --job-name=llava-v_s2--last
 #SBATCH --output=/leonardo_scratch/large/userexternal/fgaragna/logs/%x-%j.out
 #SBATCH --error=/leonardo_scratch/large/userexternal/fgaragna/logs/%x-%j.err
 #SBATCH --open-mode=truncate
@@ -48,7 +48,7 @@ gradient_accumulation_steps=2
 
 dataloader_num_workers=4
 
-model_name="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/pretrain/llava-v_s1--mean/mm_projector.bin"
+model_name="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/pretrain/llava-v_s1--last/mm_projector.bin"
 train_data_path="/leonardo_scratch/large/userexternal/fcocchi0/rag_mlmm/dataset/second_stage_LLaVA/llava_v1_5_mix665k.json"
 train_image_folder="/leonardo_scratch/large/userexternal/fcocchi0/rag_mlmm/dataset"
 
