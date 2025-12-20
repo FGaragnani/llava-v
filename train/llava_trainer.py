@@ -343,7 +343,16 @@ class LLaVATrainer(Trainer):
                 # Obtain last hidden states
                 hidden_states = None
                 if hasattr(outputs, 'hidden_states') and outputs.hidden_states is not None:
-                    hidden_states = outputs.hidden_states[-1]
+                    if self.args.address_layer == 'first_layer':
+                        hidden_states = outputs.hidden_states[1]
+                    elif self.args.address_layer == 'mid_layer':
+                        mid_idx = (len(outputs.hidden_states) - 1) // 2
+                        hidden_states = outputs.hidden_states[mid_idx]
+                    elif self.args.address_layer == 'last_layer':
+                        hidden_states = outputs.hidden_states[-1]
+                    else:
+                        hidden_states = outputs.hidden_states[-1]
+                        logger.warning(f"[GrandAlign] Unknown address_layer {self.args.address_layer}, defaulting to last_layer.")
                 if hidden_states is None:
                     logger.warning("[GrandAlignDebug] hidden_states not found in outputs; skipping GranD loss.")
                 elif hidden_states is not None:
