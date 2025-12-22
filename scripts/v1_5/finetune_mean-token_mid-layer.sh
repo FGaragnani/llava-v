@@ -40,7 +40,7 @@ export MASTER_PORT=`comm -23 <(seq 5000 6000 | sort) <(ss -Htan | awk '{print $4
 
 run_name="${SLURM_JOB_NAME}"
 output_dir="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/${run_name}"
-clip_model_name_or_path="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/openai/clip-vit-large-patch14"
+clip_model_name_or_path="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/openai/clip-vit-large-patch14-336"
 
 learning_rate=2e-5
 per_device_train_batch_size=4

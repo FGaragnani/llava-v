@@ -50,7 +50,7 @@ gradient_accumulation_steps=4
 
 language_model="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/vicuna-7b-v1.5"
 # language_model="/work/tesi_fgaragnani/checkpoints/lmsys/vicuna-7b-v1.5"
-clip_model_name_or_path="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/openai/clip-vit-large-patch14"
+clip_model_name_or_path="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/openai/clip-vit-large-patch14-336"
 
 ((ws = $SLURM_NNODES * $SLURM_GPUS_PER_NODE))
 export WORLD_SIZE=$ws
