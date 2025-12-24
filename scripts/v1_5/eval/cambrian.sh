@@ -11,7 +11,7 @@
 #SBATCH --partition=boost_usr_prod
 #SBATCH --account=IscrB_MLLM-RAG
 #SBATCH --time=02:30:00
-#SBATCH --array=0-22
+#SBATCH --array=0-20
 
 set -e
 
