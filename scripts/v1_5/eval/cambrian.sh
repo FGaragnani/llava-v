@@ -38,7 +38,7 @@ export IS_LLAVA_MORE=1
 PROJECT_ROOT="$HOME"
 export PYTHONPATH="$PROJECT_ROOT/llava:$PROJECT_ROOT:$PYTHONPATH"
 
-llava_more="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2--last-midL" # <--
+llava_more="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2--last_midL" # <--
 model_name="${1:-${llava_more}}"
 conv_mode="${2:-vicuna_v1}"
 eval_output_dir="/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava--last-midL" # <--
