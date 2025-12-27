@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=llava-v_s1--base_extra
+#SBATCH --job-name=llava-base_s1--base_extra
 #SBATCH --output=/leonardo_scratch/large/userexternal/fgaragna/logs/%x-%j.out
 #SBATCH --error=/leonardo_scratch/large/userexternal/fgaragna/logs/%x-%j.err
 #SBATCH --open-mode=truncate
@@ -42,7 +42,7 @@ export MASTER_PORT=`comm -23 <(seq 5000 6000 | sort) <(ss -Htan | awk '{print $4
 learning_rate=2e-4
 mm_projector_lr=2e-5
 run_name="${SLURM_JOB_NAME}"
-output_dir="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/${run_name}"
+output_dir="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-base/${run_name}"
 # output_dir="/work/tesi_fgaragnani/checkpoints/llava-v/${run_name}"
 
 per_device_train_batch_size=8
@@ -83,7 +83,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     --alignment_crop_size 768 \
     --bf16 True \
     --fp16 False \
-    --output_dir /leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/pretrain/${run_name} \
+    --output_dir /leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-base/pretrain/${run_name} \
     --num_train_epochs 1 \
     --per_device_train_batch_size $per_device_train_batch_size \
     --per_device_eval_batch_size 4 \
