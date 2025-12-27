@@ -333,6 +333,12 @@ class LLaVATrainer(Trainer):
                 logger.warning(f"[GrandAlignDebug] Masked unification error: {repr(e)}")
 
         grand_extra_loss = torch.zeros((), device=base_loss.device)
+        weight = getattr(self.args, 'grand_alignment_loss_weight', 0.5)
+        if not weight:
+            total_loss = base_loss
+            if return_outputs:
+                return total_loss, outputs
+            return total_loss
         attempted_phrase_total = 0
         matched_phrase_total = 0
         crop_total = 0
@@ -452,7 +458,6 @@ class LLaVATrainer(Trainer):
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
                         print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")
 
-        weight = getattr(self.args, 'grand_alignment_loss_weight', 0.5)
         total_loss = base_loss + (grand_extra_loss * weight)
         if return_outputs:
             return total_loss, outputs
