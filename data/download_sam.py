@@ -104,8 +104,8 @@ def main():
     before_start = sum(1 for _ in IMAGES_DIR.glob("*.jpg"))
     image_pbar = tqdm(total=MAX_IMAGES - before_start, desc="Extracting images", unit="img")
     for part_idx in tqdm(sorted(parts.keys()), desc="Processing TAR parts", unit="tar"):
-        # Skip tar 19 and 68
-        if part_idx == 19 or part_idx == 68:
+        # Skip tar 19, 68 and 75
+        if part_idx == 19 or part_idx == 68 or part_idx == 75:
             tqdm.write(f"⏭️ Skipping tar {part_idx} (sa_{part_idx:06d}.tar)")
             continue
         
@@ -141,7 +141,11 @@ def main():
         neighbor_next = parts.get(part_idx + 1, set())
         image_names = neighbor_previous | parts[part_idx] | neighbor_next
         remaining = [n for n in image_names if not (IMAGES_DIR / f"{n}.jpg").exists()]
-        extracted_count = extract_selected_images_from_tar(tar_path, set(remaining), IMAGES_DIR)
+        try:
+            extracted_count = extract_selected_images_from_tar(tar_path, set(remaining), IMAGES_DIR)
+        except Exception as e:
+            extracted_count = 0
+            tqdm.write(f"⚠️ Error extracting from {tar_name}: {e}")
         print(f"✅ Extracted {extracted_count}/{len(remaining)} images from {tar_name}")
         tqdm.write(f"✅ Extracted {extracted_count}/{len(remaining)} images from {tar_name} "
                    f"(total now: {current_count + extracted_count})")
