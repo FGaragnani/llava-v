@@ -7,7 +7,7 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus-per-node=0
 #SBATCH --mem=24G
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=4
 #SBATCH --partition=lrd_all_serial
 #SBATCH --account=IscrB_MLLM-RAG
 #SBATCH --time=4:00:00
