@@ -11,7 +11,6 @@
 #SBATCH --partition=lrd_all_serial
 #SBATCH --account=IscrB_MLLM-RAG
 #SBATCH --qos=normal
-#SBATCH --gres=tmpfs:0
 #SBATCH --time=4:00:00
 
 set -e
