@@ -104,6 +104,11 @@ def main():
     before_start = sum(1 for _ in IMAGES_DIR.glob("*.jpg"))
     image_pbar = tqdm(total=MAX_IMAGES - before_start, desc="Extracting images", unit="img")
     for part_idx in tqdm(sorted(parts.keys()), desc="Processing TAR parts", unit="tar"):
+        # Skip tar 19
+        if part_idx == 19:
+            tqdm.write(f"⏭️ Skipping tar 19 (sa_000019.tar)")
+            continue
+        
         current_count = sum(1 for _ in IMAGES_DIR.glob("*.jpg")) - before_start
         new_images = current_count - image_pbar.n
         if new_images > 0:
