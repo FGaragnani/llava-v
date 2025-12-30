@@ -5,12 +5,10 @@
 #SBATCH --open-mode=truncate
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --gpus-per-node=0
 #SBATCH --mem=24G
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=1
 #SBATCH --partition=lrd_all_serial
 #SBATCH --account=IscrB_MLLM-RAG
-#SBATCH --qos=normal
 #SBATCH --time=4:00:00
 
 set -e
