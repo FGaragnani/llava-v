@@ -132,7 +132,9 @@ def main():
 
         # Extract needed images
         print(f"📦 Extracting from {tar_name} ({len(remaining)} needed)...")
-        image_names = parts[part_idx] | parts[part_idx + 1]
+        neighbor_previous = parts[part_idx - 1] if part_idx > 0 else set()
+        neighbor_next = parts.get(part_idx + 1, set())
+        image_names = neighbor_previous | parts[part_idx] | neighbor_next
         remaining = [n for n in image_names if not (IMAGES_DIR / f"{n}.jpg").exists()]
         extracted_count = extract_selected_images_from_tar(tar_path, set(remaining), IMAGES_DIR)
         print(f"✅ Extracted {extracted_count}/{len(remaining)} images from {tar_name}")
