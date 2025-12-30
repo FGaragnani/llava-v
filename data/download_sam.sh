@@ -9,6 +9,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --partition=lrd_all_serial
 #SBATCH --account=IscrB_MLLM-RAG
+#SBATCH --gres=gpu:0
 #SBATCH --time=4:00:00
 
 set -e
