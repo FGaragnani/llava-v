@@ -85,7 +85,7 @@ def main():
     IMAGES_DIR.mkdir(parents=True, exist_ok=True)
     TARS_DIR.mkdir(parents=True, exist_ok=True)
     link_map = load_links(LINKS_FILE)
-    MAX_IMAGES = 400_000
+    MAX_IMAGES = 500_000
 
     annotation_names = [p.stem for p in ANNOTATIONS_DIR.glob("*.json")]
     if not annotation_names:
@@ -161,8 +161,10 @@ def main():
         if sum(1 for _ in IMAGES_DIR.glob("*.jpg")) >= MAX_IMAGES:
             tqdm.write(f"⏹️ Reached quota of {MAX_IMAGES} images. Stopping.")
             break
-        # Optionally remove tar after extraction to save space
-        # tar_path.unlink()
+        
+        images = set(p.stem for p in IMAGES_DIR.glob("*.jpg"))
+        images = images | set(p.stem for p in (IMAGES_DIR / "images/").glob("*.jpg"))
+        print("Unique images so far:", sum(1 for _ in IMAGES_DIR.glob("*.jpg")))
 
     print("🎉 All done.")
 
