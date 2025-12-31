@@ -164,7 +164,7 @@ def main():
         
         images = set(p.stem for p in IMAGES_DIR.glob("*.jpg"))
         images = images | set(p.stem for p in (IMAGES_DIR / "images/").glob("*.jpg"))
-        print("Unique images so far:", sum(1 for _ in IMAGES_DIR.glob("*.jpg")))
+        print("Unique images so far:", len(images))
 
     print("🎉 All done.")
 
