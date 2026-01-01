@@ -15,7 +15,10 @@ def main():
             for line in f:
                 if "[GrandAlignDebug]" in line:
                     found = True
-                    grand_align_debug.append(float(line.split("=")[1]))
+                    try:
+                        grand_align_debug.append(float(line.split("=")[1]))
+                    except ValueError:
+                        print("Could not parse GrandAlignDebug line:", line)
                 else:
                     if not found:
                         continue
