@@ -22,6 +22,8 @@ def main():
                 else:
                     if not found:
                         continue
+                    if line.strip() == "":
+                        continue
                     try:
                         ce_loss_data.append(float(line.split(":")[1].split(",")[0]))
                     except IndexError:
@@ -34,7 +36,6 @@ def main():
         plotext.title(f"Logs from {out_file.name}")
         plotext.xlabel("Iterations")
         plotext.ylabel("Value")
-        plotext.legend()
         plotext.show()
 
 if __name__ == "__main__":
