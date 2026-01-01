@@ -18,7 +18,9 @@ def main():
                     try:
                         grand_align_debug.append(float(line.split("=")[1]))
                     except ValueError:
-                        print("Could not parse GrandAlignDebug line:", line)
+                        first_part = line.split("=")[1]
+                        grand_align_debug.append(float(first_part.split("[")[0]))
+                        grand_align_debug.append(float(line.split("=")[2]))
                 else:
                     if not found:
                         continue
