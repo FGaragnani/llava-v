@@ -34,7 +34,7 @@ def main():
                     grand_align_debug = []
         plotext.clf()
         plotext.plot(grand_align_data, label="GrandAlignDebug")
-        # plotext.plot(ce_loss_data, label="CE Loss")
+        plotext.plot(ce_loss_data, label="CE Loss")
         plotext.title(f"Logs from {out_file.name}")
         plotext.xlabel("Iterations")
         plotext.ylabel("Value")
