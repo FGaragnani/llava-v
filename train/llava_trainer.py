@@ -379,7 +379,7 @@ class LLaVATrainer(Trainer):
                         try:
                             img = Image.open(image_path).convert('RGB')
                         except Exception as e:
-                            logger.warning(f"[GrandAlignDebug] skip_sample b={b_idx} reason=image_open_fail error={repr(e)}")
+                            logger.warning(f"[GrandAlignDebug] skip_sample b={b_idx} path={image_path} reason=image_open_fail error={repr(e)}")
                             continue
                         crops = []
                         for (l, t, r, b) in sample_bboxes:
