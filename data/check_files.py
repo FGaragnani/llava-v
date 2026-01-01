@@ -13,7 +13,7 @@ IMAGES_DIR = OUTPUT_DIR / "images"
 
 def check_files():
 
-    for image_file in tqdm(IMAGES_DIR.iterdir(), total=5_000_000, desc="Checking images"):
+    for image_file in tqdm(IMAGES_DIR.iterdir(), total=500_000, desc="Checking images"):
         if image_file.is_file():
             image_stem = image_file.stem
             annotation_file = ANNOTATIONS_DIR / f"{image_stem}.json"
