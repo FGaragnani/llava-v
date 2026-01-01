@@ -24,7 +24,7 @@ def main():
                         continue
                     try:
                         ce_loss_data.append(float(line.split(":")[1].split(",")[0]))
-                    except ValueError:
+                    except IndexError:
                         print("Could not parse CE Loss line:", line)
                     grand_align_data.append(sum(grand_align_debug)/len(grand_align_debug) if grand_align_debug else 0.0)
                     grand_align_debug = []
