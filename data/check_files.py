@@ -47,45 +47,5 @@ def check_files():
                 # os.remove(annotation_file)
                 print(f"Should delete corrupted annotation and its image: {annotation_file.name}, {image_file.name})")
 
-def check_images_from_file(list_path: Path):
-    if not list_path.exists():
-        list_path.parent.mkdir(parents=True, exist_ok=True)
-        image_names = sorted(p.name for p in IMAGES_DIR.iterdir() if p.is_file())
-        with open(list_path, "w", encoding="utf-8") as handle:
-            handle.write("\n".join(image_names))
-        print(f"Created list file with {len(image_names)} image names at {list_path}")
-
-    with open(list_path, "r", encoding="utf-8") as handle:
-        names = [line.strip() for line in handle if line.strip()]
-
-    for name in tqdm(names, desc="Checking listed images"):
-        image_file = _find_image_file(name)
-        if image_file is None:
-            print(f"Missing image for name: {name}")
-            continue
-
-        annotation_file = ANNOTATIONS_DIR / f"{image_file.stem}.json"
-        if not annotation_file.exists():
-            print(f"Missing annotation for image: {image_file.name}")
-            continue
-
-        try:
-            with Image.open(image_file) as img:
-                img.verify()
-        except Exception:
-            print(f"Should delete corrupted image and its annotation: {image_file.name}, {annotation_file.name})")
-            continue
-
-        try:
-            with open(annotation_file, "r", encoding="utf-8") as handle:
-                json.load(handle)
-        except json.JSONDecodeError:
-            # os.remove(image_file) if image_file.exists() else None
-            # os.remove(annotation_file)
-            print(f"Should delete corrupted annotation and its image: {annotation_file.name}, {image_file.name})")
-                
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        check_images_from_file(Path(sys.argv[1]))
-    else:
         check_files()

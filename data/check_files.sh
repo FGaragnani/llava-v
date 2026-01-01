@@ -1,0 +1,24 @@
+#!/bin/bash
+#SBATCH --job-name=checking_images
+#SBATCH --output=/leonardo_scratch/large/userexternal/fgaragna/logs/%x-%j.out
+#SBATCH --error=/leonardo_scratch/large/userexternal/fgaragna/logs/%x-%j.err
+#SBATCH --open-mode=truncate
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --mem=24G
+#SBATCH --cpus-per-task=1
+#SBATCH --partition=lrd_all_serial
+#SBATCH --account=IscrB_MLLM-RAG
+#SBATCH --time=4:00:00
+
+set -e
+
+# Module loading
+module unload cuda
+module load cuda/11.8
+module load anaconda3/2022.05
+module load profile/deeplrn
+
+cd $HOME/llava
+
+python data/check_files.py
