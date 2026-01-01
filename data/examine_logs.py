@@ -11,10 +11,14 @@ def main():
         ce_loss_data = []
         with open(out_file, "r", encoding="utf-8") as f:
             grand_align_debug = []
+            found = False
             for line in f:
                 if "[GrandAlignDebug]" in line:
+                    found = True
                     grand_align_debug.append(float(line.split("=")[1]))
                 else:
+                    if not found:
+                        continue
                     ce_loss_data.append(float(line.split(":")[1].split(",")[0]))
                     grand_align_data.append(sum(grand_align_debug)/len(grand_align_debug) if grand_align_debug else 0.0)
                     grand_align_debug = []
