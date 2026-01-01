@@ -40,3 +40,6 @@ def check_files():
                 os.remove(image_file) if image_file.exists() else None
                 os.remove(annotation_file)
                 print(f"Deleted corrupted annotation and its image: {annotation_file.name}, {image_file.name})")
+                
+if __name__ == "__main__":
+    check_files()
