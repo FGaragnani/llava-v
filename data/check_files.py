@@ -26,9 +26,9 @@ def check_files():
                 with Image.open(image_file) as img:
                     img.verify()  # Verify that it is, in fact an image
             except:
-                os.remove(image_file)
-                os.remove(annotation_file) if annotation_file.exists() else None
-                print(f"Deleted corrupted image and its annotation: {image_file.name}, {annotation_file.name})")
+                # os.remove(image_file)
+                # os.remove(annotation_file) if annotation_file.exists() else None
+                print(f"Should delete corrupted image and its annotation: {image_file.name}, {annotation_file.name})")
     
     for annotation_file in tqdm(ANNOTATIONS_DIR.iterdir(), total=len(list(ANNOTATIONS_DIR.iterdir())), desc="Checking annotations"):
         if annotation_file.is_file():
