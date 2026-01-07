@@ -7,6 +7,7 @@ import bitsandbytes
 import os
 
 from torch.utils.data import Sampler
+from llava.train.attn_pooler import MHAPooler
 
 from transformers import Trainer
 from transformers.trainer import (
@@ -147,7 +148,9 @@ class LLaVATrainer(Trainer):
     def __init__(self, patch_embedder=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.patch_embedder = patch_embedder if patch_embedder is not None else PatchEmbedder()
-        self.patch_embedder.freeze()
+        self.patch_embedder.freeze() 
+        if self.args.text_token_pool == 'attn':
+            self.text_pooler = MHAPooler(dim=self.model.config.hidden_size, num_heads=8)
 
     def _get_train_sampler(self) -> Optional[torch.utils.data.Sampler]:
         if self.train_dataset is None or not has_length(self.train_dataset):
@@ -428,6 +431,10 @@ class LLaVATrainer(Trainer):
                                             matched_text = span_embeds[-1]
                                         elif self.args.text_token_pool == 'mean':
                                             matched_text = span_embeds.mean(dim=0)
+                                        elif self.args.text_token_pool == 'attn':
+                                            span_embeds = span_embeds.unsqueeze(0)  # [1, L, D]
+                                            pooled_embed, _ = self.text_pooler(span_embeds)  # [1, D]
+                                            matched_text = pooled_embed.squeeze(0)
                                         else:
                                             matched_text = span_embeds.mean(dim=0)
                                         matched_text_embeds.append(matched_text)

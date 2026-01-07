@@ -121,7 +121,7 @@ class TrainingArguments(transformers.TrainingArguments):
     # GLAMM
     group_by_modality_length: bool = field(default=False)
     grand_alignment_loss_weight: float = field(default=0.5)
-    text_token_pool: str = field(default="mean", metadata={"help": "Pooling method for text tokens in GLAMM alignment: mean, last."})
+    text_token_pool: str = field(default="mean", metadata={"help": "Pooling method for text tokens in GLAMM alignment: mean, last, attn."})
     address_layer: str = field(default="all", metadata={"help": "Which transformer layers to address for GLAMM alignment: first_layer, mid_layer, last_layer."})
 
 def maybe_zero_3(param, ignore_status=False, name=None):
