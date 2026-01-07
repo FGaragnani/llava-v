@@ -432,14 +432,21 @@ class LLaVATrainer(Trainer):
                                         elif self.args.text_token_pool == 'mean':
                                             matched_text = span_embeds.mean(dim=0)
                                         elif self.args.text_token_pool == 'attn':
-                                            # Ensure text pooler present and lives on same device as hidden states
-                                            if getattr(self.args, 'text_token_pool', None) == 'attn' and hasattr(self, 'text_pooler'):
-                                                try:
-                                                    self.text_pooler = self.text_pooler.to(hidden_states.device)
-                                                except Exception as e:
-                                                    logger.warning(f"[GrandAlignDebug] Failed moving text_pooler to device: {repr(e)}")
-                                            else:
+                                            # Ensure text_pooler exists and matches hidden_states device & dtype
+                                            if not hasattr(self, 'text_pooler'):
                                                 raise RuntimeError("text_pooler not initialized for attn pooling")
+
+                                            try:
+                                                self.text_pooler = self.text_pooler.to(
+                                                    device=hidden_states.device,
+                                                    dtype=hidden_states.dtype,
+                                                )
+                                            except Exception as e:
+                                                logger.warning(
+                                                    f"[GrandAlignDebug] Failed moving text_pooler to device/dtype: {repr(e)}"
+                                                )
+
+                                            # span_embeds inherits dtype/device from hidden_states
                                             span_embeds = span_embeds.unsqueeze(0)  # [1, L, D]
                                             pooled_embed, _ = self.text_pooler(span_embeds)  # [1, D]
                                             matched_text = pooled_embed.squeeze(0)
