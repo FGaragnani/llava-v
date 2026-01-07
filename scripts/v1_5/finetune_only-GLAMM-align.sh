@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=llava--only-GLAMM-align
+#SBATCH --job-name=llava--only-GLAMM-align-s2
 #SBATCH --output=/leonardo_scratch/large/userexternal/fgaragna/logs/%x-%j.out
 #SBATCH --error=/leonardo_scratch/large/userexternal/fgaragna/logs/%x-%j.err
 #SBATCH --open-mode=truncate
