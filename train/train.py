@@ -80,6 +80,7 @@ class DataArguments:
     image_aspect_ratio: str = 'square'
     # Glamm / GrandD
     use_glamm: bool = field(default=False, metadata={"help": "Whether to include GranDDataset (GLAMM) during training."})
+    use_llava_data: bool = field(default=True, metadata={"help": "Whether to use classic LLaVA conversational data from data_path."})
     grand_image_dir: Optional[str] = field(default=None, metadata={"help": "Directory containing GLAMM/GranD images."})
     grand_annotation_dir: Optional[str] = field(default=None, metadata={"help": "Directory containing GLAMM/GranD annotation JSON files."})
     patch_agg_mode: str = field(default="cls", metadata={"help": "Patch aggregation mode for PatchEmbedder: cls, mean, max, attn."})
@@ -820,7 +821,7 @@ def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer,
     """Make dataset and collator for supervised fine-tuning."""
     # Base dataset from json conversational data
     train_dataset = None
-    if data_args.data_path:
+    if data_args.data_path and data_args.use_llava_data:
         train_dataset = LazySupervisedDataset(tokenizer=tokenizer,
                                               data_path=data_args.data_path,
                                               data_args=data_args)
