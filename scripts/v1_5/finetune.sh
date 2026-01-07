@@ -60,7 +60,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     --deepspeed ./scripts/zero3.json \
     --gradient_checkpointing True \
     --model_name_or_path "/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/vicuna-7b-v1.5" \
-    --save_steps 500 \
+    --save_steps 12000 \
     --save_total_limit 1 \
     --output_dir $output_dir \
     --run_name $run_name \
