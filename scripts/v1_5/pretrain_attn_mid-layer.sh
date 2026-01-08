@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=llava-v_s1--attn
+#SBATCH --job-name=llava-v_s1--attn-midL
 #SBATCH --output=/leonardo_scratch/large/userexternal/fgaragna/logs/%x-%j.out
 #SBATCH --error=/leonardo_scratch/large/userexternal/fgaragna/logs/%x-%j.err
 #SBATCH --open-mode=truncate
