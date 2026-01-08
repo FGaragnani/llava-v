@@ -42,7 +42,7 @@ export MASTER_PORT=`comm -23 <(seq 5000 6000 | sort) <(ss -Htan | awk '{print $4
 learning_rate=2e-4
 mm_projector_lr=2e-5
 run_name="${SLURM_JOB_NAME}"
-output_dir="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/pretrain/${run_name}"
+output_dir="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/${run_name}"
 # output_dir="/work/tesi_fgaragnani/checkpoints/llava-v/${run_name}"
 
 per_device_train_batch_size=8
