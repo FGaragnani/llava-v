@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration - adjust these paths to match your setup
-eval_output_dir="${2:-/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava--only-GLAMM}"
+eval_output_dir="${2:-/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava--only-GLAMM-align}"
 _model_name="LLaVA-Last"
 model_name="${1:-${_model_name}}"
 echo "Model name: ${model_name}"
