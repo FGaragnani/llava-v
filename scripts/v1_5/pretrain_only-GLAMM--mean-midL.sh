@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=llava-only-GLAMM-align-s1
+#SBATCH --job-name=llava-only-GLAMM-align-s1--mean-midL
 #SBATCH --output=/leonardo_scratch/large/userexternal/fgaragna/logs/%x-%j.out
 #SBATCH --error=/leonardo_scratch/large/userexternal/fgaragna/logs/%x-%j.err
 #SBATCH --open-mode=truncate
@@ -107,7 +107,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     --grand_image_dir /leonardo_scratch/large/userexternal/fgaragna/dataset/GLAMM/images/ \
     --grand_annotation_dir /leonardo_scratch/large/userexternal/fgaragna/dataset/GLAMM/annotations/simple/ \
     --patch_agg_mode cls \
-    --grand_alignment_loss_weight 1.0 \
+    --grand_alignment_loss_weight 0.5 \
     --text_token_pool mean \
     --address_layer mid_layer \
     --use_llava_data False
