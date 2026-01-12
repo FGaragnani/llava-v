@@ -48,7 +48,7 @@ gradient_accumulation_steps=2
 
 dataloader_num_workers=4
 
-model_name="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/pretrain/llava-only-GLAMM-align-s1-last/mm_projector.bin"
+model_name="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/pretrain/llava-only-GLAMM-align-s1--last/mm_projector.bin"
 train_data_path="/leonardo_scratch/large/userexternal/fcocchi0/rag_mlmm/dataset/second_stage_LLaVA/llava_v1_5_mix665k.json"
 train_image_folder="/leonardo_scratch/large/userexternal/fcocchi0/rag_mlmm/dataset"
 
