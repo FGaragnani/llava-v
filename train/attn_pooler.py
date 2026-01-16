@@ -29,17 +29,13 @@ class MHAPooler(nn.Module):
             attn_weights: attention weights from MultiheadAttention
         """
         B, T, D = x.shape
-
-        # Lightweight pre-normalization (no learned params)
         x = F.layer_norm(x, (D,))
-
-        # Expand query to batch and normalize as well
+        
         q = self.query.expand(B, 1, -1)
         q = F.layer_norm(q, (D,))
 
         key_padding_mask = None
         if mask is not None:
-            # nn.MultiheadAttention expects True for positions to ignore
             key_padding_mask = mask == 0
 
         out, attn_weights = self.attn(
@@ -48,7 +44,6 @@ class MHAPooler(nn.Module):
             need_weights=True,
         )
 
-        # out: (B, 1, D) after MHA (already combines heads)
         pooled = out.squeeze(1)  # (B, D)
 
         return pooled, attn_weights
