@@ -129,6 +129,99 @@ class PatchEmbedder(nn.Module):
             agg = agg.to(original_device)
         return agg # [N, D]
     
+    @torch.no_grad()
+    def forward_tokens(self, imgs):
+        """
+        imgs: [N, 3, H, W] tensor or list of PIL images
+        returns:
+            patch_tokens: [N, P, D]
+            patch_grid: (H_p, W_p) patch grid inferred from resize + patch size
+            patch_size: int patch stride (pixels)
+        """
+        original_device = imgs.device if isinstance(imgs, torch.Tensor) else None
+        inputs = self.processor(images=imgs, return_tensors="pt")
+        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+        outputs = self.model(**inputs, output_hidden_states=True)
+
+        last_hidden = outputs.last_hidden_state  # [N, num_tokens, D]
+        patch_tokens = last_hidden[:, 1:, :]     # [N, num_patches, D]
+
+        patch_size = self._get_model_patch_size()
+        h_px, w_px = inputs["pixel_values"].shape[-2:]
+        if patch_size is not None:
+            grid_h = max(1, h_px // patch_size)
+            grid_w = max(1, w_px // patch_size)
+        else:
+            raise ValueError(f"Cannot infer patch grid without patch size from model [{self.model}] config.")
+        patch_grid = (grid_h, grid_w)
+
+        if original_device is not None:
+            patch_tokens = patch_tokens.to(original_device)
+        return patch_tokens, patch_grid, patch_size
+    
+    # given the set of output embeddings from forward_tokens,
+    # decide which to aggregate into a single embedding given crop location
+    @torch.no_grad()
+    def aggregated_embeddings_from_crop(self, patch_tokens, patch_grid, patch_size, bboxes, orig_size):
+        """
+        patch_tokens: Tensor [P, D] or [1, P, D] from forward_tokens (single image).
+        patch_grid: (H_p, W_p) grid returned by forward_tokens.
+        patch_size: int patch stride (pixels) used by the vision backbone.
+        bboxes: list of (l, t, r, b) in original pixel coords.
+        orig_size: (H_orig, W_orig) of the original image.
+        returns: Tensor [K, D] mean embedding per bbox (order follows bboxes).
+        """
+        if patch_tokens.dim() == 3 and patch_tokens.size(0) == 1:
+            patch_tokens = patch_tokens.squeeze(0)
+        if patch_tokens.dim() != 2:
+            raise ValueError(f"Expected patch_tokens shape [P, D] or [1, P, D], got {patch_tokens.shape}")
+
+        grid_h, grid_w = patch_grid
+        num_patches = patch_tokens.shape[0]
+        if num_patches != grid_h * grid_w:
+            raise ValueError(f"Patch/token mismatch: tokens={num_patches}, grid={grid_h}x{grid_w}")
+
+        # Reshape tokens into grid
+        tokens_grid = patch_tokens.view(grid_h, grid_w, -1)
+        H_orig, W_orig = orig_size
+        device = patch_tokens.device
+
+        agg_list = []
+        for (l, t, r, b) in bboxes:
+            # Scale bbox from original coords to resized pixel coords used by the backbone.
+            x0 = max(0.0, float(l) * grid_w * patch_size / max(1.0, W_orig))
+            y0 = max(0.0, float(t) * grid_h * patch_size / max(1.0, H_orig))
+            x1 = max(0.0, float(r) * grid_w * patch_size / max(1.0, W_orig))
+            y1 = max(0.0, float(b) * grid_h * patch_size / max(1.0, H_orig))
+
+            c0 = int(math.floor(x0 / patch_size))
+            c1 = int(math.ceil(x1 / patch_size))
+            r0 = int(math.floor(y0 / patch_size))
+            r1 = int(math.ceil(y1 / patch_size))
+
+            c0 = max(0, min(grid_w, c0))
+            c1 = max(0, min(grid_w, c1))
+            r0 = max(0, min(grid_h, r0))
+            r1 = max(0, min(grid_h, r1))
+
+            if c1 <= c0 or r1 <= r0:
+                # Empty region: push zeros to keep alignment stable.
+                agg_list.append(torch.zeros(tokens_grid.shape[-1], device=device))
+                continue
+
+            region = tokens_grid[r0:r1, c0:c1, :]
+            agg_list.append(region.mean(dim=(0, 1)))
+
+        if not agg_list:
+            return torch.empty(0, patch_tokens.shape[-1], device=device)
+        return torch.stack(agg_list, dim=0)
+
+    def _get_model_patch_size(self):
+        if hasattr(self.model.config, "patch_size"):
+            ps = self.model.config.patch_size
+            return ps
+        return None
+    
     def _get_model_image_size(self):
         try:
             return self.model.config.image_size
