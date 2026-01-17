@@ -122,7 +122,8 @@ class TrainingArguments(transformers.TrainingArguments):
     group_by_modality_length: bool = field(default=False)
     grand_alignment_loss_weight: float = field(default=0.5)
     text_token_pool: str = field(default="mean", metadata={"help": "Pooling method for text tokens in GLAMM alignment: mean, last, attn."})
-    address_layer: str = field(default="all", metadata={"help": "Which transformer layers to address for GLAMM alignment: first_layer, mid_layer, last_layer."})
+    address_layer: str = field(default="last_layer", metadata={"help": "Which transformer layers to address for GLAMM alignment: first_layer, mid_layer, last_layer."})
+    full_image_alignment: bool = field(default=False, metadata={"help": "Whether to use full image features for GLAMM alignment instead of cropped features."})
 
 def maybe_zero_3(param, ignore_status=False, name=None):
     from deepspeed import zero
