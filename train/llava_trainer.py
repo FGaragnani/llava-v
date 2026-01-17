@@ -384,17 +384,24 @@ class LLaVATrainer(Trainer):
                         except Exception as e:
                             logger.warning(f"[GrandAlignDebug] skip_sample b={b_idx} path={image_path} reason=image_open_fail error={repr(e)}")
                             continue
-                        crops = []
-                        for (l, t, r, b) in sample_bboxes:
-                            try:
-                                crops.append(img.crop((l, t, r, b)))
-                            except Exception:
+                        if self.args.full_image_alignment:
+                            with torch.no_grad():
+                                patch_tokens, patch_grid, patch_size = self.patch_embedder.forward_tokens(img)
+                                patch_embeds = self.patch_embedder.aggregated_embeddings_from_crop(
+                                        patch_tokens, patch_grid, patch_size, sample_bboxes, img.size[::-1]
+                                )  # img.size is (W, H)
+                        else:
+                            crops = []
+                            for (l, t, r, b) in sample_bboxes:
+                                try:
+                                    crops.append(img.crop((l, t, r, b)))
+                                except Exception:
+                                    continue
+                            if not crops:
                                 continue
-                        if not crops:
-                            continue
-                        crop_total += len(crops)
-                        with torch.no_grad():
-                            patch_embeds = self.patch_embedder(crops)
+                            crop_total += len(crops)
+                            with torch.no_grad():
+                                patch_embeds = self.patch_embedder(crops)
                         try:
                             base_model = model.get_model() if hasattr(model, 'get_model') else model
                             align_enc = getattr(base_model, 'alignment_encoder', None)
