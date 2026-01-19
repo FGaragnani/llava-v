@@ -1,6 +1,6 @@
 #!/bin/bash
 
-file="model_list.txt"
+file="models_list.txt"
 
 while IFS= read -r model_name; do
     echo "Processing: $model_name"
