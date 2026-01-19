@@ -1,5 +1,3 @@
-llava--only-GLAMM--mean-midL-full
-llava--only-GLAMM--mean-full
 llava--mean-full
 llava-v_s2--mean-1
 llava--mean-midL-full
