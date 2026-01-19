@@ -9,7 +9,7 @@
 #SBATCH --mem=48G
 #SBATCH --cpus-per-task=4
 #SBATCH --partition=boost_usr_prod
-#SBATCH --account=IscrB_MLLM-RAG
+#SBATCH --account=AIFAC_S02_096
 #SBATCH --time=02:30:00
 #SBATCH --array=0-20
 
@@ -37,6 +37,13 @@ export TOKENIZER_PATH="/leonardo_scratch/large/userexternal/fgaragna/models/lmsy
 export IS_LLAVA_MORE=1
 PROJECT_ROOT="$HOME"
 export PYTHONPATH="$PROJECT_ROOT/llava:$PROJECT_ROOT:$PYTHONPATH"
+
+# drwxr-xr-x.  3 fgaragna interactive 4096 Jan 19 00:04 llava--only-GLAMM--mean-midL-full
+# drwxr-xr-x.  3 fgaragna interactive 4096 Jan 19 00:03 llava--only-GLAMM--mean-full
+# drwxr-xr-x.  3 fgaragna interactive 4096 Jan 19 00:03 llava--mean-full
+# drwxr-xr-x.  3 fgaragna interactive 4096 Jan 19 00:03 llava-v_s2--mean-1
+# drwxr-xr-x.  3 fgaragna interactive 4096 Jan 19 00:03 llava--mean-midL-full
+# drwxr-xr-x.  3 fgaragna interactive 4096 Jan 19 00:00 llava-v_s2--mean-midL-1
 
 llava_more="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava--only-GLAMM-align--mean-1/" # <--
 model_name="${1:-${llava_more}}"
