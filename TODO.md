@@ -1,15 +1,72 @@
-- Benchmarks aggiuntivi:
-  - MScoco
-  - HAL
+# LLaVA + 500K
 
-- Solo GLAMM:
-  - [X] Pretrain
-  - [ ] Finetune
-  - [ ] Evaluation
+## Mean embeddings, last layer, lambda=1
 
-- attn per testo:
-  - [X] pretrain
-  - [ ] finetune
-  - [ ] evaluation
+- [x] Pretrain
+- [ ] Finetune
+- [ ] Cambrian
+- [ ] AMBER gen
+- [ ] AMBER disc
+- [ ] MSCOCO
 
-- Non crop ma intere immagini a DINO -> poi si prendono gli embeddings corrispondenti alle crop
+## Mean embeddings, mean layer, lambda=1
+
+- [x] Pretrain
+- [ ] Finetune
+- [ ] Cambrian
+- [ ] AMBER gen
+- [ ] AMBER disc
+- [ ] MSCOCO
+
+# 500k GLAMM
+
+## Mean embeddings, last layer, lambda=1
+
+- [x] Pretrain
+- [ ] Finetune
+- [ ] Cambrian
+- [ ] AMBER gen
+- [ ] AMBER disc
+- [ ] MSCOCO
+
+# Non crop, ma immagine intera a DINO
+
+## LLAVA + 500K
+
+### mean-midL
+
+- [x] Pretrain
+- [ ] Finetune
+- [ ] Cambrian
+- [ ] AMBER gen
+- [ ] AMBER disc
+- [ ] MSCOCO
+
+### mean
+
+- [X] Pretrain
+- [ ] Finetune
+- [ ] Cambrian
+- [ ] AMBER gen
+- [ ] AMBER disc
+- [ ] MSCOCO
+
+## 500K GLAMM
+
+### mean-midL
+
+- [X] Pretrain
+- [ ] Finetune
+- [ ] Cambrian
+- [ ] AMBER gen
+- [ ] AMBER disc
+- [ ] MSCOCO
+
+### mean
+
+- [X] Pretrain
+- [ ] Finetune
+- [ ] Cambrian
+- [ ] AMBER gen
+- [ ] AMBER disc
+- [ ] MSCOCO
