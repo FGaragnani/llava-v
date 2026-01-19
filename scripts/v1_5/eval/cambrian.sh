@@ -42,12 +42,11 @@ export PYTHONPATH="$PROJECT_ROOT/llava:$PROJECT_ROOT:$PYTHONPATH"
 # drwxr-xr-x.  3 fgaragna interactive 4096 Jan 19 00:03 llava--only-GLAMM--mean-full
 # drwxr-xr-x.  3 fgaragna interactive 4096 Jan 19 00:03 llava--mean-full
 # drwxr-xr-x.  3 fgaragna interactive 4096 Jan 19 00:03 llava-v_s2--mean-1
-# drwxr-xr-x.  3 fgaragna interactive 4096 Jan 19 00:03 llava--mean-midL-full
 
-llava_more="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava--mean-midL-full/" # <--
+llava_more="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2--mean-1/" # <--
 model_name="${1:-${llava_more}}"
 conv_mode="${2:-llava_v1}"
-eval_output_dir="/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-v--mean-midL-full" # <--
+eval_output_dir="/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-v--mean-1" # <--
 gpu_devices="${3:-0}"
 safe_model_name=$(tr '/' '_' <<< $model_name)
 
