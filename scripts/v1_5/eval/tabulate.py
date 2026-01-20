@@ -14,35 +14,35 @@ def tabulate_results(eval_dir, experiment_csv_fname, out_pivot_fname, out_all_re
     evals_order = [
         ## llava
         # 'vqav2',
-        # 'gqa',
-        # 'vizwiz',
-        # 'scienceqa',
-        # 'textvqa',
-        # 'pope',
+        'gqa',
+        'vizwiz',
+        'scienceqa',
+        'textvqa',
+        'pope',
         'mme',
-        # 'mmbench_en',
+        'mmbench_en',
         'mmbench_cn',
         'seed',
         # 'llava_w',
         # 'mmvet', # submission
         ## Addtl
-        # 'mmmu',
+        'mmmu',
         'mathvista',
         'ai2d',
-        # 'chartqa',
+        'chartqa',
         # 'docvqa', # submission
         # 'infovqa', # submission
         # 'stvqa', # submission
-        # 'ocrbench',
-        # 'mmstar',
-        # 'realworldqa',
+        'ocrbench',
+        'mmstar',
+        'realworldqa',
         # 'qbench',
-        #'blink',
-        #'mmvp',
-        #'vstar',
-        #'ade',
+        'blink',
+        'mmvp',
+        'vstar',
+        'ade',
         # 'omni',
-        #'coco'
+        'coco'
         # 'synthdog', # seems broken?
     ]
 

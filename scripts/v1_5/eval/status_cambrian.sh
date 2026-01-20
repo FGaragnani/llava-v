@@ -8,36 +8,35 @@ echo "Model name: ${model_name}"
 
 # All Cambrian benchmarks (should match the array in the main script)
 benchmarks=(
-    # gqa
-    # vizwiz
-    # scienceqa
-    # textvqa
-    # pope
+    gqa
+    vizwiz
+    scienceqa
+    textvqa
+    pope
     mme
-    # mmbench_en
+    mmbench_en
     mmbench_cn
     seed
     # mmvet
-    # mmmu
+    mmmu
     mathvista
     ai2d
-    # chartqa
+    chartqa
     # docvqa
     # infovqa
     # stvqa
-    # ocrbench
-    # mmstar
-    # realworldqa
+    ocrbench
+    mmstar
+    realworldqa
     # qbench
-    # blink
-    # mmvp
-    # vstar
-    # ade
+    blink
+    mmvp
+    vstar
+    ade
     # omni
-    # coco
+    coco
     # synthdog
 )
-
 
 echo "Checking status of Cambrian benchmarks for model: $model_name"
 echo "=========================================================="
