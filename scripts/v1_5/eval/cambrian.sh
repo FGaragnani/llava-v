@@ -40,10 +40,10 @@ export PYTHONPATH="$PROJECT_ROOT/llava:$PROJECT_ROOT:$PYTHONPATH"
 
 # drwxr-xr-x.  3 fgaragna interactive 4096 Jan 19 00:04 llava--only-GLAMM--mean-midL-full
 
-llava_more="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava--only-GLAMM--mean-midL-full/" # <--
+llava_more="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava--mean-full/" # <--
 model_name="${1:-${llava_more}}"
 conv_mode="${2:-llava_v1}"
-eval_output_dir="/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-only-GLAMM--mean-midL-full" # <--
+eval_output_dir="/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-llava-mean-full" # <--
 gpu_devices="${3:-0}"
 safe_model_name=$(tr '/' '_' <<< $model_name)
 
@@ -61,33 +61,33 @@ export CUDA_VISIBLE_DEVICES="$gpu_devices"
 
 # All Cambrian benchmarks
 benchmarks=(
-    gqa
-    vizwiz
-    scienceqa
-    textvqa
-    pope
+    # gqa
+    # vizwiz
+    # scienceqa
+    # textvqa
+    # pope
     mme
-    mmbench_en
+    # mmbench_en
     mmbench_cn
     seed
     # mmvet
-    mmmu
+    # mmmu
     mathvista
     ai2d
-    chartqa
+    # chartqa
     # docvqa
     # infovqa
     # stvqa
-    ocrbench
-    mmstar
-    realworldqa
+    # ocrbench
+    # mmstar
+    # realworldqa
     # qbench
-    blink
-    mmvp
-    vstar
-    ade
+    # blink
+    # mmvp
+    # vstar
+    # ade
     # omni
-    coco
+    # coco
     # synthdog
 )
 
