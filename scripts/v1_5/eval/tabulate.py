@@ -91,7 +91,8 @@ def tabulate_results(eval_dir, experiment_csv_fname, out_pivot_fname, out_all_re
         df = df.sort_values("time")
         df = df.drop_duplicates("model", keep="last")
 
-        df = df[["time", "eval_name", "model", "accuracy"]]
+        accuracy_name = "accuracy" if "accuracy" in df.columns else "accurcay"
+        df = df[["time", "eval_name", "model", accuracy_name]]
         dfs.append(df)
 
     all_results = pd.concat(dfs)
