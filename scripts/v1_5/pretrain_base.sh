@@ -9,7 +9,7 @@
 #SBATCH --mem=480G
 #SBATCH --cpus-per-task=32
 #SBATCH --partition=boost_usr_prod
-#SBATCH --account=IscrB_MLLM-RAG
+#SBATCH --account=AIFAC_S02_096
 #SBATCH --time=8:00:00
 
 module load anaconda3/2022.05
