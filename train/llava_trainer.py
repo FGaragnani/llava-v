@@ -1,4 +1,5 @@
 import os
+import bisect
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -26,6 +27,7 @@ except ImportError:
     IGNORE_INDEX = -100  # Fallback to standard HF ignore index
 
 from llava.train.embedder import PatchEmbedder
+from llava.constants import IMAGE_TOKEN_INDEX
 
 
 def maybe_zero_3(param, ignore_status=False, name=None):
@@ -365,6 +367,33 @@ class LLaVATrainer(Trainer):
                 if hidden_states is None:
                     logger.warning("[GrandAlignDebug] hidden_states not found in outputs; skipping GranD loss.")
                 elif hidden_states is not None:
+                    input_ids = inputs.get('input_ids', None)
+                    labels_len = labels.size(1) if hasattr(labels, 'size') else None
+
+                    def compute_span_with_image_offset(span_indices, sample_input_ids):
+                        if sample_input_ids is None or labels_len is None:
+                            return span_indices
+                        hidden_len = hidden_states.size(1)
+                        if hidden_len <= labels_len:
+                            return span_indices
+                        image_positions = (sample_input_ids == IMAGE_TOKEN_INDEX).nonzero(as_tuple=False).squeeze(-1).tolist()
+                        if not image_positions:
+                            return span_indices
+                        extra = hidden_len - labels_len
+                        num_images = len(image_positions)
+                        base = extra // num_images
+                        rem = extra % num_images
+
+                        adjusted = []
+                        for idx in span_indices:
+                            k = bisect.bisect_left(image_positions, idx)
+                            if k == 0:
+                                adjusted.append(idx)
+                                continue
+                            shift = (base * k) + min(rem, k)
+                            adjusted.append(idx + shift)
+                        return adjusted
+
                     per_sample_losses = []
                     for b_idx, is_grand in enumerate(grand_mask):
                         if not is_grand:
@@ -379,6 +408,9 @@ class LLaVATrainer(Trainer):
                             continue
                         generated_token_ids = label_row[token_mask].tolist()
                         generated_indices = torch.nonzero(token_mask, as_tuple=False).squeeze(-1).tolist()
+                        sample_input_ids = None
+                        if input_ids is not None and input_ids.size(0) > b_idx:
+                            sample_input_ids = input_ids[b_idx]
                         try:
                             img = Image.open(image_path).convert('RGB')
                         except Exception as e:
@@ -431,7 +463,8 @@ class LLaVATrainer(Trainer):
                             for start in range(len(generated_token_ids) - len(variant_tokens) + 1):
                                 if generated_token_ids[start:start+len(variant_tokens)] == variant_tokens:
                                     orig_span = generated_indices[start:start+len(variant_tokens)]
-                                    span_embeds = hidden_states[b_idx][orig_span]
+                                    span_indices = compute_span_with_image_offset(orig_span, sample_input_ids)
+                                    span_embeds = hidden_states[b_idx][span_indices]
                                     if span_embeds.numel() > 0:
                                         matched_text = None
                                         if self.args.text_token_pool == 'last':
