@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cambrian.sh llava-v_s2--mean-midL
-cambrian.sh llava-v_s2--mean
-cambrian.sh llava-v_s2--last
-cambrian.sh llava-v_s2--last-midL
+sbatch cambrian.sh llava-v_s2--mean-midL
+sbatch cambrian.sh llava-v_s2--mean
+sbatch cambrian.sh llava-v_s2--last
+sbatch cambrian.sh llava-v_s2--last-midL
