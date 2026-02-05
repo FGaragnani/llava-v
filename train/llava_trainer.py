@@ -264,6 +264,7 @@ class LLaVATrainer(Trainer):
         return self.optimizer
 
     def _save_checkpoint(self, model, trial, metrics=None):
+        self._sanitize_generation_config_for_save()
         model.generation_config.do_sample = True
         if getattr(self.args, 'tune_mm_mlp_adapter', False):
             from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
@@ -289,7 +290,20 @@ class LLaVATrainer(Trainer):
         if getattr(self.args, 'tune_mm_mlp_adapter', False):
             pass
         else:
+            self._sanitize_generation_config_for_save()
             super(LLaVATrainer, self)._save(output_dir, state_dict)
+
+    def _sanitize_generation_config_for_save(self):
+        """Prevent generation_config validation warnings from crashing model save."""
+        cfg = getattr(self.model, "generation_config", None)
+        if cfg is None:
+            return
+        if getattr(cfg, "do_sample", False):
+            return
+        if getattr(cfg, "temperature", 1.0) != 1.0:
+            cfg.temperature = 1.0
+        if getattr(cfg, "top_p", 1.0) != 1.0:
+            cfg.top_p = 1.0
 
     def compute_loss(self, model, inputs, return_outputs=False):
         """
