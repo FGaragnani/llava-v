@@ -43,6 +43,7 @@ llava_more="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/${
 conv_mode="${2:-llava_v1}"
 eval_output_dir="/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-${model_name}" # <--
 gpu_devices="${3:-0}"
+model_name="${llava_more}"
 safe_model_name=$(tr '/' '_' <<< $llava_more)
 
 echo "Conversation mode: $conv_mode"
