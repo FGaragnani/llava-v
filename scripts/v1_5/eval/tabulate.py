@@ -2,9 +2,10 @@ import os
 import json
 import pandas as pd
 import argparse
+from datetime import datetime, timedelta
 
 
-def tabulate_results(eval_dir, experiment_csv_fname, out_pivot_fname, out_all_results_fname):
+def tabulate_results(eval_dir, experiment_csv_fname, out_pivot_fname, out_all_results_fname, days_back=None):
     exists = os.path.exists(eval_dir)
     if not exists:
         raise ValueError(f"eval_dir {eval_dir} does not exist")
@@ -76,6 +77,17 @@ def tabulate_results(eval_dir, experiment_csv_fname, out_pivot_fname, out_all_re
             print(f"Error reading {results_path}: {e}")
             raise e
 
+        # Filter by date if specified
+        if days_back is not None:
+            if "time" in df.columns:
+                cutoff_date = datetime.now() - timedelta(days=days_back)
+                df["time_parsed"] = pd.to_datetime(df["time"])
+                df = df[df["time_parsed"] >= cutoff_date]
+                df = df.drop("time_parsed", axis=1)
+                if len(df) == 0:
+                    print(f"Skipping {eval_name} as no results within last {days_back} days")
+                    continue
+
         if eval_name in evals_col_overrides:
             override = evals_col_overrides[eval_name]
             if override.startswith("100x_"):
@@ -117,7 +129,8 @@ if __name__ == "__main__":
     parser.add_argument("--experiment_csv", type=str, default="experiments.csv", help="Name of the CSV file containing experiment results")
     parser.add_argument("--out_pivot", type=str, default="pivot.xlsx", help="Name of the output file (Excel or CSV)")
     parser.add_argument("--out_all_results", type=str, default="all_results.csv", help="Name of the CSV file to save all results")
+    parser.add_argument("--days", type=int, default=2, help="Only include results from the last N days (default: all)")
 
     args = parser.parse_args()
 
-    tabulate_results(args.eval_dir, args.experiment_csv, args.out_pivot, args.out_all_results)
+    tabulate_results(args.eval_dir, args.experiment_csv, args.out_pivot, args.out_all_results, args.days)
