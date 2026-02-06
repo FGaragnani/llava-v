@@ -409,6 +409,27 @@ class LLaVATrainer(Trainer):
                             adjusted.append(idx + shift)
                         return adjusted
 
+                    def build_expanded_index_map(sample_input_ids):
+                        if sample_input_ids is None or labels_len is None:
+                            return None
+                        hidden_len = hidden_states.size(1)
+                        if hidden_len <= labels_len:
+                            return list(range(labels_len))
+                        image_positions = (sample_input_ids == IMAGE_TOKEN_INDEX).nonzero(as_tuple=False).squeeze(-1).tolist()
+                        if not image_positions:
+                            return list(range(labels_len))
+                        extra = hidden_len - labels_len
+                        num_images = len(image_positions)
+                        base = extra // num_images
+                        rem = extra % num_images
+                        # Map each text token index to its hidden-state index after image-token expansion.
+                        expanded = []
+                        for idx in range(labels_len):
+                            k = bisect.bisect_left(image_positions, idx)
+                            shift = (base * k) + min(rem, k)
+                            expanded.append(idx + shift)
+                        return expanded
+
                     per_sample_losses = []
                     for b_idx, is_grand in enumerate(grand_mask):
                         if not is_grand:
@@ -417,8 +438,6 @@ class LLaVATrainer(Trainer):
                         image_path = grand_image_paths[b_idx] if b_idx < len(grand_image_paths) else None
                         if not sample_bboxes or image_path is None:
                             continue
-                        if debug_align:
-                            print(f"[GrandAlignDebug] sample={b_idx} image={image_path} bboxes={len(sample_bboxes)}")
                         label_row = labels[b_idx]
                         token_mask = (label_row != IGNORE_INDEX) & (label_row != -100)
                         if token_mask.sum() == 0:
@@ -428,6 +447,18 @@ class LLaVATrainer(Trainer):
                         sample_input_ids = None
                         if input_ids is not None and input_ids.size(0) > b_idx:
                             sample_input_ids = input_ids[b_idx]
+                        if debug_align and sample_input_ids is not None:
+                            expanded_map = build_expanded_index_map(sample_input_ids)
+                            if expanded_map is not None:
+                                hidden_len = hidden_states.size(1)
+                                # Basic sanity checks for offset alignment.
+                                bad = [i for i, v in enumerate(expanded_map) if v < 0 or v >= hidden_len]
+                                if bad:
+                                    print(f"[GrandAlignDebug] bad_span_indices sample={b_idx} bad_count={len(bad)}")
+                                if expanded_map and expanded_map[-1] != hidden_len - 1:
+                                    print(
+                                        f"[GrandAlignDebug] span_end_mismatch sample={b_idx} last={expanded_map[-1]} hidden_last={hidden_len - 1}"
+                                    )
                         try:
                             img = Image.open(image_path).convert('RGB')
                         except Exception as e:
@@ -485,6 +516,17 @@ class LLaVATrainer(Trainer):
                                     span_indices = compute_span_with_image_offset(orig_span, sample_input_ids)
                                     span_embeds = hidden_states[b_idx][span_indices]
                                     if span_embeds.numel() > 0:
+                                        if debug_align and self.tokenizer is not None:
+                                            try:
+                                                decoded_phrase = self.tokenizer.decode(variant_tokens)
+                                                decoded_span = self.tokenizer.decode(generated_token_ids[start:start+len(variant_tokens)])
+                                                print(
+                                                    f"[GrandAlignDebug] detok phrase='{decoded_phrase}' span='{decoded_span}'"
+                                                )
+                                            except Exception as e:
+                                                logger.warning(
+                                                    f"[GrandAlignDebug] detok failed: {repr(e)}"
+                                                )
                                         matched_text = None
                                         if self.args.text_token_pool == 'last':
                                             matched_text = span_embeds[-1]
@@ -513,15 +555,11 @@ class LLaVATrainer(Trainer):
                                             matched_text = span_embeds.mean(dim=0)
                                         matched_text_embeds.append(matched_text)
                                         matched_crop_indices.append(crop_i)
-                                        if debug_align:
-                                            matched_phrases_dbg.append((crop_i, phrase, span_indices))
                                         found = True
                                     break
                             if found:
                                 matched_phrase_total += 1
                                 matched_crop_total += 1
-                            elif debug_align:
-                                missed_phrases_dbg.append((crop_i, phrase))
 
                         if matched_text_embeds:
                             text_batch = torch.stack(matched_text_embeds, dim=0).to(patch_embeds.device)
@@ -537,18 +575,6 @@ class LLaVATrainer(Trainer):
                             sims = (proj_norm * img_norm).sum(dim=-1)
                             crop_losses = 1 - sims  # tensor of shape [M]
 
-                        if debug_align:
-                            if matched_phrases_dbg:
-                                for crop_i, phrase, span_indices in matched_phrases_dbg[:10]:
-                                    print(
-                                        f"[GrandAlignDebug] matched crop={crop_i} phrase='{phrase}' span={span_indices}"
-                                    )
-                            if missed_phrases_dbg:
-                                for crop_i, phrase in missed_phrases_dbg[:10]:
-                                    print(
-                                        f"[GrandAlignDebug] missed crop={crop_i} phrase='{phrase}'"
-                                    )
-                        
                         if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
                             per_sample_losses.append(crop_losses.mean())
                     if per_sample_losses:
