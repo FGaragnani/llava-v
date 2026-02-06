@@ -362,6 +362,7 @@ class LLaVATrainer(Trainer):
         matched_phrase_total = 0
         crop_total = 0
         matched_crop_total = 0
+        debug_align = os.environ.get("GRAND_ALIGN_DEBUG", "0") == "1"
         if grand_mask is not None and labels is not None and grand_bboxes is not None and grand_image_paths is not None and grand_dense_labels is not None and grand_dense_captions is not None:
             grand_mask = grand_mask.bool()
             if grand_mask.any():
@@ -416,6 +417,8 @@ class LLaVATrainer(Trainer):
                         image_path = grand_image_paths[b_idx] if b_idx < len(grand_image_paths) else None
                         if not sample_bboxes or image_path is None:
                             continue
+                        if debug_align:
+                            print(f"[GrandAlignDebug] sample={b_idx} image={image_path} bboxes={len(sample_bboxes)}")
                         label_row = labels[b_idx]
                         token_mask = (label_row != IGNORE_INDEX) & (label_row != -100)
                         if token_mask.sum() == 0:
@@ -462,6 +465,8 @@ class LLaVATrainer(Trainer):
                         # Batch-match phrases to text spans, then batch project with alignment encoder
                         matched_text_embeds = []
                         matched_crop_indices = []
+                        matched_phrases_dbg = []
+                        missed_phrases_dbg = []
                         for crop_i, phrase in enumerate(phrases):
                             phrase = phrase.strip()
                             if not phrase:
@@ -508,11 +513,15 @@ class LLaVATrainer(Trainer):
                                             matched_text = span_embeds.mean(dim=0)
                                         matched_text_embeds.append(matched_text)
                                         matched_crop_indices.append(crop_i)
+                                        if debug_align:
+                                            matched_phrases_dbg.append((crop_i, phrase, span_indices))
                                         found = True
                                     break
                             if found:
                                 matched_phrase_total += 1
                                 matched_crop_total += 1
+                            elif debug_align:
+                                missed_phrases_dbg.append((crop_i, phrase))
 
                         if matched_text_embeds:
                             text_batch = torch.stack(matched_text_embeds, dim=0).to(patch_embeds.device)
@@ -527,6 +536,18 @@ class LLaVATrainer(Trainer):
                             img_norm = F.normalize(img_vecs, dim=-1)
                             sims = (proj_norm * img_norm).sum(dim=-1)
                             crop_losses = 1 - sims  # tensor of shape [M]
+
+                        if debug_align:
+                            if matched_phrases_dbg:
+                                for crop_i, phrase, span_indices in matched_phrases_dbg[:10]:
+                                    print(
+                                        f"[GrandAlignDebug] matched crop={crop_i} phrase='{phrase}' span={span_indices}"
+                                    )
+                            if missed_phrases_dbg:
+                                for crop_i, phrase in missed_phrases_dbg[:10]:
+                                    print(
+                                        f"[GrandAlignDebug] missed crop={crop_i} phrase='{phrase}'"
+                                    )
                         
                         if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
                             per_sample_losses.append(crop_losses.mean())
