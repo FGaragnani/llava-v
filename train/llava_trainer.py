@@ -363,7 +363,13 @@ class LLaVATrainer(Trainer):
         crop_total = 0
         matched_crop_total = 0
         debug_align = os.environ.get("GRAND_ALIGN_DEBUG", "0") == "1"
-        if grand_mask is not None and labels is not None and grand_bboxes is not None and grand_image_paths is not None and grand_dense_labels is not None and grand_dense_captions is not None:
+        if \
+            grand_mask is not None and \
+                labels is not None and \
+                grand_bboxes is not None and \
+                grand_image_paths is not None and \
+                grand_dense_labels is not None and \
+                grand_dense_captions is not None:
             grand_mask = grand_mask.bool()
             if grand_mask.any():
                 # Obtain last hidden states
@@ -430,6 +436,29 @@ class LLaVATrainer(Trainer):
                             expanded.append(idx + shift)
                         return expanded
 
+                    def get_image_token_spans(sample_input_ids):
+                        if sample_input_ids is None or labels_len is None:
+                            return []
+                        hidden_len = hidden_states.size(1)
+                        if hidden_len <= labels_len:
+                            return []
+                        image_positions = (sample_input_ids == IMAGE_TOKEN_INDEX).nonzero(as_tuple=False).squeeze(-1).tolist()
+                        if not image_positions:
+                            return []
+                        extra = hidden_len - labels_len
+                        num_images = len(image_positions)
+                        base = extra // num_images
+                        rem = extra % num_images
+                        spans = []
+                        for i, pos in enumerate(image_positions):
+                            shift = (base * i) + min(rem, i)
+                            extra_i = base + (1 if i < rem else 0)
+                            span_len = 1 + extra_i
+                            start = pos + shift
+                            end = start + span_len
+                            spans.append((start, end))
+                        return spans
+
                     per_sample_losses = []
                     for b_idx, is_grand in enumerate(grand_mask):
                         if not is_grand:
@@ -451,7 +480,7 @@ class LLaVATrainer(Trainer):
                             expanded_map = build_expanded_index_map(sample_input_ids)
                             if expanded_map is not None:
                                 hidden_len = hidden_states.size(1)
-                                # Basic sanity checks for offset alignment.
+                                # sanity check
                                 bad = [i for i, v in enumerate(expanded_map) if v < 0 or v >= hidden_len]
                                 if bad:
                                     print(f"[GrandAlignDebug] bad_span_indices sample={b_idx} bad_count={len(bad)}")
@@ -482,6 +511,10 @@ class LLaVATrainer(Trainer):
                             crop_total += len(crops)
                             with torch.no_grad():
                                 patch_embeds = self.patch_embedder(crops)
+                                try:
+                                    _, patch_grid, patch_size = self.patch_embedder.forward_tokens(img)
+                                except Exception:
+                                    patch_grid, patch_size = None, None
                         try:
                             base_model = model.get_model() if hasattr(model, 'get_model') else model
                             align_enc = getattr(base_model, 'alignment_encoder', None)
@@ -492,91 +525,158 @@ class LLaVATrainer(Trainer):
                             continue
                         patch_embeds = patch_embeds.to(hidden_states.device)
                         crop_losses = []
-                        phrases = grand_dense_labels[b_idx] if b_idx < len(grand_dense_labels) else []
-                        # Batch-match phrases to text spans, then batch project with alignment encoder
-                        matched_text_embeds = []
-                        matched_crop_indices = []
-                        matched_phrases_dbg = []
-                        missed_phrases_dbg = []
-                        for crop_i, phrase in enumerate(phrases):
-                            phrase = phrase.strip()
-                            if not phrase:
-                                continue
-                            attempted_phrase_total += 1
-                            if crop_i >= patch_embeds.size(0):
-                                continue
-                            if self.tokenizer is None:
-                                continue
-                            variant_tokens = self.tokenizer(phrase, add_special_tokens=False).input_ids
-                            found = False
-                            # Search for phrase tokens in generated tokens
-                            for start in range(len(generated_token_ids) - len(variant_tokens) + 1):
-                                if generated_token_ids[start:start+len(variant_tokens)] == variant_tokens:
-                                    orig_span = generated_indices[start:start+len(variant_tokens)]
-                                    span_indices = compute_span_with_image_offset(orig_span, sample_input_ids)
-                                    span_embeds = hidden_states[b_idx][span_indices]
-                                    if span_embeds.numel() > 0:
-                                        if debug_align and self.tokenizer is not None:
-                                            try:
-                                                decoded_phrase = self.tokenizer.decode(variant_tokens)
-                                                decoded_span = self.tokenizer.decode(generated_token_ids[start:start+len(variant_tokens)])
-                                                print(
-                                                    f"[GrandAlignDebug] detok phrase='{decoded_phrase}' span='{decoded_span}'"
-                                                )
-                                            except Exception as e:
-                                                logger.warning(
-                                                    f"[GrandAlignDebug] detok failed: {repr(e)}"
-                                                )
-                                        matched_text = None
-                                        if self.args.text_token_pool == 'last':
-                                            matched_text = span_embeds[-1]
-                                        elif self.args.text_token_pool == 'mean':
-                                            matched_text = span_embeds.mean(dim=0)
-                                        elif self.args.text_token_pool == 'attn':
-                                            # Ensure text_pooler exists and matches hidden_states device & dtype
-                                            if not hasattr(self, 'text_pooler'):
-                                                raise RuntimeError("text_pooler not initialized for attn pooling")
 
-                                            try:
-                                                self.text_pooler = self.text_pooler.to(
-                                                    device=hidden_states.device,
-                                                    dtype=hidden_states.dtype,
-                                                )
-                                            except Exception as e:
-                                                logger.warning(
-                                                    f"[GrandAlignDebug] Failed moving text_pooler to device/dtype: {repr(e)}"
-                                                )
+                        if not self.args.align_with_image:
+                            # Batch-match phrases to text spans, then batch project with alignment encoder
+                            phrases = grand_dense_labels[b_idx] if b_idx < len(grand_dense_labels) else []
+                            matched_text_embeds = []
+                            matched_crop_indices = []
+                            for crop_i, phrase in enumerate(phrases):
+                                phrase = phrase.strip()
+                                if not phrase:
+                                    continue
+                                attempted_phrase_total += 1
+                                if crop_i >= patch_embeds.size(0):
+                                    continue
+                                if self.tokenizer is None:
+                                    continue
+                                variant_tokens = self.tokenizer(phrase, add_special_tokens=False).input_ids
+                                found = False
+                                # Search for phrase tokens in generated tokens
+                                for start in range(len(generated_token_ids) - len(variant_tokens) + 1):
+                                    if generated_token_ids[start:start+len(variant_tokens)] == variant_tokens:
+                                        orig_span = generated_indices[start:start+len(variant_tokens)]
+                                        span_indices = compute_span_with_image_offset(orig_span, sample_input_ids)
+                                        span_embeds = hidden_states[b_idx][span_indices]
+                                        if span_embeds.numel() > 0:
+                                            if debug_align and self.tokenizer is not None:
+                                                try:
+                                                    decoded_phrase = self.tokenizer.decode(variant_tokens)
+                                                    decoded_span = self.tokenizer.decode(generated_token_ids[start:start+len(variant_tokens)])
+                                                    print(
+                                                        f"[GrandAlignDebug] detok phrase='{decoded_phrase}' span='{decoded_span}'"
+                                                    )
+                                                except Exception as e:
+                                                    logger.warning(
+                                                        f"[GrandAlignDebug] detok failed: {repr(e)}"
+                                                    )
+                                            matched_text = None
+                                            if self.args.text_token_pool == 'last':
+                                                matched_text = span_embeds[-1]
+                                            elif self.args.text_token_pool == 'mean':
+                                                matched_text = span_embeds.mean(dim=0)
+                                            elif self.args.text_token_pool == 'attn':
+                                                # Ensure text_pooler exists and matches hidden_states device & dtype
+                                                if not hasattr(self, 'text_pooler'):
+                                                    raise RuntimeError("text_pooler not initialized for attn pooling")
 
-                                            # span_embeds inherits dtype/device from hidden_states
-                                            span_embeds = span_embeds.unsqueeze(0)  # [1, L, D]
-                                            pooled_embed, _ = self.text_pooler(span_embeds)  # [1, D]
-                                            matched_text = pooled_embed.squeeze(0)
-                                        else:
-                                            matched_text = span_embeds.mean(dim=0)
-                                        matched_text_embeds.append(matched_text)
-                                        matched_crop_indices.append(crop_i)
-                                        found = True
-                                    break
-                            if found:
-                                matched_phrase_total += 1
-                                matched_crop_total += 1
+                                                try:
+                                                    self.text_pooler = self.text_pooler.to(
+                                                        device=hidden_states.device,
+                                                        dtype=hidden_states.dtype,
+                                                    )
+                                                except Exception as e:
+                                                    logger.warning(
+                                                        f"[GrandAlignDebug] Failed moving text_pooler to device/dtype: {repr(e)}"
+                                                    )
 
-                        if matched_text_embeds:
-                            text_batch = torch.stack(matched_text_embeds, dim=0).to(patch_embeds.device)
-                            # Align text to image
+                                                # span_embeds inherits dtype/device from hidden_states
+                                                span_embeds = span_embeds.unsqueeze(0)  # [1, L, D]
+                                                pooled_embed, _ = self.text_pooler(span_embeds)  # [1, D]
+                                                matched_text = pooled_embed.squeeze(0)
+                                            else:
+                                                matched_text = span_embeds.mean(dim=0)
+                                            matched_text_embeds.append(matched_text)
+                                            matched_crop_indices.append(crop_i)
+                                            found = True
+                                        break
+                                if found:
+                                    matched_phrase_total += 1
+                                    matched_crop_total += 1
+
+                            if matched_text_embeds:
+                                text_batch = torch.stack(matched_text_embeds, dim=0).to(patch_embeds.device)
+                                # Align text to image
+                                try:
+                                    projected_text_batch = align_enc(text_batch)
+                                except Exception:
+                                    projected_text_batch = align_enc(text_batch).squeeze(0)
+                                # Compute cosine similarity batch-wise against corresponding image vectors
+                                proj_norm = F.normalize(projected_text_batch, dim=-1)
+                                img_vecs = patch_embeds[matched_crop_indices]
+                                img_norm = F.normalize(img_vecs, dim=-1)
+                                sims = (proj_norm * img_norm).sum(dim=-1)
+                                crop_losses = 1 - sims  # tensor of shape [M]
+
+                            if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
+                                per_sample_losses.append(crop_losses.mean())
+                            
+                        else:
+                            # Match image-to-image Caffo style
+                            if patch_embeds is None or patch_embeds.numel() == 0:
+                                continue
+                            if patch_grid is None or patch_size is None:
+                                continue
+                            pool_mode = getattr(self.args, 'image_token_pool', None)
+
+                            sample_input_ids = None
+                            if input_ids is not None and input_ids.size(0) > b_idx:
+                                sample_input_ids = input_ids[b_idx]
+                            spans = get_image_token_spans(sample_input_ids)
+                            if not spans:
+                                continue
+
+                            img_span = spans[0]
+                            img_tokens = hidden_states[b_idx][img_span[0]:img_span[1]]
+                            if img_tokens.dim() != 2:
+                                continue
+
                             try:
-                                projected_text_batch = align_enc(text_batch)
-                            except Exception:
-                                projected_text_batch = align_enc(text_batch).squeeze(0)
-                            # Compute cosine similarity batch-wise against corresponding image vectors
-                            proj_norm = F.normalize(projected_text_batch, dim=-1)
-                            img_vecs = patch_embeds[matched_crop_indices]
-                            img_norm = F.normalize(img_vecs, dim=-1)
-                            sims = (proj_norm * img_norm).sum(dim=-1)
-                            crop_losses = 1 - sims  # tensor of shape [M]
+                                token_sets = PatchEmbedder.token_sets_from_bboxes(
+                                    patch_tokens=img_tokens,
+                                    patch_grid=patch_grid,
+                                    patch_size=patch_size,
+                                    bboxes=sample_bboxes,
+                                    orig_size=img.size[::-1],
+                                )
+                            except Exception as e:
+                                logger.warning(f"[GrandAlignDebug] image_token_select_failed: {repr(e)}")
+                                continue
 
-                        if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
-                            per_sample_losses.append(crop_losses.mean())
+                            pooled_img_embeds = []
+                            matched_crop_indices = []
+                            for crop_i, token_set in enumerate(token_sets):
+                                if crop_i >= patch_embeds.size(0):
+                                    continue
+                                if token_set.numel() == 0:
+                                    continue
+                                if pool_mode == 'last':
+                                    pooled = token_set[-1]
+                                elif pool_mode == 'mean':
+                                    pooled = token_set.mean(dim=0)
+                                else:
+                                    raise ValueError(f"Unknown image_token_pool mode: {pool_mode}")
+                                pooled_img_embeds.append(pooled)
+                                matched_crop_indices.append(crop_i)
+
+                            if not pooled_img_embeds:
+                                continue
+
+                            img_batch = torch.stack(pooled_img_embeds, dim=0).to(patch_embeds.device)
+                            try:
+                                projected_img_batch = align_enc(img_batch)
+                            except Exception:
+                                projected_img_batch = align_enc(img_batch).squeeze(0)
+
+                            proj_norm = F.normalize(projected_img_batch, dim=-1)
+                            dino_vecs = patch_embeds[matched_crop_indices]
+                            dino_norm = F.normalize(dino_vecs, dim=-1)
+                            sims = (proj_norm * dino_norm).sum(dim=-1)
+                            crop_losses = 1 - sims
+
+                            if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
+                                per_sample_losses.append(crop_losses.mean())
+
                     if per_sample_losses:
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
                         print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")

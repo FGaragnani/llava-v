@@ -171,6 +171,37 @@ class PatchEmbedder(nn.Module):
         orig_size: (H_orig, W_orig) of the original image.
         returns: Tensor [K, D] mean embedding per bbox (order follows bboxes).
         """
+        token_sets = PatchEmbedder.token_sets_from_bboxes(
+            patch_tokens=patch_tokens,
+            patch_grid=patch_grid,
+            patch_size=patch_size,
+            bboxes=bboxes,
+            orig_size=orig_size,
+        )
+
+        if not token_sets:
+            return torch.empty(0, patch_tokens.shape[-1], device=patch_tokens.device)
+
+        agg_list = []
+        for token_set in token_sets:
+            if token_set.numel() == 0:
+                agg_list.append(torch.zeros(patch_tokens.shape[-1], device=patch_tokens.device))
+            else:
+                agg_list.append(token_set.mean(dim=0))
+
+        return torch.stack(agg_list, dim=0)
+
+    @staticmethod
+    @torch.no_grad()
+    def token_sets_from_bboxes(patch_tokens, patch_grid, patch_size, bboxes, orig_size):
+        """
+        patch_tokens: Tensor [P, D] or [1, P, D] from forward_tokens (single image).
+        patch_grid: (H_p, W_p) grid returned by forward_tokens.
+        patch_size: int patch stride (pixels) used by the vision backbone.
+        bboxes: list of (l, t, r, b) in original pixel coords.
+        orig_size: (H_orig, W_orig) of the original image.
+        returns: list of Tensors [N_i, D] per bbox (order follows bboxes).
+        """
         if patch_tokens.dim() == 3 and patch_tokens.size(0) == 1:
             patch_tokens = patch_tokens.squeeze(0)
         if patch_tokens.dim() != 2:
@@ -184,9 +215,8 @@ class PatchEmbedder(nn.Module):
         # Reshape tokens into grid
         tokens_grid = patch_tokens.view(grid_h, grid_w, -1)
         H_orig, W_orig = orig_size
-        device = patch_tokens.device
 
-        agg_list = []
+        token_sets = []
         for (l, t, r, b) in bboxes:
             # Scale bbox from original coords to resized pixel coords used by the backbone.
             x0 = max(0.0, float(l) * grid_w * patch_size / max(1.0, W_orig))
@@ -205,16 +235,13 @@ class PatchEmbedder(nn.Module):
             r1 = max(0, min(grid_h, r1))
 
             if c1 <= c0 or r1 <= r0:
-                # Empty region: push zeros to keep alignment stable.
-                agg_list.append(torch.zeros(tokens_grid.shape[-1], device=device))
+                token_sets.append(torch.empty(0, patch_tokens.shape[-1], device=patch_tokens.device))
                 continue
 
             region = tokens_grid[r0:r1, c0:c1, :]
-            agg_list.append(region.mean(dim=(0, 1)))
+            token_sets.append(region.reshape(-1, region.shape[-1]))
 
-        if not agg_list:
-            return torch.empty(0, patch_tokens.shape[-1], device=device)
-        return torch.stack(agg_list, dim=0)
+        return token_sets
 
     def _get_model_patch_size(self):
         if hasattr(self.model.config, "patch_size"):
