@@ -695,6 +695,11 @@ class LLaVATrainer(Trainer):
 
                             img_batch = torch.stack(pooled_img_embeds, dim=0).to(patch_embeds.device)
                             try:
+                                enc_param = next(align_enc.parameters())
+                                img_batch = img_batch.to(device=enc_param.device, dtype=enc_param.dtype)
+                            except Exception:
+                                pass
+                            try:
                                 projected_img_batch = align_enc(img_batch)
                             except Exception:
                                 projected_img_batch = align_enc(img_batch).squeeze(0)
