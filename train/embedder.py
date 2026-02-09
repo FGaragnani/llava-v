@@ -186,7 +186,15 @@ class PatchEmbedder(nn.Module):
         for token_set in token_sets:
             if token_set.numel() == 0:
                 agg_list.append(torch.zeros(patch_tokens.shape[-1], device=patch_tokens.device))
+                continue
+            if self.agg_mode == "max":
+                agg_list.append(token_set.max(dim=0).values)
+            elif self.agg_mode == "attn" and self.attn_block is not None:
+                tokens = token_set.unsqueeze(0)
+                out_tokens = self.attn_block(tokens)
+                agg_list.append(out_tokens[:, 0, :].squeeze(0))
             else:
+                # Default to mean for cls/mean/unknown in crop aggregation.
                 agg_list.append(token_set.mean(dim=0))
 
         return torch.stack(agg_list, dim=0)
