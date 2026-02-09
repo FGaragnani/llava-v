@@ -1,5 +1,6 @@
 import os
 import bisect
+import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -613,10 +614,17 @@ class LLaVATrainer(Trainer):
                             
                         else:
                             # Match image-to-image Caffo style
-                            if patch_embeds is None or patch_embeds.numel() == 0:
+                            try:
+                                dino_tokens, dino_grid, dino_patch = self.patch_embedder.forward_tokens(img)
+                                dino_embeds = self.patch_embedder.aggregated_embeddings_from_crop(
+                                    dino_tokens, dino_grid, dino_patch, sample_bboxes, img.size[::-1]
+                                )
+                            except Exception as e:
+                                logger.warning(f"[GrandAlignDebug] dino_embed_failed: {repr(e)}")
                                 continue
-                            if patch_grid is None or patch_size is None:
+                            if dino_embeds is None or dino_embeds.numel() == 0:
                                 continue
+                            patch_embeds = dino_embeds
                             pool_mode = getattr(self.args, 'image_token_pool', None)
 
                             sample_input_ids = None
@@ -631,11 +639,32 @@ class LLaVATrainer(Trainer):
                             if img_tokens.dim() != 2:
                                 continue
 
+                            img_token_count = img_tokens.size(0)
+                            grid_h, grid_w = patch_grid
+                            if img_token_count != grid_h * grid_w:
+                                sqrt_n = int(round(math.sqrt(img_token_count)))
+                                if sqrt_n * sqrt_n == img_token_count:
+                                    grid_h, grid_w = sqrt_n, sqrt_n
+                                else:
+                                    orig_h, orig_w = img.size[1], img.size[0]
+                                    ratio = float(orig_w) / max(1.0, float(orig_h))
+                                    grid_w = int(round(math.sqrt(img_token_count * ratio)))
+                                    grid_w = max(1, grid_w)
+                                    grid_h = max(1, int(round(img_token_count / grid_w)))
+                                    if grid_h * grid_w != img_token_count:
+                                        logger.warning(
+                                            f"[GrandAlignDebug] image_token_grid_mismatch: tokens={img_token_count} grid={patch_grid}"
+                                        )
+                                        continue
+
+                            img_token_grid = (grid_h, grid_w)
+                            img_token_patch = 1
+
                             try:
                                 token_sets = PatchEmbedder.token_sets_from_bboxes(
                                     patch_tokens=img_tokens,
-                                    patch_grid=patch_grid,
-                                    patch_size=patch_size,
+                                    patch_grid=img_token_grid,
+                                    patch_size=img_token_patch,
                                     bboxes=sample_bboxes,
                                     orig_size=img.size[::-1],
                                 )
