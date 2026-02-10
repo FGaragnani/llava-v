@@ -596,7 +596,9 @@ class LLaVATrainer(Trainer):
                                     matched_crop_total += 1
 
                             if matched_text_embeds:
-                                text_batch = torch.stack(matched_text_embeds, dim=0).to(patch_embeds.device)
+                                text_batch = torch.stack(matched_text_embeds, dim=0)
+                                enc_param = next(align_enc.parameters())
+                                text_batch = text_batch.to(device=enc_param.device, dtype=enc_param.dtype)
                                 # Align text to image
                                 try:
                                     projected_text_batch = align_enc(text_batch)
@@ -605,6 +607,7 @@ class LLaVATrainer(Trainer):
                                 # Compute cosine similarity batch-wise against corresponding image vectors
                                 proj_norm = F.normalize(projected_text_batch, dim=-1)
                                 img_vecs = patch_embeds[matched_crop_indices]
+                                img_vecs = img_vecs.to(device=enc_param.device, dtype=enc_param.dtype)
                                 img_norm = F.normalize(img_vecs, dim=-1)
                                 sims = (proj_norm * img_norm).sum(dim=-1)
                                 crop_losses = 1 - sims  # tensor of shape [M]
