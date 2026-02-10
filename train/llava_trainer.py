@@ -617,19 +617,29 @@ class LLaVATrainer(Trainer):
                             
                         else:
                             # Match image-to-image Caffo style
-                            crops = []
-                            for (l, t, r, b) in sample_bboxes:
+                            if self.args.full_image_alignment:
                                 try:
-                                    crops.append(img.crop((l, t, r, b)))
-                                except Exception:
+                                    patch_tokens, patch_grid, patch_size = self.patch_embedder.forward_tokens(img)
+                                    dino_embeds = self.patch_embedder.aggregated_embeddings_from_crop(
+                                        patch_tokens, patch_grid, patch_size, sample_bboxes, img.size[::-1]
+                                    )
+                                except Exception as e:
+                                    logger.warning(f"[GrandAlignDebug] dino_embed_failed: {repr(e)}")
                                     continue
-                            if not crops:
-                                continue
-                            try:
-                                dino_embeds = self.patch_embedder(crops)
-                            except Exception as e:
-                                logger.warning(f"[GrandAlignDebug] dino_embed_failed: {repr(e)}")
-                                continue
+                            else:
+                                crops = []
+                                for (l, t, r, b) in sample_bboxes:
+                                    try:
+                                        crops.append(img.crop((l, t, r, b)))
+                                    except Exception:
+                                        continue
+                                if not crops:
+                                    continue
+                                try:
+                                    dino_embeds = self.patch_embedder(crops)
+                                except Exception as e:
+                                    logger.warning(f"[GrandAlignDebug] dino_embed_failed: {repr(e)}")
+                                    continue
                             if dino_embeds is None or dino_embeds.numel() == 0:
                                 continue
                             pool_mode = getattr(self.args, 'image_token_pool', None)
