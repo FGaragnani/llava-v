@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=2GB
 #SBATCH --time=24:00:00
-#SBATCH -A IscrB_MLLM-RAG
+#SBATCH -A AIFAC_S02_096
 #SBATCH --gres=gpu:0
 #SBATCH --partition=boost_usr_prod
 #SBATCH --array=0-4
