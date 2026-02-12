@@ -57,9 +57,8 @@ class PatchEmbedder(nn.Module):
             self.processor = AutoImageProcessor.from_pretrained(model_name)
             self.model = AutoModel.from_pretrained(model_name)
         except Exception as e:
-            model_name = "/work/tesi_fgaragnani/checkpoints/facebook/dinov2-base"
-            self.processor = AutoImageProcessor.from_pretrained(model_name)
-            self.model = AutoModel.from_pretrained(model_name)
+            print(f"Error loading model '{model_name}': {e}")
+            raise e
         self.model.eval()
         self.device = torch.device(device)
         self.agg_mode = agg_mode

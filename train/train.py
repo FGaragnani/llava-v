@@ -84,6 +84,7 @@ class DataArguments:
     grand_image_dir: Optional[str] = field(default=None, metadata={"help": "Directory containing GLAMM/GranD images."})
     grand_annotation_dir: Optional[str] = field(default=None, metadata={"help": "Directory containing GLAMM/GranD annotation JSON files."})
     patch_agg_mode: str = field(default="cls", metadata={"help": "Patch aggregation mode for PatchEmbedder: cls, mean, max, attn."})
+    patch_model_name: str = field(default="facebook/dinov2-base", metadata={"help": "Model name for PatchEmbedder, e.g., ViT-B/16."})
 
 @dataclass
 class TrainingArguments(transformers.TrainingArguments):
@@ -126,6 +127,7 @@ class TrainingArguments(transformers.TrainingArguments):
     full_image_alignment: bool = field(default=False, metadata={"help": "Whether to use full image features for GLAMM alignment instead of cropped features."})
     align_with_image: bool = field(default=False, metadata={"help": "Whether to align text with image features in GLAMM alignment; if False, align with text; if True, align with image embeddings in LLaVA."})
     image_token_pool: Optional[str] = field(default=None, metadata={"help": "Pooling method for image tokens in GLAMM alignment: mean, last; if None, throws an error if needed."})
+    patch_model_name: str = field(default="facebook/dinov2-base", metadata={"help": "Model name for PatchEmbedder, e.g., facebook/dinov2-base."})
 
 def maybe_zero_3(param, ignore_status=False, name=None):
     from deepspeed import zero
@@ -1082,7 +1084,7 @@ def train(attn_implementation=None):
 
     data_module = make_supervised_data_module(tokenizer=tokenizer,
                                               data_args=data_args)
-    patch_embedder = PatchEmbedder(agg_mode=data_args.patch_agg_mode, device="cuda")
+    patch_embedder = PatchEmbedder(model_name=data_args.patch_model_name, agg_mode=data_args.patch_agg_mode, device="cuda")
     try:
         rank0_print(f"PatchEmbedder device: {patch_embedder.device}")
     except Exception:
