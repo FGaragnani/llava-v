@@ -1,2 +1,1 @@
-llava--mean-full
 llava--mean-midL-full
