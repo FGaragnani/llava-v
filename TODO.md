@@ -1,5 +1,5 @@
 - [ ] Full:
-      - [ ] Pretrain
+      - [X] Pretrain
       - [ ] Finetune
       - [ ] Cambrian
       - [ ] Amber Gen
@@ -7,7 +7,7 @@
       - [ ] MsCOCO
 
 - [ ] Only GLAMM:
-      - [ ] Pretrain
+      - [X] Pretrain
       - [ ] Finetune
       - [ ] Cambrian
       - [ ] Amber Gen
