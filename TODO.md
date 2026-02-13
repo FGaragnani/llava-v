@@ -1,13 +1,13 @@
 - [ ] Full:
       - [X] Pretrain
-      - [ ] Finetune
-      - [ ] Cambrian
-      - [ ] Amber Gen
-      - [ ] Amber Disc
-      - [ ] MsCOCO
+      - [X] Finetune
+      - [X] Cambrian
+      - [X] Amber Gen
+      - [X] Amber Disc
+      - [X] MsCOCO
 
 - [ ] Only GLAMM:
-      - [X] Pretrain
+      - [ ] Pretrain
       - [ ] Finetune
       - [ ] Cambrian
       - [ ] Amber Gen
@@ -24,5 +24,12 @@
       - [ ] Amber Disc
       - [ ] MsCOCO
       
-- [ ] CLIP invece di DiNO (?)
+- [ ] CLIP invece di DiNO (?):
+      - [ ] Pretrain
+      - [ ] Finetune
+      - [ ] Cambrian
+      - [ ] Amber Gen
+      - [ ] Amber Disc
+      - [ ] MsCOCO
+
 - [ ] dino.txt
