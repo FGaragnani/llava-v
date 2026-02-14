@@ -84,7 +84,6 @@ class DataArguments:
     grand_image_dir: Optional[str] = field(default=None, metadata={"help": "Directory containing GLAMM/GranD images."})
     grand_annotation_dir: Optional[str] = field(default=None, metadata={"help": "Directory containing GLAMM/GranD annotation JSON files."})
     patch_agg_mode: str = field(default="cls", metadata={"help": "Patch aggregation mode for PatchEmbedder: cls, mean, max, attn."})
-    patch_model_name: str = field(default="facebook/dinov2-base", metadata={"help": "Model name for PatchEmbedder, e.g., ViT-B/16."})
 
 @dataclass
 class TrainingArguments(transformers.TrainingArguments):
@@ -1084,7 +1083,7 @@ def train(attn_implementation=None):
 
     data_module = make_supervised_data_module(tokenizer=tokenizer,
                                               data_args=data_args)
-    patch_embedder = PatchEmbedder(model_name=data_args.patch_model_name, agg_mode=data_args.patch_agg_mode, device="cuda")
+    patch_embedder = PatchEmbedder(model_name=training_args.patch_model_name, agg_mode=data_args.patch_agg_mode, device="cuda")
     try:
         rank0_print(f"PatchEmbedder device: {patch_embedder.device}")
     except Exception:
