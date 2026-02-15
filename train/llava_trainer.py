@@ -393,6 +393,7 @@ class LLaVATrainer(Trainer):
                     labels_len = labels.size(1) if hasattr(labels, 'size') else None
 
                     def compute_span_with_image_offset(span_indices, sample_input_ids):
+                        # Adjust text token indices to account for image tokens in the hidden states, if necessary
                         if sample_input_ids is None or labels_len is None:
                             return span_indices
                         hidden_len = hidden_states.size(1)
@@ -417,6 +418,8 @@ class LLaVATrainer(Trainer):
                         return adjusted
 
                     def build_expanded_index_map(sample_input_ids):
+                        # Build a map FROM original text indices TO hidden state indices, 
+                        # accounting for inserted image tokens
                         if sample_input_ids is None or labels_len is None:
                             return None
                         hidden_len = hidden_states.size(1)
@@ -438,6 +441,7 @@ class LLaVATrainer(Trainer):
                         return expanded
 
                     def get_image_token_spans(sample_input_ids):
+                        # Identify spans of hidden states corresponding to each image token
                         if sample_input_ids is None or labels_len is None:
                             return []
                         hidden_len = hidden_states.size(1)
@@ -462,9 +466,10 @@ class LLaVATrainer(Trainer):
 
                     per_sample_losses = []
                     for b_idx, is_grand in enumerate(grand_mask):
+                        # For each sample in the batch
                         if not is_grand:
                             continue
-                        sample_bboxes = grand_bboxes[b_idx] if b_idx < len(grand_bboxes) else []
+                        sample_bboxes = grand_bboxes[b_idx] if b_idx < len(grand_bboxes) else [] # list of bboxes
                         image_path = grand_image_paths[b_idx] if b_idx < len(grand_image_paths) else None
                         if not sample_bboxes or image_path is None:
                             continue
@@ -501,11 +506,12 @@ class LLaVATrainer(Trainer):
                         patch_size = None
                         
                         if self.args.full_image_alignment:
+                            # if full image, directly compute embeddings for the whole image
                             with torch.no_grad():
                                 patch_tokens, patch_grid, patch_size = self.patch_embedder.forward_tokens(img)
                                 patch_embeds = self.patch_embedder.aggregated_embeddings_from_crop(
                                         patch_tokens, patch_grid, patch_size, sample_bboxes, img.size[::-1]
-                                )  # img.size is (W, H)
+                                )  # img.size is (W, H), patch_embeds.size is (N, D)
                         else:
                             crops = []
                             for (l, t, r, b) in sample_bboxes:
