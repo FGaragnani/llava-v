@@ -59,9 +59,21 @@ class PatchEmbedder(nn.Module):
         except Exception as e:
             print(f"Error loading model '{model_name}': {e}")
             raise e
+        
+        # For CLIP models, extract just the vision encoder
+        if hasattr(self.model, 'vision_model'):
+            # CLIP-style multimodal model - use only vision encoder
+            self.vision_model = self.model.vision_model
+            print(f"Detected CLIP-style model, using vision_model component")
+        else:
+            # Vision-only model (DINOv2, etc.) - use full model
+            self.vision_model = self.model
+        
         self.model.eval()
+        self.vision_model.eval()
         self.device = torch.device(device)
         self.agg_mode = agg_mode
+        
         # Handle different model config structures (DINOv2, CLIP, etc.)
         if hasattr(self.model.config, 'hidden_size'):
             self.dim = self.model.config.hidden_size
@@ -87,6 +99,8 @@ class PatchEmbedder(nn.Module):
 
     def to_device(self, device):
         self.model.to(device)
+        if hasattr(self, 'vision_model') and self.vision_model is not self.model:
+            self.vision_model.to(device)
         if self.attn_block is not None:
             self.attn_block.to(device)
         self.device = device
@@ -102,13 +116,13 @@ class PatchEmbedder(nn.Module):
         inputs = self.processor(images=patches, return_tensors="pt")
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
         try:
-            outputs = self.model(**inputs, output_hidden_states=True)
+            outputs = self.vision_model(**inputs, output_hidden_states=True)
         except RuntimeError as e:
             print("RuntimeError:", e)
             print("Input tensor shape:", inputs['pixel_values'].shape)
             print("Input dtype: ", inputs['pixel_values'].dtype)
-            print("Model device: ", next(self.model.parameters()).device)
-            print("Sharded?", any(hasattr(p, "ds_id") for p in self.model.parameters()))
+            print("Model device: ", next(self.vision_model.parameters()).device)
+            print("Sharded?", any(hasattr(p, "ds_id") for p in self.vision_model.parameters()))
 
         # Hidden states -> last layer embeddings
         last_hidden = outputs.last_hidden_state  # [N, num_tokens, D]
@@ -148,7 +162,7 @@ class PatchEmbedder(nn.Module):
         original_device = imgs.device if isinstance(imgs, torch.Tensor) else None
         inputs = self.processor(images=imgs, return_tensors="pt")
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
-        outputs = self.model(**inputs, output_hidden_states=True)
+        outputs = self.vision_model(**inputs, output_hidden_states=True)
 
         last_hidden = outputs.last_hidden_state  # [N, num_tokens, D]
         patch_tokens = last_hidden[:, 1:, :]     # [N, num_patches, D]
