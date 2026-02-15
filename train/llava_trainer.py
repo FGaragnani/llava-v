@@ -494,6 +494,12 @@ class LLaVATrainer(Trainer):
                         except Exception as e:
                             logger.warning(f"[GrandAlignDebug] skip_sample b={b_idx} path={image_path} reason=image_open_fail error={repr(e)}")
                             continue
+                        
+                        # Compute embeddings once and reuse for both text and image alignment paths
+                        patch_tokens = None
+                        patch_grid = None
+                        patch_size = None
+                        
                         if self.args.full_image_alignment:
                             with torch.no_grad():
                                 patch_tokens, patch_grid, patch_size = self.patch_embedder.forward_tokens(img)
@@ -513,7 +519,7 @@ class LLaVATrainer(Trainer):
                             with torch.no_grad():
                                 patch_embeds = self.patch_embedder(crops)
                                 try:
-                                    _, patch_grid, patch_size = self.patch_embedder.forward_tokens(img)
+                                    patch_tokens, patch_grid, patch_size = self.patch_embedder.forward_tokens(img)
                                 except Exception:
                                     patch_grid, patch_size = None, None
                         try:
@@ -617,29 +623,9 @@ class LLaVATrainer(Trainer):
                             
                         else:
                             # Match image-to-image Caffo style
-                            if self.args.full_image_alignment:
-                                try:
-                                    patch_tokens, patch_grid, patch_size = self.patch_embedder.forward_tokens(img)
-                                    dino_embeds = self.patch_embedder.aggregated_embeddings_from_crop(
-                                        patch_tokens, patch_grid, patch_size, sample_bboxes, img.size[::-1]
-                                    )
-                                except Exception as e:
-                                    logger.warning(f"[GrandAlignDebug] dino_embed_failed: {repr(e)}")
-                                    continue
-                            else:
-                                crops = []
-                                for (l, t, r, b) in sample_bboxes:
-                                    try:
-                                        crops.append(img.crop((l, t, r, b)))
-                                    except Exception:
-                                        continue
-                                if not crops:
-                                    continue
-                                try:
-                                    dino_embeds = self.patch_embedder(crops)
-                                except Exception as e:
-                                    logger.warning(f"[GrandAlignDebug] dino_embed_failed: {repr(e)}")
-                                    continue
+                            # Reuse patch_embeds already computed above to avoid redundant computation
+                            dino_embeds = patch_embeds
+                            
                             if dino_embeds is None or dino_embeds.numel() == 0:
                                 continue
                             pool_mode = getattr(self.args, 'image_token_pool', None)
