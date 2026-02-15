@@ -62,7 +62,15 @@ class PatchEmbedder(nn.Module):
         self.model.eval()
         self.device = torch.device(device)
         self.agg_mode = agg_mode
-        self.dim = self.model.config.hidden_size
+        # Handle different model config structures (DINOv2, CLIP, etc.)
+        if hasattr(self.model.config, 'hidden_size'):
+            self.dim = self.model.config.hidden_size
+        elif hasattr(self.model.config, 'vision_config') and hasattr(self.model.config.vision_config, 'hidden_size'):
+            self.dim = self.model.config.vision_config.hidden_size
+        elif hasattr(self.model.config, 'projection_dim'):
+            self.dim = self.model.config.projection_dim
+        else:
+            raise ValueError(f"Cannot determine hidden dimension from model config. Available attributes: {dir(self.model.config)}")
         if self.agg_mode == "attn":
             self.attn_block = TransformerBlock(self.dim, num_heads=8, mlp_ratio=4.0)
         else:
