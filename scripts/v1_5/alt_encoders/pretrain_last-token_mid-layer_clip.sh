@@ -80,7 +80,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     --mm_vision_select_layer -2 \
     --mm_use_im_start_end False \
     --mm_use_im_patch_token False \
-    --alignment_crop_size 768 \
+    --alignment_crop_size 1024 \
     --bf16 True \
     --fp16 False \
     --output_dir /leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/pretrain/${run_name} \
