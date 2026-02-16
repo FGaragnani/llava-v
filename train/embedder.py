@@ -55,19 +55,19 @@ class PatchEmbedder(nn.Module):
         """
         try:
             self.processor = AutoImageProcessor.from_pretrained(model_name)
-            self.model = AutoModel.from_pretrained(model_name)
+            
+            if "clip" in model_name.lower():
+                from transformers import CLIPVisionModel
+                print(f"[PatchEmbedder] Loading CLIP vision encoder only (skipping text encoder)")
+                self.vision_model = CLIPVisionModel.from_pretrained(model_name)
+                self.model = self.vision_model  # Reference for config access
+            else:
+                # DINOv2 and other vision-only models - load normally
+                self.model = AutoModel.from_pretrained(model_name)
+                self.vision_model = self.model
         except Exception as e:
             print(f"Error loading model '{model_name}': {e}")
             raise e
-        
-        # For CLIP models, extract just the vision encoder
-        if hasattr(self.model, 'vision_model'):
-            # CLIP-style multimodal model - use only vision encoder
-            self.vision_model = self.model.vision_model
-            print(f"Detected CLIP-style model, using vision_model component")
-        else:
-            # Vision-only model (DINOv2, etc.) - use full model
-            self.vision_model = self.model
         
         self.model.eval()
         self.vision_model.eval()
