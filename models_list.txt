@@ -1,2 +1,1 @@
-llava--only-GLAMM--mean-midL-full
-llava--only-GLAMM--mean-full
+llava-v_s2--mean-midL-full-iti
