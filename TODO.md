@@ -1,30 +1,4 @@
-- [ ] Full:
-      - [X] Pretrain
-      - [X] Finetune
-      - [X] Cambrian
-      - [X] Amber Gen
-      - [X] Amber Disc
-      - [X] MsCOCO
-
-- [ ] Only GLAMM:
-      - [ ] Pretrain
-      - [ ] Finetune
-      - [ ] Cambrian
-      - [ ] Amber Gen
-      - [ ] Amber Disc
-      - [ ] MsCOCO
-
-- [ ] MidL - ImageToImage
-            -->
-      DiNO embeddings *align* with LLaVA mid layers
-      - [ ] Pretrain
-      - [ ] Finetune
-      - [ ] Cambrian
-      - [ ] Amber Gen
-      - [ ] Amber Disc
-      - [ ] MsCOCO
-      
-- [ ] CLIP invece di DiNO (?):
+- [ ] CLIP invece di DiNO (penultimo layer):
       - [ ] Pretrain
       - [ ] Finetune
       - [ ] Cambrian
@@ -33,3 +7,13 @@
       - [ ] MsCOCO
 
 - [ ] dino.txt
+- [ ] SigLip
+
+- [ ] Stage tre -- LLaVA normale a cui aggiungi un terzo stage con LLaVA-v (100k immagini)
+      - [ ] Mi raccomando: LLaVA3-extra-data (solo autoregressione sui dati) + LLaVA3-v (autoregressione + allineamento) 
+      - [ ] Se funziona!: Primo stage classico + Secondo LLaVA-V
+  
+- [ ] LLM: Qwen2.5-3B (per ora solo questo)
+- [ ] VE: SigLip2 (no CLS + ultimo layer)
+  
+- [ ] Contrastive loss per batch? 
