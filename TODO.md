@@ -1,4 +1,4 @@
-- [ ] CLIP invece di DiNO (penultimo layer):
+- [ ] CLIP invece di DiNO:
       - [ ] Pretrain
       - [ ] Finetune
       - [ ] Cambrian
