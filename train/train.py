@@ -84,6 +84,7 @@ class DataArguments:
     grand_image_dir: Optional[str] = field(default=None, metadata={"help": "Directory containing GLAMM/GranD images."})
     grand_annotation_dir: Optional[str] = field(default=None, metadata={"help": "Directory containing GLAMM/GranD annotation JSON files."})
     patch_agg_mode: str = field(default="cls", metadata={"help": "Patch aggregation mode for PatchEmbedder: cls, mean, max, attn."})
+    glamm_samples_limit: Optional[int] = field(default=None, metadata={"help": "Limit the number of samples loaded from GranD dataset; if None, load all samples."})
 
 @dataclass
 class TrainingArguments(transformers.TrainingArguments):
@@ -847,6 +848,7 @@ def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer,
                 annotation_dir=data_args.grand_annotation_dir,
                 tokenizer=tokenizer,
                 data_args=data_args,
+                samples_limit=data_args.grand_samples_limit
             )
             rank0_print("GrandDDataset correctly loaded.")
         else:

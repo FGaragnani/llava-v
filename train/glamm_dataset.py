@@ -31,6 +31,7 @@ class GranDDataset(Dataset):
         prompt_template: Optional[str] = None,
         label_joiner: str = ", ",
         delete_corrupt: bool = True,
+        samples_limit: Optional[int] = None,
     ):
         self.image_dir = image_dir
         self.annotation_dir = annotation_dir
@@ -40,6 +41,7 @@ class GranDDataset(Dataset):
         self.image_processor = image_processor if image_processor is not None else (
             getattr(data_args, "image_processor", None) if data_args else None
         )
+        self.samples_limit = samples_limit
         self.prompt_template = prompt_template or "Describe the scene."
         self.label_joiner = label_joiner
         self.delete_corrupt = delete_corrupt
@@ -48,6 +50,8 @@ class GranDDataset(Dataset):
             f for f in os.listdir(self.image_dir)
             if f.lower().endswith(".jpg")
         ]
+        if self.samples_limit is not None:
+            self.image_files = self.image_files[:self.samples_limit]
         self._image_index: List[Dict[str, str]] = []
         self._build_image_index()
 
