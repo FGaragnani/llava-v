@@ -10,7 +10,7 @@
 #SBATCH --cpus-per-task=32
 #SBATCH --partition=boost_usr_prod
 #SBATCH --account=AIFAC_S02_096
-#SBATCH --time=12:00:00
+#SBATCH --time=14:00:00
 
 module load anaconda3/2022.05
 module load profile/deeplrn
