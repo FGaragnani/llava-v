@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=llava-base_s3--align_mean-midL
+#SBATCH --job-name=llava-base_s3--align_extra-data
 #SBATCH --output=/leonardo_scratch/large/userexternal/fgaragna/logs/%x-%j.out
 #SBATCH --error=/leonardo_scratch/large/userexternal/fgaragna/logs/%x-%j.err
 #SBATCH --open-mode=truncate
