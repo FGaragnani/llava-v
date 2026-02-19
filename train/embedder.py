@@ -53,6 +53,7 @@ class PatchEmbedder(nn.Module):
         agg_mode: aggregation mode for patch embeddings. One of ["cls", "mean", "max", "attn"]
         device: device to run the model on
         """
+        self.model_name = model_name
         try:
             self.processor = AutoImageProcessor.from_pretrained(model_name)
             
@@ -125,7 +126,7 @@ class PatchEmbedder(nn.Module):
             print("Sharded?", any(hasattr(p, "ds_id") for p in self.vision_model.parameters()))
 
         # Hidden states -> last layer embeddings
-        last_hidden = outputs.last_hidden_state  # [N, num_tokens, D]
+        last_hidden = self._get_last_tokens(outputs)  # [N, num_tokens, D]
         cls_token = last_hidden[:, 0, :]         # [N, D]
         patch_tokens = last_hidden[:, 1:, :]     # [N, num_patches, D]
 
@@ -164,7 +165,7 @@ class PatchEmbedder(nn.Module):
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
         outputs = self.vision_model(**inputs, output_hidden_states=True)
 
-        last_hidden = outputs.last_hidden_state  # [N, num_tokens, D]
+        last_hidden = self._get_last_tokens(outputs)  # [N, num_tokens, D]
         patch_tokens = last_hidden[:, 1:, :]     # [N, num_patches, D]
 
         patch_size = self._get_model_patch_size()
@@ -275,3 +276,9 @@ class PatchEmbedder(nn.Module):
             return self.model.config.image_size
         except AttributeError:
             return None
+        
+    def _get_last_tokens(self, outputs):
+        if "clip" in self.model_name.lower():
+            return outputs.hidden_states[-2]
+        else:
+            return outputs.last_hidden_state
