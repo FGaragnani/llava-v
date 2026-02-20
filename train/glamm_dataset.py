@@ -93,6 +93,17 @@ class GranDDataset(Dataset):
     def __len__(self) -> int:
         return len(self._image_index)
 
+    @property
+    def lengths(self) -> List[int]:
+        # Keep non-zero lengths for compatibility with grouped samplers.
+        # GranD samples are multimodal; we use a constant positive proxy length.
+        return [1] * len(self._image_index)
+
+    @property
+    def modality_lengths(self) -> List[int]:
+        # Positive values denote multimodal samples in LLaVA grouped sampling.
+        return [1] * len(self._image_index)
+
     def __getitem__(self, idx: int) -> Dict[str, torch.Tensor | List | str]:
         if idx < 0 or idx >= len(self._image_index):
             raise IndexError(idx)

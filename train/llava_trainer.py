@@ -160,7 +160,9 @@ class LLaVATrainer(Trainer):
             return None
 
         if self.args.group_by_modality_length:
-            lengths = self.train_dataset.modality_lengths
+            lengths = self._get_dataset_modality_lengths(self.train_dataset)
+            if lengths is None:
+                return super()._get_train_sampler()
             return LengthGroupedSampler(
                 self.args.train_batch_size,
                 world_size=self.args.world_size * self.args.gradient_accumulation_steps,
@@ -169,6 +171,32 @@ class LLaVATrainer(Trainer):
             )
         else:
             return super()._get_train_sampler()
+
+    def _get_dataset_modality_lengths(self, dataset) -> Optional[List[int]]:
+        if hasattr(dataset, "modality_lengths"):
+            return dataset.modality_lengths
+
+        if hasattr(dataset, "datasets"):
+            all_lengths: List[int] = []
+            for child in dataset.datasets:
+                child_lengths = self._get_dataset_modality_lengths(child)
+                if child_lengths is None:
+                    if hasattr(child, "lengths"):
+                        child_lengths = [abs(l) for l in child.lengths]
+                    elif has_length(child):
+                        child_lengths = [1] * len(child)
+                    else:
+                        return None
+                all_lengths.extend(child_lengths)
+            return all_lengths
+
+        if hasattr(dataset, "lengths"):
+            return [abs(l) for l in dataset.lengths]
+
+        if has_length(dataset):
+            return [1] * len(dataset)
+
+        return None
 
     def create_optimizer(self):
         """
