@@ -848,7 +848,7 @@ def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer,
                 annotation_dir=data_args.grand_annotation_dir,
                 tokenizer=tokenizer,
                 data_args=data_args,
-                samples_limit=data_args.grand_samples_limit
+                samples_limit=data_args.glamm_samples_limit
             )
             rank0_print("GrandDDataset correctly loaded.")
         else:
