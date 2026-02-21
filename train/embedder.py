@@ -121,12 +121,26 @@ class PatchEmbedder(nn.Module):
         print("[PatchEmbedder] model_type:", getattr(self.model.config, "model_type", None))
         try:
             patch_proj = None
-            if hasattr(self.vision_model, "embeddings") and hasattr(self.vision_model.embeddings, "patch_embeddings"):
-                pe = self.vision_model.embeddings.patch_embeddings
-                if hasattr(pe, "projection"):
-                    patch_proj = pe.projection
+            patch_proj_name = None
+            if hasattr(self.vision_model, "embeddings"):
+                embeddings = self.vision_model.embeddings
+                if hasattr(embeddings, "patch_embeddings"):
+                    pe = embeddings.patch_embeddings
+                    if hasattr(pe, "projection"):
+                        patch_proj = pe.projection
+                        patch_proj_name = "patch_embeddings.projection"
+                if patch_proj is None and hasattr(embeddings, "patch_embedding"):
+                    pe = embeddings.patch_embedding
+                    if hasattr(pe, "weight"):
+                        patch_proj = pe
+                        patch_proj_name = "patch_embedding"
             if patch_proj is not None and hasattr(patch_proj, "weight"):
-                print("[PatchEmbedder] patch_proj.weight.shape:", tuple(patch_proj.weight.shape))
+                print(
+                    "[PatchEmbedder] patch_proj.weight.shape:",
+                    tuple(patch_proj.weight.shape),
+                    "name:",
+                    patch_proj_name,
+                )
             else:
                 print("[PatchEmbedder] patch_proj not found")
         except Exception as e:
