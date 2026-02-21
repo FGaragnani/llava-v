@@ -81,7 +81,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
 	--dataloader_num_workers $dataloader_num_workers \
 	--model_max_length 2048 \
 	--image_aspect_ratio pad \
-	--group_by_modality_length True \
+	--group_by_modality_length False \
 	--freeze_backbone False \
 	--version vicuna_v1 \
 	--use_llava_data False \

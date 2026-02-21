@@ -116,14 +116,30 @@ class PatchEmbedder(nn.Module):
         original_device = patches.device if isinstance(patches, torch.Tensor) else None
         inputs = self.processor(images=patches, return_tensors="pt")
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
+        print("[PatchEmbedder] model_name:", self.model_name)
+        print("[PatchEmbedder] model_class:", type(self.vision_model))
+        print("[PatchEmbedder] model_type:", getattr(self.model.config, "model_type", None))
+        try:
+            patch_proj = None
+            if hasattr(self.vision_model, "embeddings") and hasattr(self.vision_model.embeddings, "patch_embeddings"):
+                pe = self.vision_model.embeddings.patch_embeddings
+                if hasattr(pe, "projection"):
+                    patch_proj = pe.projection
+            if patch_proj is not None and hasattr(patch_proj, "weight"):
+                print("[PatchEmbedder] patch_proj.weight.shape:", tuple(patch_proj.weight.shape))
+            else:
+                print("[PatchEmbedder] patch_proj not found")
+        except Exception as e:
+            print("[PatchEmbedder] patch_proj probe failed:", repr(e))
         try:
             outputs = self.vision_model(**inputs, output_hidden_states=True)
         except RuntimeError as e:
             print("RuntimeError:", e)
-            print("Input tensor shape:", inputs['pixel_values'].shape)
-            print("Input dtype: ", inputs['pixel_values'].dtype)
+            print("Input tensor shape:", inputs["pixel_values"].shape)
+            print("Input dtype: ", inputs["pixel_values"].dtype)
             print("Model device: ", next(self.vision_model.parameters()).device)
             print("Sharded?", any(hasattr(p, "ds_id") for p in self.vision_model.parameters()))
+            raise
 
         # Hidden states -> last layer embeddings
         last_hidden = self._get_last_tokens(outputs)  # [N, num_tokens, D]
