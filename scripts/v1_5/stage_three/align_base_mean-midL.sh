@@ -32,6 +32,9 @@ export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 export HF_HUB_CACHE="/leonardo_scratch/large/userexternal/fcocchi0/rag_mlmm/hf_models"
 export HF_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
+export NCCL_ASYNC_ERROR_HANDLING=1
+export NCCL_DEBUG=INFO
+export TORCH_DISTRIBUTED_DEBUG=DETAIL
 
 IFS=',' read -r -a nodelist <<<$SLURM_NODELIST
 export MASTER_ADDR=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
@@ -50,7 +53,7 @@ base_model_path="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava
 
 srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
 	torchrun \
-	--nnodes=$SLURM_NNODES --nproc-per-node=$SLURM_GPUS_PER_NODE --rdzv-endpoint=$MASTER_ADDR --master-port=$MASTER_PORT --rdzv-id=$SLURM_JOB_NAME --rdzv-backend=c10d \
+	--nnodes=$SLURM_NNODES --nproc-per-node=$SLURM_GPUS_PER_NODE --rdzv-endpoint=${MASTER_ADDR}:${MASTER_PORT} --rdzv-id=$SLURM_JOB_NAME --rdzv-backend=c10d --rdzv-conf timeout=900 \
 	train/train_mem.py \
 	--seed 42 \
 	--deepspeed ./scripts/zero3.json \
