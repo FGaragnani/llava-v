@@ -747,12 +747,8 @@ class LLaVATrainer(Trainer):
                                 per_sample_losses.append(crop_losses.mean())
 
                     if per_sample_losses:
-                        candidate_grand_loss = torch.stack(per_sample_losses).mean()
-                        if torch.isfinite(candidate_grand_loss):
-                            grand_extra_loss = candidate_grand_loss
-                            print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")
-                        else:
-                            logger.warning("[GrandAlignDebug] candidate grand loss is non_finite; skipping grand term this step")
+                        grand_extra_loss = torch.stack(per_sample_losses).mean()
+                        print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")
 
         total_loss = base_loss + (grand_extra_loss * weight)
         if return_outputs:
