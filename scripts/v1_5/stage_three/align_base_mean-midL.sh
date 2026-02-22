@@ -65,7 +65,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
 	--vision_tower $clip_model_name_or_path \
 	--report_to wandb \
 	--remove_unused_columns False \
-	--bf16 True \
+	--bf16 False \
 	--fp16 False \
 	--num_train_epochs 1 \
 	--per_device_train_batch_size $per_device_train_batch_size \
