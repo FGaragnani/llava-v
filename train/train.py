@@ -1045,6 +1045,7 @@ def train(attn_implementation=None):
 
         log_param_dtype("vision_tower", model.get_vision_tower())
         if hasattr(model.get_model(), "mm_projector"):
+            model.get_model().mm_projector.to(device=training_args.device, dtype=compute_dtype)
             log_param_dtype("mm_projector", model.get_model().mm_projector)
 
     # GLAMM Alignment-Encoder
@@ -1071,7 +1072,7 @@ def train(attn_implementation=None):
                 if enc is not None and hasattr(enc, "to"):
                     enc.to(
                         device=training_args.device,
-                        dtype=torch.float32
+                        dtype=compute_dtype if (training_args.bf16 or training_args.fp16) else torch.float32
                     )
                     try:
                         first_param = next(enc.parameters()) if hasattr(enc, "parameters") else None
