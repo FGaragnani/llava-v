@@ -65,12 +65,14 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
 	--report_to wandb \
 	--remove_unused_columns False \
 	--bf16 True \
+	--fp16 False \
 	--num_train_epochs 1 \
 	--per_device_train_batch_size $per_device_train_batch_size \
 	--gradient_accumulation_steps $gradient_accumulation_steps \
 	--evaluation_strategy "no" \
 	--mm_projector_type mlp2x_gelu \
 	--learning_rate $learning_rate \
+	--max_grad_norm 1.0 \
 	--weight_decay 0. \
 	--warmup_ratio 0.03 \
 	--lr_scheduler_type "cosine" \
