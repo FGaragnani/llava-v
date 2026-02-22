@@ -32,7 +32,7 @@ export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 export HF_HUB_CACHE="/leonardo_scratch/large/userexternal/fcocchi0/rag_mlmm/hf_models"
 export HF_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
-export NCCL_DEBUG=INFO
+export GRAND_FORCE_MASK=1
 
 IFS=',' read -r -a nodelist <<<$SLURM_NODELIST
 export MASTER_ADDR=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
