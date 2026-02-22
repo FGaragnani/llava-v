@@ -877,18 +877,6 @@ def train(attn_implementation=None):
     local_rank = training_args.local_rank
     compute_dtype = (torch.float16 if training_args.fp16 else (torch.bfloat16 if training_args.bf16 else torch.float32))
 
-    def log_param_dtype(tag, module):
-        if local_rank not in (0, -1):
-            return
-        try:
-            p = next(module.parameters())
-        except Exception:
-            p = None
-        if p is None:
-            rank0_print(f"[DType] {tag}: no parameters")
-            return
-        rank0_print(f"[DType] {tag}: dtype={p.dtype} device={p.device}")
-
     bnb_model_from_pretrained_args = {}
     if training_args.bits in [4, 8]:
         from transformers import BitsAndBytesConfig
@@ -1043,10 +1031,8 @@ def train(attn_implementation=None):
         model.config.mm_use_im_patch_token = model_args.mm_use_im_patch_token
         model.initialize_vision_tokenizer(model_args, tokenizer=tokenizer)
 
-        log_param_dtype("vision_tower", model.get_vision_tower())
         if hasattr(model.get_model(), "mm_projector"):
             model.get_model().mm_projector.to(device=training_args.device, dtype=compute_dtype)
-            log_param_dtype("mm_projector", model.get_model().mm_projector)
 
     # GLAMM Alignment-Encoder
     if getattr(data_args, "use_glamm", False):
@@ -1086,11 +1072,6 @@ def train(attn_implementation=None):
                 rank0_print(f"WARNING: Failed moving alignment encoder to device {training_args.device}: {e}")
         except Exception as e:
             rank0_print(f"WARNING: Failed creating alignment encoder: {e}")
-        try:
-            if getattr(model.get_model(), "alignment_encoder", None) is not None:
-                log_param_dtype("alignment_encoder", model.get_model().alignment_encoder)
-        except Exception:
-            ...
 
     if training_args.bits in [4, 8]:
         from peft.tuners.lora import LoraLayer
@@ -1112,7 +1093,6 @@ def train(attn_implementation=None):
         rank0_print(f"PatchEmbedder device: {patch_embedder.device}")
     except Exception:
         ...
-    log_param_dtype("llava_model", model)
 
     trainer = LLaVATrainer(model=model,
                     tokenizer=tokenizer,
