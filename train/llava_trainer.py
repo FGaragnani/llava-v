@@ -638,19 +638,19 @@ class LLaVATrainer(Trainer):
                             if matched_text_embeds:
                                 text_batch = torch.stack(matched_text_embeds, dim=0)
                                 enc_param = next(align_enc.parameters())
-                                text_batch = text_batch.to(device=enc_param.device, dtype=torch.float32)
+                                text_batch = text_batch.to(device=enc_param.device, dtype=enc_param.dtype)
                                 # Align text to image
                                 try:
                                     projected_text_batch = align_enc(text_batch)
                                 except Exception:
                                     projected_text_batch = align_enc(text_batch).squeeze(0)
                                 # Compute cosine similarity batch-wise against corresponding image vectors
-                                proj_norm = F.normalize(projected_text_batch.float(), dim=-1, eps=1e-6)
+                                proj_norm = F.normalize(projected_text_batch, dim=-1)
                                 img_vecs = patch_embeds[matched_crop_indices]
-                                img_vecs = img_vecs.to(device=enc_param.device, dtype=torch.float32)
-                                img_norm = F.normalize(img_vecs, dim=-1, eps=1e-6)
-                                sims = (proj_norm * img_norm).sum(dim=-1).clamp(-1.0, 1.0)
-                                crop_losses = (1 - sims).to(projected_text_batch.dtype)  # tensor of shape [M]
+                                img_vecs = img_vecs.to(device=enc_param.device, dtype=enc_param.dtype)
+                                img_norm = F.normalize(img_vecs, dim=-1)
+                                sims = (proj_norm * img_norm).sum(dim=-1)
+                                crop_losses = (1 - sims)
 
                             if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
                                 per_sample_losses.append(crop_losses.mean())
@@ -729,7 +729,7 @@ class LLaVATrainer(Trainer):
                             img_batch = torch.stack(pooled_img_embeds, dim=0).to(patch_embeds.device)
                             try:
                                 enc_param = next(align_enc.parameters())
-                                img_batch = img_batch.to(device=enc_param.device, dtype=torch.float32)
+                                img_batch = img_batch.to(device=enc_param.device, dtype=enc_param.dtype)
                             except Exception:
                                 pass
                             try:
@@ -737,11 +737,11 @@ class LLaVATrainer(Trainer):
                             except Exception:
                                 projected_img_batch = align_enc(img_batch).squeeze(0)
 
-                            proj_norm = F.normalize(projected_img_batch.float(), dim=-1, eps=1e-6)
-                            dino_vecs = dino_embeds[matched_crop_indices].to(projected_img_batch.device, dtype=torch.float32)
-                            dino_norm = F.normalize(dino_vecs, dim=-1, eps=1e-6)
-                            sims = (proj_norm * dino_norm).sum(dim=-1).clamp(-1.0, 1.0)
-                            crop_losses = (1 - sims).to(projected_img_batch.dtype)
+                            proj_norm = F.normalize(projected_img_batch, dim=-1)
+                            dino_vecs = dino_embeds[matched_crop_indices]
+                            dino_norm = F.normalize(dino_vecs, dim=-1)
+                            sims = (proj_norm * dino_norm).sum(dim=-1)
+                            crop_losses = (1 - sims)
 
                             if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
                                 per_sample_losses.append(crop_losses.mean())

@@ -85,7 +85,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
 	--image_aspect_ratio pad \
 	--group_by_modality_length False \
 	--freeze_backbone False \
-	--version vicuna_v1 \
+	--version plain \
 	--use_llava_data False \
 	--use_glamm True \
 	--grand_image_dir /leonardo_scratch/large/userexternal/fgaragna/dataset/GLAMM/images/ \
