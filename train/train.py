@@ -1055,7 +1055,7 @@ def train(attn_implementation=None):
                 if enc is not None and hasattr(enc, "to"):
                     enc.to(
                         device=training_args.device,
-                        dtype=(torch.bfloat16 if training_args.bf16 else (torch.float16 if training_args.fp16 else torch.float32))
+                        dtype=torch.float32
                     )
                     try:
                         first_param = next(enc.parameters()) if hasattr(enc, "parameters") else None
