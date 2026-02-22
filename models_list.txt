@@ -1,1 +1,2 @@
-llava-v_s2--mean-midL-full-iti
+llava-v_s2--mean-midL-clip
+llava-v_s2--last-midL-clip
