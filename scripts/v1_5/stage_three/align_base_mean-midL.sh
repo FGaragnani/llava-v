@@ -33,6 +33,7 @@ export HF_HUB_CACHE="/leonardo_scratch/large/userexternal/fcocchi0/rag_mlmm/hf_m
 export HF_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 export GRAND_FORCE_MASK=1
+GRAND_LOSS_DEBUG=1
 
 IFS=',' read -r -a nodelist <<<$SLURM_NODELIST
 export MASTER_ADDR=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
@@ -42,7 +43,7 @@ run_name="${SLURM_JOB_NAME}"
 output_dir="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/stage_three/${run_name}"
 clip_model_name_or_path="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/openai/clip-vit-large-patch14-336"
 
-learning_rate=2e-5
+learning_rate=5e-6
 per_device_train_batch_size=2
 gradient_accumulation_steps=4
 dataloader_num_workers=4
@@ -79,6 +80,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
 	--mm_use_im_start_end False \
 	--mm_use_im_patch_token False \
 	--logging_steps 5 \
+	--lazy_preprocess True \
 	--tf32 True \
 	--dataloader_num_workers $dataloader_num_workers \
 	--model_max_length 2048 \
