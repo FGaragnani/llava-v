@@ -116,35 +116,6 @@ class PatchEmbedder(nn.Module):
         original_device = patches.device if isinstance(patches, torch.Tensor) else None
         inputs = self.processor(images=patches, return_tensors="pt")
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
-        print("[PatchEmbedder] model_name:", self.model_name)
-        print("[PatchEmbedder] model_class:", type(self.vision_model))
-        print("[PatchEmbedder] model_type:", getattr(self.model.config, "model_type", None))
-        try:
-            patch_proj = None
-            patch_proj_name = None
-            if hasattr(self.vision_model, "embeddings"):
-                embeddings = self.vision_model.embeddings
-                if hasattr(embeddings, "patch_embeddings"):
-                    pe = embeddings.patch_embeddings
-                    if hasattr(pe, "projection"):
-                        patch_proj = pe.projection
-                        patch_proj_name = "patch_embeddings.projection"
-                if patch_proj is None and hasattr(embeddings, "patch_embedding"):
-                    pe = embeddings.patch_embedding
-                    if hasattr(pe, "weight"):
-                        patch_proj = pe
-                        patch_proj_name = "patch_embedding"
-            if patch_proj is not None and hasattr(patch_proj, "weight"):
-                print(
-                    "[PatchEmbedder] patch_proj.weight.shape:",
-                    tuple(patch_proj.weight.shape),
-                    "name:",
-                    patch_proj_name,
-                )
-            else:
-                print("[PatchEmbedder] patch_proj not found")
-        except Exception as e:
-            print("[PatchEmbedder] patch_proj probe failed:", repr(e))
         try:
             outputs = self.vision_model(**inputs, output_hidden_states=True)
         except RuntimeError as e:
