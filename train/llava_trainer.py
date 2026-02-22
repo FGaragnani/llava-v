@@ -565,6 +565,9 @@ class LLaVATrainer(Trainer):
                             logger.warning("Alignment encoder not found; skipping GranD loss.")
                             continue
                         patch_embeds = patch_embeds.to(hidden_states.device)
+                        if not torch.isfinite(patch_embeds).all():
+                            logger.warning("[GrandAlignDebug] non_finite patch_embeds detected")
+                            patch_embeds = torch.nan_to_num(patch_embeds, nan=0.0, posinf=0.0, neginf=0.0)
                         crop_losses = []
 
                         if not self.args.align_with_image:
@@ -644,13 +647,26 @@ class LLaVATrainer(Trainer):
                                     projected_text_batch = align_enc(text_batch)
                                 except Exception:
                                     projected_text_batch = align_enc(text_batch).squeeze(0)
+                                if not torch.isfinite(projected_text_batch).all():
+                                    logger.warning("[GrandAlignDebug] non_finite projected_text_batch detected")
+                                    projected_text_batch = torch.nan_to_num(projected_text_batch, nan=0.0, posinf=0.0, neginf=0.0)
                                 # Compute cosine similarity batch-wise against corresponding image vectors
-                                proj_norm = F.normalize(projected_text_batch, dim=-1)
+                                proj_norm = F.normalize(projected_text_batch, dim=-1, eps=1e-6)
                                 img_vecs = patch_embeds[matched_crop_indices]
                                 img_vecs = img_vecs.to(device=enc_param.device, dtype=enc_param.dtype)
-                                img_norm = F.normalize(img_vecs, dim=-1)
-                                sims = (proj_norm * img_norm).sum(dim=-1)
-                                crop_losses = 1 - sims  # tensor of shape [M]
+                                if not torch.isfinite(img_vecs).all():
+                                    logger.warning("[GrandAlignDebug] non_finite img_vecs detected")
+                                    img_vecs = torch.nan_to_num(img_vecs, nan=0.0, posinf=0.0, neginf=0.0)
+                                img_norm = F.normalize(img_vecs, dim=-1, eps=1e-6)
+                                valid_mask = torch.isfinite(proj_norm).all(dim=-1) & torch.isfinite(img_norm).all(dim=-1)
+                                if valid_mask.any():
+                                    proj_norm = proj_norm[valid_mask]
+                                    img_norm = img_norm[valid_mask]
+                                    sims = (proj_norm * img_norm).sum(dim=-1)
+                                    sims = torch.nan_to_num(sims, nan=0.0, posinf=1.0, neginf=-1.0)
+                                    crop_losses = 1 - sims  # tensor of shape [M]
+                                else:
+                                    crop_losses = torch.empty(0, device=enc_param.device, dtype=enc_param.dtype)
 
                             if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
                                 per_sample_losses.append(crop_losses.mean())
@@ -736,18 +752,34 @@ class LLaVATrainer(Trainer):
                                 projected_img_batch = align_enc(img_batch)
                             except Exception:
                                 projected_img_batch = align_enc(img_batch).squeeze(0)
+                            if not torch.isfinite(projected_img_batch).all():
+                                logger.warning("[GrandAlignDebug] non_finite projected_img_batch detected")
+                                projected_img_batch = torch.nan_to_num(projected_img_batch, nan=0.0, posinf=0.0, neginf=0.0)
 
-                            proj_norm = F.normalize(projected_img_batch, dim=-1)
+                            proj_norm = F.normalize(projected_img_batch, dim=-1, eps=1e-6)
                             dino_vecs = dino_embeds[matched_crop_indices]
-                            dino_norm = F.normalize(dino_vecs, dim=-1)
-                            sims = (proj_norm * dino_norm).sum(dim=-1)
-                            crop_losses = 1 - sims
+                            if not torch.isfinite(dino_vecs).all():
+                                logger.warning("[GrandAlignDebug] non_finite dino_vecs detected")
+                                dino_vecs = torch.nan_to_num(dino_vecs, nan=0.0, posinf=0.0, neginf=0.0)
+                            dino_norm = F.normalize(dino_vecs, dim=-1, eps=1e-6)
+                            valid_mask = torch.isfinite(proj_norm).all(dim=-1) & torch.isfinite(dino_norm).all(dim=-1)
+                            if valid_mask.any():
+                                proj_norm = proj_norm[valid_mask]
+                                dino_norm = dino_norm[valid_mask]
+                                sims = (proj_norm * dino_norm).sum(dim=-1)
+                                sims = torch.nan_to_num(sims, nan=0.0, posinf=1.0, neginf=-1.0)
+                                crop_losses = 1 - sims
+                            else:
+                                crop_losses = torch.empty(0, device=projected_img_batch.device, dtype=projected_img_batch.dtype)
 
                             if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
                                 per_sample_losses.append(crop_losses.mean())
 
                     if per_sample_losses:
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
+                        grand_extra_loss = torch.nan_to_num(grand_extra_loss, nan=0.0, posinf=0.0, neginf=0.0)
+                        if not torch.isfinite(base_loss):
+                            logger.warning("[GrandAlignDebug] base_loss is non_finite before adding grand loss")
                         print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")
 
         total_loss = base_loss + (grand_extra_loss * weight)
