@@ -78,6 +78,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
 	--mm_use_im_start_end False \
 	--mm_use_im_patch_token False \
 	--logging_steps 5 \
+	--lazy_preprocess True \
 	--tf32 True \
 	--dataloader_num_workers $dataloader_num_workers \
 	--model_max_length 2048 \
