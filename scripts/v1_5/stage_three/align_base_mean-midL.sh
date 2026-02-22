@@ -73,6 +73,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
 	--evaluation_strategy "no" \
 	--mm_projector_type mlp2x_gelu \
 	--learning_rate $learning_rate \
+	--max_grad_norm 1.0 \
 	--weight_decay 0. \
 	--warmup_ratio 0.03 \
 	--lr_scheduler_type "cosine" \

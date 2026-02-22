@@ -353,21 +353,43 @@ class LLaVATrainer(Trainer):
         base_loss = outputs.loss if hasattr(outputs, 'loss') else outputs[0]
 
         debug_loss = os.environ.get("GRAND_LOSS_DEBUG", "0") == "1"
+        nan_guard = os.environ.get("GRAND_NAN_GUARD", "0") == "1"
         try:
             debug_every = int(os.environ.get("GRAND_DEBUG_EVERY", "100"))
         except ValueError:
             debug_every = 100
         step = getattr(self.state, "global_step", -1)
-        if debug_loss and step >= 0 and (step % max(1, debug_every) == 0):
+        base_loss_is_finite = torch.isfinite(base_loss).item() if isinstance(base_loss, torch.Tensor) else True
+        if debug_loss and step >= 0 and (step % max(1, debug_every) == 0 or not base_loss_is_finite):
             label_count = None
             if isinstance(labels, torch.Tensor):
                 label_count = (labels != IGNORE_INDEX).sum().item()
-            base_finite = torch.isfinite(base_loss).item() if isinstance(base_loss, torch.Tensor) else True
             logger.warning(
                 f"[LossDebug] step={step} base_loss={float(base_loss):.6f} "
-                f"finite={base_finite} label_count={label_count} "
+                f"finite={base_loss_is_finite} label_count={label_count} "
                 f"grand_mask_any={bool(grand_mask.any()) if isinstance(grand_mask, torch.Tensor) else None}"
             )
+            if debug_loss and (not base_loss_is_finite):
+                logits = getattr(outputs, "logits", None)
+                if isinstance(logits, torch.Tensor):
+                    logits_finite = torch.isfinite(logits)
+                    logits_max = torch.nan_to_num(logits, nan=0.0, posinf=0.0, neginf=0.0).abs().max().item()
+                    logger.warning(
+                        f"[LossDebug] step={step} logits_finite={bool(logits_finite.all())} "
+                        f"logits_max_abs={logits_max:.6f}"
+                    )
+                hidden_seq = getattr(outputs, "hidden_states", None)
+                if isinstance(hidden_seq, (list, tuple)) and hidden_seq:
+                    last = hidden_seq[-1]
+                    if isinstance(last, torch.Tensor):
+                        last_finite = torch.isfinite(last)
+                        last_max = torch.nan_to_num(last, nan=0.0, posinf=0.0, neginf=0.0).abs().max().item()
+                        logger.warning(
+                            f"[LossDebug] step={step} hidden_last_finite={bool(last_finite.all())} "
+                            f"hidden_last_max_abs={last_max:.6f}"
+                        )
+                if nan_guard:
+                    raise FloatingPointError(f"NaN/Inf in base_loss at step {step}")
 
         # Masked unification path: always touch alignment_encoder with a masked batch to keep graph consistent.
         if os.environ.get("GRAND_FORCE_MASK", "0") == "1":
