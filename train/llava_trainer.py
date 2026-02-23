@@ -353,7 +353,8 @@ class LLaVATrainer(Trainer):
         base_loss = outputs.loss if hasattr(outputs, 'loss') else outputs[0]
 
 
-        # Masked unification path: always touch alignment_encoder with a masked batch to keep graph consistent.
+        # Masked unification path: always touch alignment_encoder with a masked batch 
+        # to keep graph consistent.
         if os.environ.get("GRAND_FORCE_MASK", "0") == "1":
             try:
                 base_model = model.get_model() if hasattr(model, 'get_model') else model
@@ -461,7 +462,6 @@ class LLaVATrainer(Trainer):
                         num_images = len(image_positions)
                         base = extra // num_images
                         rem = extra % num_images
-                        # Map each text token index to its hidden-state index after image-token expansion.
                         expanded = []
                         for idx in range(labels_len):
                             k = bisect.bisect_left(image_positions, idx)
@@ -511,6 +511,8 @@ class LLaVATrainer(Trainer):
                         sample_input_ids = None
                         if input_ids is not None and input_ids.size(0) > b_idx:
                             sample_input_ids = input_ids[b_idx]
+                        
+                        # debug_align
                         if debug_align and sample_input_ids is not None:
                             expanded_map = build_expanded_index_map(sample_input_ids)
                             if expanded_map is not None:
@@ -523,13 +525,14 @@ class LLaVATrainer(Trainer):
                                     print(
                                         f"[GrandAlignDebug] span_end_mismatch sample={b_idx} last={expanded_map[-1]} hidden_last={hidden_len - 1}"
                                     )
+
                         try:
                             img = Image.open(image_path).convert('RGB')
                         except Exception as e:
                             logger.warning(f"[GrandAlignDebug] skip_sample b={b_idx} path={image_path} reason=image_open_fail error={repr(e)}")
                             continue
                         
-                        # Compute embeddings once and reuse for both text and image alignment paths
+                        # Compute embeddings once
                         patch_tokens = None
                         patch_grid = None
                         patch_size = None
@@ -569,7 +572,7 @@ class LLaVATrainer(Trainer):
                         crop_losses = []
 
                         if not self.args.align_with_image:
-                            # Batch-match phrases to text spans, then batch project with alignment encoder
+                            # Batch-match phrases to TEXT spans, then batch project with alignment encoder
                             phrases = grand_dense_labels[b_idx] if b_idx < len(grand_dense_labels) else []
                             matched_text_embeds = []
                             matched_crop_indices = []
@@ -640,7 +643,7 @@ class LLaVATrainer(Trainer):
                                 text_batch = torch.stack(matched_text_embeds, dim=0)
                                 enc_param = next(align_enc.parameters())
                                 text_batch = text_batch.to(device=enc_param.device, dtype=enc_param.dtype)
-                                # Align text to image
+                                # Align text to image dimensions
                                 try:
                                     projected_text_batch = align_enc(text_batch)
                                 except Exception:

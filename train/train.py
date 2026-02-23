@@ -789,13 +789,12 @@ class DataCollatorForSupervisedDataset(object):
             else:
                 batch['images'] = images
 
-        # Grand source mask (tensor of shape [B])
+        # Grand source mask
         if 'is_grand' in instances[0]:
             grand_flags = [instance['is_grand'] for instance in instances]
-            # Ensure tensor type
             grand_flags = [f if isinstance(f, torch.Tensor) else torch.tensor(bool(f)) for f in grand_flags]
             batch['grand_source_mask'] = torch.stack(grand_flags).to(dtype=torch.bool)
-        # Grand-specific metadata lists (variable length per sample)
+        # Grand-specific lists
         grand_bboxes = []
         grand_image_paths = []
         grand_dense_captions = []
@@ -835,7 +834,6 @@ def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer,
     grand_dataset = None
     if getattr(data_args, "use_glamm", False) and data_args.grand_image_dir and data_args.grand_annotation_dir:
         try:
-            # Local import to avoid mandatory dependency when not used
             from train.glamm_dataset import GranDDataset
         except ImportError:
             try:
