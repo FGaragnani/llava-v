@@ -2,7 +2,7 @@ import torch
 from llava.model.language_model.llava_llama import LlavaLlamaForCausalLM
 import os
 
-ROOT_PATH = "/path/to/your/models/root"
+ROOT_PATH = "/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/stage_three"
 
 def is_model_folder(path):
     # Basic check for HF model folder
