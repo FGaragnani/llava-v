@@ -56,21 +56,27 @@ class PatchEmbedder(nn.Module):
         self.model_name = model_name
         try:
             self.processor = AutoImageProcessor.from_pretrained(model_name)
-            
+
             if "clip" in model_name.lower():
                 from transformers import CLIPVisionModel
-                print(f"[PatchEmbedder] Loading CLIP vision encoder only (skipping text encoder)")
+                print("[PatchEmbedder] Loading CLIP vision encoder only (skipping text encoder)")
                 self.vision_model = CLIPVisionModel.from_pretrained(model_name)
-                self.model = self.vision_model  # Reference for config access
+                self.model = self.vision_model 
+            elif "siglip2" in model_name.lower():
+                from transformers import Siglip2VisionModel
+                print("[PatchEmbedder] Loading SigLip2 vision encoder only (skipping text encoder)")
+                self.vision_model = Siglip2VisionModel.from_pretrained(model_name)
+                self.model = self.vision_model 
             elif "siglip" in model_name.lower():
                 from transformers import SiglipVisionModel
-                print(f"[PatchEmbedder] Loading SigLip vision encoder only (skipping text encoder)")
+                print("[PatchEmbedder] Loading SigLip vision encoder only (skipping text encoder)")
                 self.vision_model = SiglipVisionModel.from_pretrained(model_name)
-                self.model = self.vision_model  # Reference for config access
+                self.model = self.vision_model 
             else:
-                # DINOv2 and other vision-only models - load normally
+                # DINOv2 and other vision-only models 
                 self.model = AutoModel.from_pretrained(model_name)
                 self.vision_model = self.model
+
         except Exception as e:
             print(f"Error loading model '{model_name}': {e}")
             raise e
@@ -286,7 +292,7 @@ class PatchEmbedder(nn.Module):
     def _get_last_tokens(self, outputs):
         if "clip" in self.model_name.lower():
             return outputs.hidden_states[-2]
-        elif "siglip" in self.model_name.lower():
+        elif "siglip2" in self.model_name.lower() or "siglip" in self.model_name.lower():
             return outputs.last_hidden_state
         else:
             return outputs.last_hidden_state
