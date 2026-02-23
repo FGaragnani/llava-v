@@ -62,11 +62,6 @@ class PatchEmbedder(nn.Module):
                 print("[PatchEmbedder] Loading CLIP vision encoder only (skipping text encoder)")
                 self.vision_model = CLIPVisionModel.from_pretrained(model_name)
                 self.model = self.vision_model 
-            elif "siglip2" in model_name.lower():
-                from transformers import Siglip2VisionModel
-                print("[PatchEmbedder] Loading SigLip2 vision encoder only (skipping text encoder)")
-                self.vision_model = Siglip2VisionModel.from_pretrained(model_name)
-                self.model = self.vision_model 
             elif "siglip" in model_name.lower():
                 from transformers import SiglipVisionModel
                 print("[PatchEmbedder] Loading SigLip vision encoder only (skipping text encoder)")
