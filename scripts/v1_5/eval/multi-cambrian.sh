@@ -1,4 +1,4 @@
 #!/bin/bash
 
-sbatch scripts/v1_5/eval/cambrian.sh llava-v_s2--mean-midL-clip
-sbatch scripts/v1_5/eval/cambrian.sh llava-v_s2--last-midL-clip
+sbatch scripts/v1_5/eval/cambrian.sh llava-base_s3--align_mean-midL
+sbatch scripts/v1_5/eval/cambrian.sh llava-base_s3--align_extra-data
