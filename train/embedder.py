@@ -62,6 +62,11 @@ class PatchEmbedder(nn.Module):
                 print(f"[PatchEmbedder] Loading CLIP vision encoder only (skipping text encoder)")
                 self.vision_model = CLIPVisionModel.from_pretrained(model_name)
                 self.model = self.vision_model  # Reference for config access
+            if "siglip" in model_name.lower():
+                from transformers import AutoModel
+                print(f"[PatchEmbedder] Loading SigLip vision encoder only (skipping text encoder)")
+                self.vision_model = AutoModel.from_pretrained(model_name)
+                self.model = self.vision_model  # Reference for config access
             else:
                 # DINOv2 and other vision-only models - load normally
                 self.model = AutoModel.from_pretrained(model_name)
@@ -75,7 +80,7 @@ class PatchEmbedder(nn.Module):
         self.device = torch.device(device)
         self.agg_mode = agg_mode
         
-        # Handle different model config structures (DINOv2, CLIP, etc.)
+        # Handle different model config structures
         if hasattr(self.model.config, 'hidden_size'):
             self.dim = self.model.config.hidden_size
         elif hasattr(self.model.config, 'vision_config') and hasattr(self.model.config.vision_config, 'hidden_size'):
