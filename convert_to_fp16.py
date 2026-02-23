@@ -27,7 +27,7 @@ for folder_name in os.listdir(ROOT_PATH):
             model_path,
             torch_dtype=torch.float32,
             device_map="cpu",
-            low_cpu_mem_usage=False
+            low_cpu_mem_usage=True
         )
 
         model = model.half()
