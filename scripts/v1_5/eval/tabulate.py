@@ -196,7 +196,7 @@ if __name__ == "__main__":
     parser.add_argument("--experiment_csv", type=str, default="experiments.csv", help="Name of the CSV file containing experiment results")
     parser.add_argument("--out_pivot", type=str, default="pivot.xlsx", help="Name of the output file (Excel or CSV)")
     parser.add_argument("--out_all_results", type=str, default="all_results.csv", help="Name of the CSV file to save all results")
-    parser.add_argument("--days", type=int, default=4, help="Only include results from the last N days (default: all)")
+    parser.add_argument("--days", type=int, default=7, help="Only include results from the last N days (default: all)")
 
     args = parser.parse_args()
 
