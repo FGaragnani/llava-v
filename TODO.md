@@ -17,3 +17,5 @@
 - [ ] VE: SigLip2 (no CLS + ultimo layer)
   
 - [ ] Contrastive loss per batch? 
+
+- [ ] Preparare i launch.json!!!!
