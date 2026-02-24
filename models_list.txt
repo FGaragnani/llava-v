@@ -1,2 +1,2 @@
-stage_three/llava-base_s3--align_mean-midL
-stage_three/llava-base_s3--align_extra-data
+llava-v_s2--mean-midL-clip
+
