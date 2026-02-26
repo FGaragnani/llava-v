@@ -1088,7 +1088,21 @@ def train(attn_implementation=None):
 
     data_module = make_supervised_data_module(tokenizer=tokenizer,
                                               data_args=data_args)
-    patch_embedder = PatchEmbedder(model_name=training_args.patch_model_name, agg_mode=data_args.patch_agg_mode, device="cuda")
+    # Avoid ZeRO-3 partitioning on the frozen patch embedder to keep perf stable.
+    try:
+        import deepspeed
+        with deepspeed.zero.Init(enabled=False):
+            patch_embedder = PatchEmbedder(
+                model_name=training_args.patch_model_name,
+                agg_mode=data_args.patch_agg_mode,
+                device="cuda",
+            )
+    except Exception:
+        patch_embedder = PatchEmbedder(
+            model_name=training_args.patch_model_name,
+            agg_mode=data_args.patch_agg_mode,
+            device="cuda",
+        )
     try:
         rank0_print(f"PatchEmbedder device: {patch_embedder.device}")
     except Exception:
