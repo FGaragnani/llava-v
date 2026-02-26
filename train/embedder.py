@@ -3,6 +3,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from transformers import AutoModel, AutoImageProcessor
+try:
+    import deepspeed
+except Exception:  # deepspeed may be unavailable in non-ZeRO runs
+    deepspeed = None
 
 class TransformerBlock(nn.Module):
     """A minimal Transformer block: pre-norm MultiheadAttention + MLP with residuals."""
@@ -123,7 +127,7 @@ class PatchEmbedder(nn.Module):
         inputs = self.processor(images=patches, return_tensors="pt")
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
         try:
-            outputs = self.vision_model(**inputs, output_hidden_states=True)
+            outputs = self._run_vision_model(inputs)
         except RuntimeError as e:
             print("RuntimeError:", e)
             print("Input tensor shape:", inputs["pixel_values"].shape)
@@ -170,7 +174,7 @@ class PatchEmbedder(nn.Module):
         original_device = imgs.device if isinstance(imgs, torch.Tensor) else None
         inputs = self.processor(images=imgs, return_tensors="pt")
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
-        outputs = self.vision_model(**inputs, output_hidden_states=True)
+        outputs = self._run_vision_model(inputs)
 
         last_hidden = self._get_last_tokens(outputs)  # [N, num_tokens, D]
         patch_tokens = last_hidden[:, 1:, :]     # [N, num_patches, D]
@@ -291,3 +295,10 @@ class PatchEmbedder(nn.Module):
             return outputs.last_hidden_state
         else:
             return outputs.last_hidden_state
+
+    def _run_vision_model(self, inputs):
+        if deepspeed is not None and any(hasattr(p, "ds_id") for p in self.vision_model.parameters()):
+            # ZeRO-3 shards parameters; gather them for the forward pass.
+            with deepspeed.zero.GatheredParameters(list(self.vision_model.parameters()), modifier_rank=None):
+                return self.vision_model(**inputs, output_hidden_states=True)
+        return self.vision_model(**inputs, output_hidden_states=True)

@@ -155,8 +155,8 @@ class GranDDataset(Dataset):
         instruction = self.prompt_template
         conversation = \
             [
-                {"from": "", "value": f"{DEFAULT_IMAGE_TOKEN}\n{instruction}"},
-                {"from": "", "value": dense_caption_text},
+                {"from": "gpt" if instruction else "", "value": f"{DEFAULT_IMAGE_TOKEN}\n{instruction}"},
+                {"from": "human" if instruction else "", "value": dense_caption_text},
             ]
         
         sources = preprocess_multimodal([conversation], self.data_args)
