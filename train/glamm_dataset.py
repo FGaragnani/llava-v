@@ -10,6 +10,7 @@ from PIL import Image, ImageOps
 
 from llava.constants import DEFAULT_IMAGE_TOKEN
 from llava.train.train import preprocess_multimodal, preprocess
+from llava.conversation import conv_llava_plain
 
 
 class GranDDataset(Dataset):
@@ -43,7 +44,7 @@ class GranDDataset(Dataset):
             getattr(data_args, "image_processor", None) if data_args else None
         )
         self.samples_limit = samples_limit
-        self.prompt_template = prompt_template or "Describe the scene."
+        self.prompt_template = prompt_template or ""
         self.label_joiner = label_joiner
         self.delete_corrupt = delete_corrupt
         self.check_area_fn = lambda img_size, patch_area: (patch_area / img_size) > check_area
@@ -116,7 +117,7 @@ class GranDDataset(Dataset):
 
         # Image
         image_path = os.path.join(self.image_dir, entry.get("image_file", image_name + ".jpg"))
-        # Open image robustly; if corrupted at runtime, optionally delete and raise
+        # Open image robustly
         try:
             image = Image.open(image_path).convert("RGB")
         except Exception:
@@ -152,16 +153,25 @@ class GranDDataset(Dataset):
 
         # Conversation
         instruction = self.prompt_template
-        conversation = [
-            {"from": "human", "value": f"{DEFAULT_IMAGE_TOKEN}\n{instruction}"},
-            {"from": "gpt", "value": dense_caption_text},
-        ]
+        conv = conv_llava_plain.copy()
+        conv.append_message(conv.roles[0], f"{DEFAULT_IMAGE_TOKEN}\n{instruction}")
+        conv.append_message(conv.roles[1], dense_caption_text)
+        conversation = [[msg[0], msg[1]] for msg in conv.messages]
+        
         sources = preprocess_multimodal([conversation], self.data_args)
         data_dict = preprocess(sources, self.tokenizer, has_image=True)
+        labels = data_dict["labels"][0]
+        if instruction: # Mask instruction
+            instruction_ids = self.tokenizer(instruction, add_special_tokens=False).input_ids
+            if len(instruction_ids) > 0:
+                for i in range(len(labels) - len(instruction_ids) + 1):
+                    if labels[i:i+len(instruction_ids)].tolist() == instruction_ids:
+                        labels[i:i+len(instruction_ids)] = -100
+                        break
 
         return {
             "input_ids": data_dict["input_ids"][0],
-            "labels": data_dict["labels"][0],
+            "labels": labels,
             "image": image_tensor,
             "bboxes": bboxes,
             "dense_labels": dense_labels,

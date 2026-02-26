@@ -503,7 +503,7 @@ class LLaVATrainer(Trainer):
                         if not sample_bboxes or image_path is None:
                             continue
                         label_row = labels[b_idx]
-                        token_mask = (label_row != IGNORE_INDEX) & (label_row != -100)
+                        token_mask = (label_row != IGNORE_INDEX)
                         if token_mask.sum() == 0:
                             continue
                         generated_token_ids = label_row[token_mask].tolist()
@@ -556,10 +556,11 @@ class LLaVATrainer(Trainer):
                             crop_total += len(crops)
                             with torch.no_grad():
                                 patch_embeds = self.patch_embedder(crops)
-                                try:
-                                    patch_tokens, patch_grid, patch_size = self.patch_embedder.forward_tokens(img)
-                                except Exception:
-                                    patch_grid, patch_size = None, None
+                                if self.args.align_with_image:
+                                    try:
+                                        patch_tokens, patch_grid, patch_size = self.patch_embedder.forward_tokens(img)
+                                    except Exception:
+                                        patch_grid, patch_size = None, None
                         try:
                             base_model = model.get_model() if hasattr(model, 'get_model') else model
                             align_enc = getattr(base_model, 'alignment_encoder', None)
@@ -625,7 +626,6 @@ class LLaVATrainer(Trainer):
                                                         f"[GrandAlignDebug] Failed moving text_pooler to device/dtype: {repr(e)}"
                                                     )
 
-                                                # span_embeds inherits dtype/device from hidden_states
                                                 span_embeds = span_embeds.unsqueeze(0)  # [1, L, D]
                                                 pooled_embed, _ = self.text_pooler(span_embeds)  # [1, D]
                                                 matched_text = pooled_embed.squeeze(0)
