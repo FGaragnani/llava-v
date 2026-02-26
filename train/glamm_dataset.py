@@ -153,10 +153,11 @@ class GranDDataset(Dataset):
 
         # Conversation
         instruction = self.prompt_template
-        conv = conv_llava_plain.copy()
-        conv.append_message(conv.roles[0], f"{DEFAULT_IMAGE_TOKEN}\n{instruction}")
-        conv.append_message(conv.roles[1], dense_caption_text)
-        conversation = [[msg[0], msg[1]] for msg in conv.messages]
+        conversation = \
+            [
+                {"from": "", "value": f"{DEFAULT_IMAGE_TOKEN}\n{instruction}"},
+                {"from": "", "value": dense_caption_text},
+            ]
         
         sources = preprocess_multimodal([conversation], self.data_args)
         data_dict = preprocess(sources, self.tokenizer, has_image=True)
