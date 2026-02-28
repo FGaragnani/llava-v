@@ -535,12 +535,105 @@ class LLaVATrainer(Trainer):
                         img_local_sizes = []
                         img_target_sizes = []
 
+                    # PASS 1: Collect maximum local size across ALL samples
+                    # This ensures we do exactly ONE all_reduce per modality (text/image)
+                    max_text_local = 0
+                    max_img_local = 0
+                    
+                    for b_idx, is_grand in enumerate(grand_mask):
+                        if not is_grand:
+                            continue
+                        sample_bboxes = grand_bboxes[b_idx] if b_idx < len(grand_bboxes) else []
+                        image_path = grand_image_paths[b_idx] if b_idx < len(grand_image_paths) else None
+                        if not sample_bboxes or image_path is None:
+                            continue
+                        label_row = labels[b_idx]
+                        token_mask = (label_row != IGNORE_INDEX)
+                        if token_mask.sum() == 0:
+                            continue
+                        
+                        generated_token_ids = label_row[token_mask].tolist()
+                        generated_indices = torch.nonzero(token_mask, as_tuple=False).squeeze(-1).tolist()
+                        sample_input_ids = None
+                        if input_ids is not None and input_ids.size(0) > b_idx:
+                            sample_input_ids = input_ids[b_idx]
+                        
+                        if not self.args.align_with_image:
+                            # Count text alignment matches
+                            phrases = grand_dense_labels[b_idx] if b_idx < len(grand_dense_labels) else []
+                            match_count = 0
+                            for crop_i, phrase in enumerate(phrases):
+                                phrase = phrase.strip()
+                                if not phrase or self.tokenizer is None:
+                                    continue
+                                variant_tokens = self.tokenizer(phrase, add_special_tokens=False).input_ids
+                                for start in range(len(generated_token_ids) - len(variant_tokens) + 1):
+                                    if generated_token_ids[start:start+len(variant_tokens)] == variant_tokens:
+                                        orig_span = generated_indices[start:start+len(variant_tokens)]
+                                        span_indices = compute_span_with_image_offset(orig_span, sample_input_ids)
+                                        span_embeds = hidden_states[b_idx][span_indices]
+                                        if span_embeds.numel() > 0:
+                                            match_count += 1
+                                        break
+                            max_text_local = max(max_text_local, match_count)
+                        else:
+                            # Count image alignment matches
+                            spans = get_image_token_spans(sample_input_ids)
+                            if spans:
+                                img_span = spans[0]
+                                img_tokens = hidden_states[b_idx][img_span[0]:img_span[1]]
+                                if img_tokens.dim() == 2:
+                                    try:
+                                        img = Image.open(image_path).convert('RGB')
+                                        img_token_count = img_tokens.size(0)
+                                        sqrt_n = int(round(math.sqrt(img_token_count)))
+                                        if sqrt_n * sqrt_n == img_token_count:
+                                            grid_h, grid_w = sqrt_n, sqrt_n
+                                        else:
+                                            orig_h, orig_w = img.size[1], img.size[0]
+                                            ratio = float(orig_w) / max(1.0, float(orig_h))
+                                            grid_w = int(round(math.sqrt(img_token_count * ratio)))
+                                            grid_w = max(1, grid_w)
+                                            grid_h = max(1, int(round(img_token_count / grid_w)))
+                                            if grid_h * grid_w != img_token_count:
+                                                continue
+                                        img_token_grid = (grid_h, grid_w)
+                                        img_token_patch = 1
+                                        token_sets = PatchEmbedder.token_sets_from_bboxes(
+                                            patch_tokens=img_tokens,
+                                            patch_grid=img_token_grid,
+                                            patch_size=img_token_patch,
+                                            bboxes=sample_bboxes,
+                                            orig_size=img.size[::-1],
+                                        )
+                                        match_count = sum(1 for ts in token_sets if ts.numel() > 0)
+                                        max_img_local = max(max_img_local, match_count)
+                                    except Exception:
+                                        pass
+                    
+                    # Synchronize maximum sizes across all ranks (ONE all_reduce per modality)
+                    global_text_max = max_text_local
+                    global_img_max = max_img_local
+                    if zero3_enabled and dist.is_available() and dist.is_initialized():
+                        text_tensor = torch.tensor([max_text_local], device=hidden_states.device, dtype=torch.int64)
+                        img_tensor = torch.tensor([max_img_local], device=hidden_states.device, dtype=torch.int64)
+                        dist.all_reduce(text_tensor, op=dist.ReduceOp.MAX)
+                        dist.all_reduce(img_tensor, op=dist.ReduceOp.MAX)
+                        global_text_max = text_tensor.item()
+                        global_img_max = img_tensor.item()
+                    
+                    if debug_align:
+                        print(f"[GrandAlignDebug] max_text_local={max_text_local} global_text_max={global_text_max}")
+                        print(f"[GrandAlignDebug] max_img_local={max_img_local} global_img_max={global_img_max}")
+
                     def _align_noop():
                         if not zero3_enabled:
                             return
                         dummy_out = zero3_dummy_align()
                         if dummy_out is not None:
                             per_sample_losses.append(dummy_out.mean() * 0.0)
+                    
+                    # PASS 2: Actual alignment with synchronized global max size
 
                     for b_idx, is_grand in enumerate(grand_mask):
                         # For each sample in the batch
@@ -691,9 +784,7 @@ class LLaVATrainer(Trainer):
 
                             local_size = len(matched_text_embeds)
                             if local_size > 0 or zero3_enabled:
-                                target_size = _get_global_max_size(local_size, hidden_states.device)
-                                if target_size == 0:
-                                    target_size = 1
+                                target_size = max(global_text_max, 1)
                                 if text_local_sizes is not None:
                                     text_local_sizes.append(local_size)
                                     text_target_sizes.append(target_size)
@@ -831,9 +922,7 @@ class LLaVATrainer(Trainer):
 
                             local_size = len(pooled_img_embeds)
                             if local_size > 0 or zero3_enabled:
-                                target_size = _get_global_max_size(local_size, hidden_states.device)
-                                if target_size == 0:
-                                    target_size = 1
+                                target_size = max(global_img_max, 1)
                                 if img_local_sizes is not None:
                                     img_local_sizes.append(local_size)
                                     img_target_sizes.append(target_size)
