@@ -409,7 +409,21 @@ class LLaVATrainer(Trainer):
             except Exception:
                 align_enc = None
 
-            def zero3_dummy_align():
+            align_calls_per_sample = None
+            align_items_per_sample = None
+            if debug_align and grand_mask is not None:
+                align_calls_per_sample = [0 for _ in range(len(grand_mask))]
+                align_items_per_sample = [0 for _ in range(len(grand_mask))]
+
+            def _record_align_call(b_idx, items):
+                if align_calls_per_sample is None or align_items_per_sample is None:
+                    return
+                if b_idx is None or b_idx >= len(align_calls_per_sample):
+                    return
+                align_calls_per_sample[b_idx] += 1
+                align_items_per_sample[b_idx] += items
+
+            def zero3_dummy_align(b_idx=None):
                 if align_enc is None:
                     return
                 enc_param = next(align_enc.parameters())
@@ -421,6 +435,7 @@ class LLaVATrainer(Trainer):
                 if input_dim is None:
                     return
                 dummy = torch.zeros(1, input_dim, device=enc_param.device, dtype=enc_param.dtype)
+                _record_align_call(b_idx, 1)
                 return align_enc(dummy)
 
             if grand_mask.any():
@@ -659,6 +674,7 @@ class LLaVATrainer(Trainer):
                                 text_batch = torch.stack(matched_text_embeds, dim=0)
                                 enc_param = next(align_enc.parameters())
                                 text_batch = text_batch.to(device=enc_param.device, dtype=enc_param.dtype)
+                                _record_align_call(b_idx, text_batch.size(0))
                                 # Align text to image dimensions
                                 try:
                                     projected_text_batch = align_enc(text_batch)
@@ -672,7 +688,7 @@ class LLaVATrainer(Trainer):
                                 sims = (proj_norm * img_norm).sum(dim=-1)
                                 crop_losses = (1 - sims)
                             else:
-                                dummy_out = zero3_dummy_align()
+                                dummy_out = zero3_dummy_align(b_idx)
                                 if dummy_out is not None:
                                     per_sample_losses.append(dummy_out.mean() * 0.0)
 
@@ -757,6 +773,7 @@ class LLaVATrainer(Trainer):
                                 img_batch = img_batch.to(device=enc_param.device, dtype=enc_param.dtype)
                             except Exception:
                                 pass
+                            _record_align_call(b_idx, img_batch.size(0))
                             try:
                                 projected_img_batch = align_enc(img_batch)
                             except Exception:
@@ -771,6 +788,11 @@ class LLaVATrainer(Trainer):
                             if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
                                 per_sample_losses.append(crop_losses.mean())
 
+                    if align_calls_per_sample is not None and align_items_per_sample is not None:
+                        logger.info(
+                            f"[GrandAlignDebug] align_calls_per_sample={align_calls_per_sample} "
+                            f"align_items_per_sample={align_items_per_sample}"
+                        )
                     if per_sample_losses:
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
                         print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")

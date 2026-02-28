@@ -34,6 +34,7 @@ export HF_HUB_CACHE="/leonardo_scratch/large/userexternal/fcocchi0/rag_mlmm/hf_m
 export HF_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 export GRAND_FORCE_MASK=1
+export GRAND_ALIGN_DEBUG=1
 export GRAND_LOSS_DEBUG=1
 export NCCL_DEBUG=INFO
 export NCCL_ASYNC_ERROR_HANDLING=1
