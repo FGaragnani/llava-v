@@ -4,7 +4,6 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.distributed as dist
 from PIL import Image
 import bitsandbytes
 import os
@@ -21,6 +20,7 @@ from transformers.trainer import (
     logger,
 )
 from typing import List, Optional
+MAX_ALIGNMENT_BATCH = 12
 
 # For masking ignored label positions
 try:
@@ -403,49 +403,6 @@ class LLaVATrainer(Trainer):
                 grand_dense_labels is not None and \
                 grand_dense_captions is not None:
             grand_mask = grand_mask.bool()
-            # Resolve alignment encoder once to keep ZeRO-3 collectives consistent.
-            try:
-                base_model = model.get_model() if hasattr(model, 'get_model') else model
-                align_enc = getattr(base_model, 'alignment_encoder', None)
-            except Exception:
-                align_enc = None
-
-            zero3_enabled = getattr(self.args, "deepspeed", None) is not None
-
-            def _get_global_max_size(local_size, device):
-                if not zero3_enabled or not dist.is_available() or not dist.is_initialized():
-                    return local_size
-                size_tensor = torch.tensor([local_size], device=device, dtype=torch.int64)
-                dist.all_reduce(size_tensor, op=dist.ReduceOp.MAX)
-                return int(size_tensor.item())
-
-            def zero3_dummy_align():
-                if align_enc is None:
-                    return
-                enc_param = next(align_enc.parameters())
-                input_dim = None
-                for module in align_enc.modules():
-                    if isinstance(module, nn.Linear):
-                        input_dim = module.in_features
-                        break
-                if input_dim is None:
-                    return
-                dummy = torch.zeros(1, input_dim, device=enc_param.device, dtype=enc_param.dtype)
-                return align_enc(dummy)
-
-            # PASS 0: Synchronize number of GranD samples across all ranks (outside of grand_mask.any() check)
-            # This ensures all ranks know max_grand_samples and call align_enc the same number of times
-            num_grand_samples = int(grand_mask.sum().item()) if grand_mask is not None else 0
-            max_grand_samples = num_grand_samples
-            if zero3_enabled and dist.is_available() and dist.is_initialized() and grand_mask is not None:
-                # Use base_loss.device since hidden_states may not be defined yet
-                samples_tensor = torch.tensor([num_grand_samples], device=base_loss.device, dtype=torch.int64)
-                dist.all_reduce(samples_tensor, op=dist.ReduceOp.MAX)
-                max_grand_samples = samples_tensor.item()
-            
-            if debug_align:
-                print(f"[GrandAlignDebug] num_grand_samples={num_grand_samples} max_grand_samples={max_grand_samples}")
-
             if grand_mask.any():
                 # Obtain last hidden states
                 hidden_states = None
@@ -538,139 +495,17 @@ class LLaVATrainer(Trainer):
                         return spans
 
                     per_sample_losses = []
-                    text_local_sizes = None
-                    text_target_sizes = None
-                    img_local_sizes = None
-                    img_target_sizes = None
-                    if debug_align:
-                        text_local_sizes = []
-                        text_target_sizes = []
-                        img_local_sizes = []
-                        img_target_sizes = []
-
-                    # PASS 1: Collect maximum local size across ALL samples
-                    # This ensures we do exactly ONE all_reduce per modality (text/image)
-                    max_text_local = 0
-                    max_img_local = 0
-                    
                     for b_idx, is_grand in enumerate(grand_mask):
+                        # For each sample in the batch
                         if not is_grand:
                             continue
-                        sample_bboxes = grand_bboxes[b_idx] if b_idx < len(grand_bboxes) else []
-                        image_path = grand_image_paths[b_idx] if b_idx < len(grand_image_paths) else None
-                        if not sample_bboxes or image_path is None:
-                            continue
-                        label_row = labels[b_idx]
-                        token_mask = (label_row != IGNORE_INDEX)
-                        if token_mask.sum() == 0:
-                            continue
-                        
-                        generated_token_ids = label_row[token_mask].tolist()
-                        generated_indices = torch.nonzero(token_mask, as_tuple=False).squeeze(-1).tolist()
-                        sample_input_ids = None
-                        if input_ids is not None and input_ids.size(0) > b_idx:
-                            sample_input_ids = input_ids[b_idx]
-                        
-                        if not self.args.align_with_image:
-                            # Count text alignment matches
-                            phrases = grand_dense_labels[b_idx] if b_idx < len(grand_dense_labels) else []
-                            match_count = 0
-                            for crop_i, phrase in enumerate(phrases):
-                                phrase = phrase.strip()
-                                if not phrase or self.tokenizer is None:
-                                    continue
-                                variant_tokens = self.tokenizer(phrase, add_special_tokens=False).input_ids
-                                for start in range(len(generated_token_ids) - len(variant_tokens) + 1):
-                                    if generated_token_ids[start:start+len(variant_tokens)] == variant_tokens:
-                                        orig_span = generated_indices[start:start+len(variant_tokens)]
-                                        span_indices = compute_span_with_image_offset(orig_span, sample_input_ids)
-                                        span_embeds = hidden_states[b_idx][span_indices]
-                                        if span_embeds.numel() > 0:
-                                            match_count += 1
-                                        break
-                            max_text_local = max(max_text_local, match_count)
-                        else:
-                            # Count image alignment matches
-                            spans = get_image_token_spans(sample_input_ids)
-                            if spans:
-                                img_span = spans[0]
-                                img_tokens = hidden_states[b_idx][img_span[0]:img_span[1]]
-                                if img_tokens.dim() == 2:
-                                    try:
-                                        img = Image.open(image_path).convert('RGB')
-                                        img_token_count = img_tokens.size(0)
-                                        sqrt_n = int(round(math.sqrt(img_token_count)))
-                                        if sqrt_n * sqrt_n == img_token_count:
-                                            grid_h, grid_w = sqrt_n, sqrt_n
-                                        else:
-                                            orig_h, orig_w = img.size[1], img.size[0]
-                                            ratio = float(orig_w) / max(1.0, float(orig_h))
-                                            grid_w = int(round(math.sqrt(img_token_count * ratio)))
-                                            grid_w = max(1, grid_w)
-                                            grid_h = max(1, int(round(img_token_count / grid_w)))
-                                            if grid_h * grid_w != img_token_count:
-                                                continue
-                                        img_token_grid = (grid_h, grid_w)
-                                        img_token_patch = 1
-                                        token_sets = PatchEmbedder.token_sets_from_bboxes(
-                                            patch_tokens=img_tokens,
-                                            patch_grid=img_token_grid,
-                                            patch_size=img_token_patch,
-                                            bboxes=sample_bboxes,
-                                            orig_size=img.size[::-1],
-                                        )
-                                        match_count = sum(1 for ts in token_sets if ts.numel() > 0)
-                                        max_img_local = max(max_img_local, match_count)
-                                    except Exception:
-                                        pass
-                    
-                    # Synchronize maximum sizes across all ranks (ONE all_reduce per modality)
-                    global_text_max = max_text_local
-                    global_img_max = max_img_local
-                    if zero3_enabled and dist.is_available() and dist.is_initialized():
-                        text_tensor = torch.tensor([max_text_local], device=hidden_states.device, dtype=torch.int64)
-                        img_tensor = torch.tensor([max_img_local], device=hidden_states.device, dtype=torch.int64)
-                        dist.all_reduce(text_tensor, op=dist.ReduceOp.MAX)
-                        dist.all_reduce(img_tensor, op=dist.ReduceOp.MAX)
-                        global_text_max = text_tensor.item()
-                        global_img_max = img_tensor.item()
-                    
-                    if debug_align:
-                        print(f"[GrandAlignDebug] max_text_local={max_text_local} global_text_max={global_text_max}")
-                        print(f"[GrandAlignDebug] max_img_local={max_img_local} global_img_max={global_img_max}")
-
-                    def _align_noop():
-                        if not zero3_enabled:
-                            return
-                        dummy_out = zero3_dummy_align()
-                        if dummy_out is not None:
-                            per_sample_losses.append(dummy_out.mean() * 0.0)
-                    
-                    # PASS 2: Actual alignment with synchronized global max size
-                    # All ranks must iterate the same number of times (max_grand_samples)
-                    grand_indices = [i for i, is_grand in enumerate(grand_mask) if is_grand]
-                    
-                    for sample_iteration in range(max_grand_samples):
-                        # For each iteration, check if this rank has a sample to process
-                        if sample_iteration < len(grand_indices):
-                            b_idx = grand_indices[sample_iteration]
-                        else:
-                            # This rank has fewer samples than max, make dummy call
-                            if zero3_enabled:
-                                _align_noop()
-                            continue
-                        
-                        # For each sample in the batch
-                        align_called = False
                         sample_bboxes = grand_bboxes[b_idx] if b_idx < len(grand_bboxes) else [] # list of bboxes
                         image_path = grand_image_paths[b_idx] if b_idx < len(grand_image_paths) else None
                         if not sample_bboxes or image_path is None:
-                            _align_noop()
                             continue
                         label_row = labels[b_idx]
                         token_mask = (label_row != IGNORE_INDEX)
                         if token_mask.sum() == 0:
-                            _align_noop()
                             continue
                         generated_token_ids = label_row[token_mask].tolist()
                         generated_indices = torch.nonzero(token_mask, as_tuple=False).squeeze(-1).tolist()
@@ -696,7 +531,6 @@ class LLaVATrainer(Trainer):
                             img = Image.open(image_path).convert('RGB')
                         except Exception as e:
                             logger.warning(f"[GrandAlignDebug] skip_sample b={b_idx} path={image_path} reason=image_open_fail error={repr(e)}")
-                            _align_noop()
                             continue
                         
                         # Compute embeddings once
@@ -719,7 +553,6 @@ class LLaVATrainer(Trainer):
                                 except Exception:
                                     continue
                             if not crops:
-                                _align_noop()
                                 continue
                             crop_total += len(crops)
                             with torch.no_grad():
@@ -729,9 +562,13 @@ class LLaVATrainer(Trainer):
                                         patch_tokens, patch_grid, patch_size = self.patch_embedder.forward_tokens(img)
                                     except Exception:
                                         patch_grid, patch_size = None, None
+                        try:
+                            base_model = model.get_model() if hasattr(model, 'get_model') else model
+                            align_enc = getattr(base_model, 'alignment_encoder', None)
+                        except Exception:
+                            align_enc = None
                         if align_enc is None:
                             logger.warning("Alignment encoder not found; skipping GranD loss.")
-                            _align_noop()
                             continue
                         patch_embeds = patch_embeds.to(hidden_states.device)
                         crop_losses = []
@@ -803,68 +640,43 @@ class LLaVATrainer(Trainer):
                                     matched_phrase_total += 1
                                     matched_crop_total += 1
 
-                            local_size = len(matched_text_embeds)
-                            
-                            # Only apply padding and global synchronization when ZeRO-3 is enabled
-                            if zero3_enabled:
-                                target_size = max(global_text_max, 1)
+                            if matched_text_embeds:
+                                text_batch = torch.stack(matched_text_embeds, dim=0)
                             else:
-                                target_size = max(local_size, 1)
-                            
-                            if local_size > 0 or zero3_enabled:
-                                if text_local_sizes is not None:
-                                    text_local_sizes.append(local_size)
-                                    text_target_sizes.append(target_size)
+                                # Empty tensor (will be padded)
+                                hidden_dim = hidden_states.size(-1)
+                                text_batch = torch.zeros(
+                                    (0, hidden_dim),
+                                    device=hidden_states.device,
+                                    dtype=hidden_states.dtype,
+                                )
 
-                                if local_size > 0:
-                                    text_batch = torch.stack(matched_text_embeds, dim=0)
-                                    img_vecs = patch_embeds[matched_crop_indices]
-                                else:
-                                    text_dim = hidden_states.size(-1)
-                                    img_dim = patch_embeds.size(-1)
-                                    text_batch = torch.zeros(0, text_dim, device=hidden_states.device, dtype=hidden_states.dtype)
-                                    img_vecs = torch.zeros(0, img_dim, device=patch_embeds.device, dtype=patch_embeds.dtype)
+                            enc_param = next(align_enc.parameters())
+                            text_batch = text_batch.to(device=enc_param.device, dtype=enc_param.dtype)
+                            valid_count = min(text_batch.size(0), MAX_ALIGNMENT_BATCH)
+                            if text_batch.size(0) < MAX_ALIGNMENT_BATCH:
+                                pad = torch.zeros(
+                                    (MAX_ALIGNMENT_BATCH - text_batch.size(0), text_batch.size(1)),
+                                    device=text_batch.device,
+                                    dtype=text_batch.dtype,
+                                )
+                                text_batch = torch.cat([text_batch, pad], dim=0)
 
-                                if target_size > local_size:
-                                    text_pad = torch.zeros(
-                                        target_size - local_size,
-                                        text_batch.size(-1),
-                                        device=text_batch.device,
-                                        dtype=text_batch.dtype,
-                                    )
-                                    img_pad = torch.zeros(
-                                        target_size - local_size,
-                                        img_vecs.size(-1),
-                                        device=img_vecs.device,
-                                        dtype=img_vecs.dtype,
-                                    )
-                                    text_batch = torch.cat([text_batch, text_pad], dim=0)
-                                    img_vecs = torch.cat([img_vecs, img_pad], dim=0)
-
-                                enc_param = next(align_enc.parameters())
-                                text_batch = text_batch.to(device=enc_param.device, dtype=enc_param.dtype)
-                                img_vecs = img_vecs.to(device=enc_param.device, dtype=enc_param.dtype)
-                                try:
-                                    projected_text_batch = align_enc(text_batch)
-                                except Exception:
-                                    projected_text_batch = align_enc(text_batch).squeeze(0)
-                                proj_norm = F.normalize(projected_text_batch, dim=-1)
-                                img_norm = F.normalize(img_vecs, dim=-1)
-                                sims = (proj_norm * img_norm).sum(dim=-1)
-                                mask = torch.zeros(target_size, device=sims.device, dtype=sims.dtype)
-                                if local_size > 0:
-                                    mask[:local_size] = 1.0
-                                denom = mask.sum()
-                                if denom > 0:
-                                    per_sample_losses.append(((1 - sims) * mask).sum() / denom)
-                                else:
-                                    per_sample_losses.append(projected_text_batch.mean() * 0.0)
-                                align_called = True
-                            else:
-                                dummy_out = zero3_dummy_align()
-                                if dummy_out is not None:
-                                    per_sample_losses.append(dummy_out.mean() * 0.0)
-                                    align_called = True
+                            text_batch = text_batch[:MAX_ALIGNMENT_BATCH]
+                            # Align text to image dimensions
+                            try:
+                                projected_text_batch = align_enc(text_batch)
+                            except Exception:
+                                projected_text_batch = align_enc(text_batch).squeeze(0)
+                            # Keep valid vectors
+                            projected_text_batch = projected_text_batch[:valid_count]
+                            # Compute cosine similarity batch-wise against corresponding image vectors
+                            proj_norm = F.normalize(projected_text_batch, dim=-1)
+                            img_vecs = patch_embeds[matched_crop_indices]
+                            img_vecs = img_vecs.to(device=enc_param.device, dtype=enc_param.dtype)
+                            img_norm = F.normalize(img_vecs, dim=-1)
+                            sims = (proj_norm * img_norm).sum(dim=-1)
+                            crop_losses = (1 - sims)
 
                             if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
                                 per_sample_losses.append(crop_losses.mean())
@@ -875,7 +687,6 @@ class LLaVATrainer(Trainer):
                             dino_embeds = patch_embeds
                             
                             if dino_embeds is None or dino_embeds.numel() == 0:
-                                _align_noop()
                                 continue
                             pool_mode = getattr(self.args, 'image_token_pool', None)
 
@@ -884,13 +695,11 @@ class LLaVATrainer(Trainer):
                                 sample_input_ids = input_ids[b_idx]
                             spans = get_image_token_spans(sample_input_ids)
                             if not spans:
-                                _align_noop()
                                 continue
 
                             img_span = spans[0]
                             img_tokens = hidden_states[b_idx][img_span[0]:img_span[1]]
                             if img_tokens.dim() != 2:
-                                _align_noop()
                                 continue
 
                             img_token_count = img_tokens.size(0)
@@ -907,7 +716,6 @@ class LLaVATrainer(Trainer):
                                     logger.warning(
                                         f"[GrandAlignDebug] image_token_grid_mismatch: tokens={img_token_count}"
                                     )
-                                    _align_noop()
                                     continue
 
                             img_token_grid = (grid_h, grid_w)
@@ -923,7 +731,6 @@ class LLaVATrainer(Trainer):
                                 )
                             except Exception as e:
                                 logger.warning(f"[GrandAlignDebug] image_token_select_failed: {repr(e)}")
-                                _align_noop()
                                 continue
 
                             pooled_img_embeds = []
@@ -933,7 +740,6 @@ class LLaVATrainer(Trainer):
                                     continue
                                 if token_set.numel() == 0:
                                     continue
-
                                 if pool_mode == 'last':
                                     pooled = token_set[-1]
                                 elif pool_mode == 'mean':
@@ -944,97 +750,31 @@ class LLaVATrainer(Trainer):
                                 matched_crop_indices.append(crop_i)
 
                             if not pooled_img_embeds:
-                                _align_noop()
                                 continue
 
-                            local_size = len(pooled_img_embeds)
-                            
-                            # Only apply padding and global synchronization when ZeRO-3 is enabled
-                            if zero3_enabled:
-                                target_size = max(global_img_max, 1)
-                            else:
-                                target_size = max(local_size, 1)
-                            
-                            if local_size > 0 or zero3_enabled:
-                                if img_local_sizes is not None:
-                                    img_local_sizes.append(local_size)
-                                    img_target_sizes.append(target_size)
-
-                                if local_size > 0:
-                                    img_batch = torch.stack(pooled_img_embeds, dim=0).to(patch_embeds.device)
-                                    dino_vecs = dino_embeds[matched_crop_indices]
-                                else:
-                                    img_dim = patch_embeds.size(-1)
-                                    img_batch = torch.zeros(0, img_dim, device=patch_embeds.device, dtype=patch_embeds.dtype)
-                                    dino_vecs = torch.zeros(0, img_dim, device=patch_embeds.device, dtype=patch_embeds.dtype)
-
-                                if target_size > local_size:
-                                    img_pad = torch.zeros(
-                                        target_size - local_size,
-                                        img_batch.size(-1),
-                                        device=img_batch.device,
-                                        dtype=img_batch.dtype,
-                                    )
-                                    dino_pad = torch.zeros(
-                                        target_size - local_size,
-                                        dino_vecs.size(-1),
-                                        device=dino_vecs.device,
-                                        dtype=dino_vecs.dtype,
-                                    )
-                                    img_batch = torch.cat([img_batch, img_pad], dim=0)
-                                    dino_vecs = torch.cat([dino_vecs, dino_pad], dim=0)
-
+                            img_batch = torch.stack(pooled_img_embeds, dim=0).to(patch_embeds.device)
+                            try:
                                 enc_param = next(align_enc.parameters())
                                 img_batch = img_batch.to(device=enc_param.device, dtype=enc_param.dtype)
-                                dino_vecs = dino_vecs.to(device=enc_param.device, dtype=enc_param.dtype)
-                                try:
-                                    projected_img_batch = align_enc(img_batch)
-                                except Exception:
-                                    projected_img_batch = align_enc(img_batch).squeeze(0)
-                                proj_norm = F.normalize(projected_img_batch, dim=-1)
-                                dino_norm = F.normalize(dino_vecs, dim=-1)
-                                sims = (proj_norm * dino_norm).sum(dim=-1)
-                                mask = torch.zeros(target_size, device=sims.device, dtype=sims.dtype)
-                                if local_size > 0:
-                                    mask[:local_size] = 1.0
-                                denom = mask.sum()
-                                if denom > 0:
-                                    per_sample_losses.append(((1 - sims) * mask).sum() / denom)
-                                else:
-                                    per_sample_losses.append(projected_img_batch.mean() * 0.0)
-                                align_called = True
-                            else:
-                                dummy_out = zero3_dummy_align()
-                                if dummy_out is not None:
-                                    per_sample_losses.append(dummy_out.mean() * 0.0)
-                                    align_called = True
+                            except Exception:
+                                pass
+                            try:
+                                projected_img_batch = align_enc(img_batch)
+                            except Exception:
+                                projected_img_batch = align_enc(img_batch).squeeze(0)
 
-                        if not align_called:
-                            dummy_out = zero3_dummy_align()
-                            if dummy_out is not None:
-                                per_sample_losses.append(dummy_out.mean() * 0.0)
+                            proj_norm = F.normalize(projected_img_batch, dim=-1)
+                            dino_vecs = dino_embeds[matched_crop_indices]
+                            dino_norm = F.normalize(dino_vecs, dim=-1)
+                            sims = (proj_norm * dino_norm).sum(dim=-1)
+                            crop_losses = (1 - sims)
+
+                            if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
+                                per_sample_losses.append(crop_losses.mean())
 
                     if per_sample_losses:
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
                         print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")
-                    if text_local_sizes is not None:
-                        logger.info(
-                            f"[GrandAlignDebug] text_local_sizes={text_local_sizes} "
-                            f"text_target_sizes={text_target_sizes}"
-                        )
-                    if img_local_sizes is not None:
-                        logger.info(
-                            f"[GrandAlignDebug] img_local_sizes={img_local_sizes} "
-                            f"img_target_sizes={img_target_sizes}"
-                        )
-                        
-            else:
-                # This rank has no GranD samples, but must stay synchronized with other ranks
-                if zero3_enabled and max_grand_samples > 0:
-                    for _ in range(max_grand_samples):
-                        dummy_out = zero3_dummy_align()
-                        if dummy_out is not None:
-                            base_loss = base_loss + dummy_out.mean() * 0.0
 
         total_loss = base_loss + (grand_extra_loss * weight)
         if return_outputs:
