@@ -409,12 +409,19 @@ class LLaVATrainer(Trainer):
             except Exception:
                 align_enc = None
 
-            input_dim = None
-            if align_enc is not None:
+            def zero3_dummy_align():
+                if align_enc is None:
+                    return
+                enc_param = next(align_enc.parameters())
+                input_dim = None
                 for module in align_enc.modules():
                     if isinstance(module, nn.Linear):
                         input_dim = module.in_features
                         break
+                if input_dim is None:
+                    return
+                dummy = torch.zeros(1, input_dim, device=enc_param.device, dtype=enc_param.dtype)
+                return align_enc(dummy)
 
             if grand_mask.any():
                 # Obtain last hidden states
@@ -510,27 +517,15 @@ class LLaVATrainer(Trainer):
                     per_sample_losses = []
                     for b_idx, is_grand in enumerate(grand_mask):
                         # For each sample in the batch
-                        if align_enc is None or input_dim is None:
-                            continue
-                        enc_param = next(align_enc.parameters())
-                        align_input = torch.zeros(1, input_dim, device=enc_param.device, dtype=enc_param.dtype)
-                        align_target = None
-                        align_valid = False
                         if not is_grand:
-                            projected = align_enc(align_input).squeeze(0)
-                            per_sample_losses.append(projected.mean() * 0.0)
                             continue
                         sample_bboxes = grand_bboxes[b_idx] if b_idx < len(grand_bboxes) else [] # list of bboxes
                         image_path = grand_image_paths[b_idx] if b_idx < len(grand_image_paths) else None
                         if not sample_bboxes or image_path is None:
-                            projected = align_enc(align_input).squeeze(0)
-                            per_sample_losses.append(projected.mean() * 0.0)
                             continue
                         label_row = labels[b_idx]
                         token_mask = (label_row != IGNORE_INDEX)
                         if token_mask.sum() == 0:
-                            projected = align_enc(align_input).squeeze(0)
-                            per_sample_losses.append(projected.mean() * 0.0)
                             continue
                         generated_token_ids = label_row[token_mask].tolist()
                         generated_indices = torch.nonzero(token_mask, as_tuple=False).squeeze(-1).tolist()
@@ -556,8 +551,6 @@ class LLaVATrainer(Trainer):
                             img = Image.open(image_path).convert('RGB')
                         except Exception as e:
                             logger.warning(f"[GrandAlignDebug] skip_sample b={b_idx} path={image_path} reason=image_open_fail error={repr(e)}")
-                            projected = align_enc(align_input).squeeze(0)
-                            per_sample_losses.append(projected.mean() * 0.0)
                             continue
                         
                         # Compute embeddings once
@@ -580,8 +573,6 @@ class LLaVATrainer(Trainer):
                                 except Exception:
                                     continue
                             if not crops:
-                                projected = align_enc(align_input).squeeze(0)
-                                per_sample_losses.append(projected.mean() * 0.0)
                                 continue
                             crop_total += len(crops)
                             with torch.no_grad():
@@ -665,11 +656,28 @@ class LLaVATrainer(Trainer):
                                     matched_crop_total += 1
 
                             if matched_text_embeds:
-                                text_vec = torch.stack(matched_text_embeds, dim=0).mean(dim=0)
-                                align_input = text_vec.unsqueeze(0).to(device=enc_param.device, dtype=enc_param.dtype)
-                                img_vec = patch_embeds[matched_crop_indices].mean(dim=0)
-                                align_target = img_vec
-                                align_valid = True
+                                text_batch = torch.stack(matched_text_embeds, dim=0)
+                                enc_param = next(align_enc.parameters())
+                                text_batch = text_batch.to(device=enc_param.device, dtype=enc_param.dtype)
+                                # Align text to image dimensions
+                                try:
+                                    projected_text_batch = align_enc(text_batch)
+                                except Exception:
+                                    projected_text_batch = align_enc(text_batch).squeeze(0)
+                                # Compute cosine similarity batch-wise against corresponding image vectors
+                                proj_norm = F.normalize(projected_text_batch, dim=-1)
+                                img_vecs = patch_embeds[matched_crop_indices]
+                                img_vecs = img_vecs.to(device=enc_param.device, dtype=enc_param.dtype)
+                                img_norm = F.normalize(img_vecs, dim=-1)
+                                sims = (proj_norm * img_norm).sum(dim=-1)
+                                crop_losses = (1 - sims)
+                            else:
+                                dummy_out = zero3_dummy_align()
+                                if dummy_out is not None:
+                                    per_sample_losses.append(dummy_out.mean() * 0.0)
+
+                            if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
+                                per_sample_losses.append(crop_losses.mean())
                             
                         else:
                             # Match image-to-image Caffo style
@@ -677,8 +685,6 @@ class LLaVATrainer(Trainer):
                             dino_embeds = patch_embeds
                             
                             if dino_embeds is None or dino_embeds.numel() == 0:
-                                projected = align_enc(align_input).squeeze(0)
-                                per_sample_losses.append(projected.mean() * 0.0)
                                 continue
                             pool_mode = getattr(self.args, 'image_token_pool', None)
 
@@ -687,15 +693,11 @@ class LLaVATrainer(Trainer):
                                 sample_input_ids = input_ids[b_idx]
                             spans = get_image_token_spans(sample_input_ids)
                             if not spans:
-                                projected = align_enc(align_input).squeeze(0)
-                                per_sample_losses.append(projected.mean() * 0.0)
                                 continue
 
                             img_span = spans[0]
                             img_tokens = hidden_states[b_idx][img_span[0]:img_span[1]]
                             if img_tokens.dim() != 2:
-                                projected = align_enc(align_input).squeeze(0)
-                                per_sample_losses.append(projected.mean() * 0.0)
                                 continue
 
                             img_token_count = img_tokens.size(0)
@@ -712,8 +714,6 @@ class LLaVATrainer(Trainer):
                                     logger.warning(
                                         f"[GrandAlignDebug] image_token_grid_mismatch: tokens={img_token_count}"
                                     )
-                                    projected = align_enc(align_input).squeeze(0)
-                                    per_sample_losses.append(projected.mean() * 0.0)
                                     continue
 
                             img_token_grid = (grid_h, grid_w)
@@ -729,8 +729,6 @@ class LLaVATrainer(Trainer):
                                 )
                             except Exception as e:
                                 logger.warning(f"[GrandAlignDebug] image_token_select_failed: {repr(e)}")
-                                projected = align_enc(align_input).squeeze(0)
-                                per_sample_losses.append(projected.mean() * 0.0)
                                 continue
 
                             pooled_img_embeds = []
@@ -751,25 +749,27 @@ class LLaVATrainer(Trainer):
                                 matched_crop_indices.append(crop_i)
 
                             if not pooled_img_embeds:
-                                projected = align_enc(align_input).squeeze(0)
-                                per_sample_losses.append(projected.mean() * 0.0)
                                 continue
 
-                            img_vec = torch.stack(pooled_img_embeds, dim=0).mean(dim=0)
-                            align_input = img_vec.unsqueeze(0).to(device=enc_param.device, dtype=enc_param.dtype)
-                            dino_vec = dino_embeds[matched_crop_indices].mean(dim=0)
-                            align_target = dino_vec
-                            align_valid = True
+                            img_batch = torch.stack(pooled_img_embeds, dim=0).to(patch_embeds.device)
+                            try:
+                                enc_param = next(align_enc.parameters())
+                                img_batch = img_batch.to(device=enc_param.device, dtype=enc_param.dtype)
+                            except Exception:
+                                pass
+                            try:
+                                projected_img_batch = align_enc(img_batch)
+                            except Exception:
+                                projected_img_batch = align_enc(img_batch).squeeze(0)
 
-                        projected = align_enc(align_input).squeeze(0)
-                        if align_valid and align_target is not None:
-                            align_target = align_target.to(device=enc_param.device, dtype=enc_param.dtype)
-                            proj_norm = F.normalize(projected, dim=-1)
-                            tgt_norm = F.normalize(align_target, dim=-1)
-                            sims = (proj_norm * tgt_norm).sum(dim=-1)
-                            per_sample_losses.append(1 - sims)
-                        else:
-                            per_sample_losses.append(projected.mean() * 0.0)
+                            proj_norm = F.normalize(projected_img_batch, dim=-1)
+                            dino_vecs = dino_embeds[matched_crop_indices]
+                            dino_norm = F.normalize(dino_vecs, dim=-1)
+                            sims = (proj_norm * dino_norm).sum(dim=-1)
+                            crop_losses = (1 - sims)
+
+                            if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
+                                per_sample_losses.append(crop_losses.mean())
 
                     if per_sample_losses:
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
