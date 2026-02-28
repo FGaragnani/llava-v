@@ -525,6 +525,23 @@ class LLaVATrainer(Trainer):
                         return spans
 
                     per_sample_losses = []
+                    text_local_sizes = None
+                    text_target_sizes = None
+                    img_local_sizes = None
+                    img_target_sizes = None
+                    if debug_align:
+                        text_local_sizes = []
+                        text_target_sizes = []
+                        img_local_sizes = []
+                        img_target_sizes = []
+
+                    def _align_noop():
+                        if not zero3_enabled:
+                            return
+                        dummy_out = zero3_dummy_align()
+                        if dummy_out is not None:
+                            per_sample_losses.append(dummy_out.mean() * 0.0)
+
                     for b_idx, is_grand in enumerate(grand_mask):
                         # For each sample in the batch
                         align_called = False
@@ -533,10 +550,12 @@ class LLaVATrainer(Trainer):
                         sample_bboxes = grand_bboxes[b_idx] if b_idx < len(grand_bboxes) else [] # list of bboxes
                         image_path = grand_image_paths[b_idx] if b_idx < len(grand_image_paths) else None
                         if not sample_bboxes or image_path is None:
+                            _align_noop()
                             continue
                         label_row = labels[b_idx]
                         token_mask = (label_row != IGNORE_INDEX)
                         if token_mask.sum() == 0:
+                            _align_noop()
                             continue
                         generated_token_ids = label_row[token_mask].tolist()
                         generated_indices = torch.nonzero(token_mask, as_tuple=False).squeeze(-1).tolist()
@@ -562,6 +581,7 @@ class LLaVATrainer(Trainer):
                             img = Image.open(image_path).convert('RGB')
                         except Exception as e:
                             logger.warning(f"[GrandAlignDebug] skip_sample b={b_idx} path={image_path} reason=image_open_fail error={repr(e)}")
+                            _align_noop()
                             continue
                         
                         # Compute embeddings once
@@ -584,6 +604,7 @@ class LLaVATrainer(Trainer):
                                 except Exception:
                                     continue
                             if not crops:
+                                _align_noop()
                                 continue
                             crop_total += len(crops)
                             with torch.no_grad():
@@ -595,6 +616,7 @@ class LLaVATrainer(Trainer):
                                         patch_grid, patch_size = None, None
                         if align_enc is None:
                             logger.warning("Alignment encoder not found; skipping GranD loss.")
+                            _align_noop()
                             continue
                         patch_embeds = patch_embeds.to(hidden_states.device)
                         crop_losses = []
@@ -671,6 +693,9 @@ class LLaVATrainer(Trainer):
                                 target_size = _get_global_max_size(local_size, hidden_states.device)
                                 if target_size == 0:
                                     target_size = 1
+                                if text_local_sizes is not None:
+                                    text_local_sizes.append(local_size)
+                                    text_target_sizes.append(target_size)
 
                                 if local_size > 0:
                                     text_batch = torch.stack(matched_text_embeds, dim=0)
@@ -731,6 +756,7 @@ class LLaVATrainer(Trainer):
                             dino_embeds = patch_embeds
                             
                             if dino_embeds is None or dino_embeds.numel() == 0:
+                                _align_noop()
                                 continue
                             pool_mode = getattr(self.args, 'image_token_pool', None)
 
@@ -739,11 +765,13 @@ class LLaVATrainer(Trainer):
                                 sample_input_ids = input_ids[b_idx]
                             spans = get_image_token_spans(sample_input_ids)
                             if not spans:
+                                _align_noop()
                                 continue
 
                             img_span = spans[0]
                             img_tokens = hidden_states[b_idx][img_span[0]:img_span[1]]
                             if img_tokens.dim() != 2:
+                                _align_noop()
                                 continue
 
                             img_token_count = img_tokens.size(0)
@@ -760,6 +788,7 @@ class LLaVATrainer(Trainer):
                                     logger.warning(
                                         f"[GrandAlignDebug] image_token_grid_mismatch: tokens={img_token_count}"
                                     )
+                                    _align_noop()
                                     continue
 
                             img_token_grid = (grid_h, grid_w)
@@ -775,6 +804,7 @@ class LLaVATrainer(Trainer):
                                 )
                             except Exception as e:
                                 logger.warning(f"[GrandAlignDebug] image_token_select_failed: {repr(e)}")
+                                _align_noop()
                                 continue
 
                             pooled_img_embeds = []
@@ -795,6 +825,7 @@ class LLaVATrainer(Trainer):
                                 matched_crop_indices.append(crop_i)
 
                             if not pooled_img_embeds:
+                                _align_noop()
                                 continue
 
                             local_size = len(pooled_img_embeds)
@@ -802,6 +833,9 @@ class LLaVATrainer(Trainer):
                                 target_size = _get_global_max_size(local_size, hidden_states.device)
                                 if target_size == 0:
                                     target_size = 1
+                                if img_local_sizes is not None:
+                                    img_local_sizes.append(local_size)
+                                    img_target_sizes.append(target_size)
 
                                 if local_size > 0:
                                     img_batch = torch.stack(pooled_img_embeds, dim=0).to(patch_embeds.device)
@@ -860,6 +894,16 @@ class LLaVATrainer(Trainer):
                     if per_sample_losses:
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
                         print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")
+                    if text_local_sizes is not None:
+                        logger.info(
+                            f"[GrandAlignDebug] text_local_sizes={text_local_sizes} "
+                            f"text_target_sizes={text_target_sizes}"
+                        )
+                    if img_local_sizes is not None:
+                        logger.info(
+                            f"[GrandAlignDebug] img_local_sizes={img_local_sizes} "
+                            f"img_target_sizes={img_target_sizes}"
+                        )
                         
             else:
                 # Keep alignment encoder collectives in sync even when no GranD samples exist on this rank.
