@@ -433,6 +433,19 @@ class LLaVATrainer(Trainer):
                 dummy = torch.zeros(1, input_dim, device=enc_param.device, dtype=enc_param.dtype)
                 return align_enc(dummy)
 
+            # PASS 0: Synchronize number of GranD samples across all ranks (outside of grand_mask.any() check)
+            # This ensures all ranks know max_grand_samples and call align_enc the same number of times
+            num_grand_samples = int(grand_mask.sum().item()) if grand_mask is not None else 0
+            max_grand_samples = num_grand_samples
+            if zero3_enabled and dist.is_available() and dist.is_initialized() and grand_mask is not None:
+                # Use base_loss.device since hidden_states may not be defined yet
+                samples_tensor = torch.tensor([num_grand_samples], device=base_loss.device, dtype=torch.int64)
+                dist.all_reduce(samples_tensor, op=dist.ReduceOp.MAX)
+                max_grand_samples = samples_tensor.item()
+            
+            if debug_align:
+                print(f"[GrandAlignDebug] num_grand_samples={num_grand_samples} max_grand_samples={max_grand_samples}")
+
             if grand_mask.any():
                 # Obtain last hidden states
                 hidden_states = None
@@ -634,13 +647,21 @@ class LLaVATrainer(Trainer):
                             per_sample_losses.append(dummy_out.mean() * 0.0)
                     
                     # PASS 2: Actual alignment with synchronized global max size
-
-                    for b_idx, is_grand in enumerate(grand_mask):
+                    # All ranks must iterate the same number of times (max_grand_samples)
+                    grand_indices = [i for i, is_grand in enumerate(grand_mask) if is_grand]
+                    
+                    for sample_iteration in range(max_grand_samples):
+                        # For each iteration, check if this rank has a sample to process
+                        if sample_iteration < len(grand_indices):
+                            b_idx = grand_indices[sample_iteration]
+                        else:
+                            # This rank has fewer samples than max, make dummy call
+                            if zero3_enabled:
+                                _align_noop()
+                            continue
+                        
                         # For each sample in the batch
                         align_called = False
-                        if not is_grand:
-                            _align_noop()
-                            continue
                         sample_bboxes = grand_bboxes[b_idx] if b_idx < len(grand_bboxes) else [] # list of bboxes
                         image_path = grand_image_paths[b_idx] if b_idx < len(grand_image_paths) else None
                         if not sample_bboxes or image_path is None:
@@ -783,8 +804,14 @@ class LLaVATrainer(Trainer):
                                     matched_crop_total += 1
 
                             local_size = len(matched_text_embeds)
-                            if local_size > 0 or zero3_enabled:
+                            
+                            # Only apply padding and global synchronization when ZeRO-3 is enabled
+                            if zero3_enabled:
                                 target_size = max(global_text_max, 1)
+                            else:
+                                target_size = max(local_size, 1)
+                            
+                            if local_size > 0 or zero3_enabled:
                                 if text_local_sizes is not None:
                                     text_local_sizes.append(local_size)
                                     text_target_sizes.append(target_size)
@@ -921,8 +948,14 @@ class LLaVATrainer(Trainer):
                                 continue
 
                             local_size = len(pooled_img_embeds)
-                            if local_size > 0 or zero3_enabled:
+                            
+                            # Only apply padding and global synchronization when ZeRO-3 is enabled
+                            if zero3_enabled:
                                 target_size = max(global_img_max, 1)
+                            else:
+                                target_size = max(local_size, 1)
+                            
+                            if local_size > 0 or zero3_enabled:
                                 if img_local_sizes is not None:
                                     img_local_sizes.append(local_size)
                                     img_target_sizes.append(target_size)
@@ -996,9 +1029,9 @@ class LLaVATrainer(Trainer):
                         )
                         
             else:
-                # Keep alignment encoder collectives in sync even when no GranD samples exist on this rank.
-                if grand_mask is not None and zero3_enabled:
-                    for _ in range(grand_mask.size(0)):
+                # This rank has no GranD samples, but must stay synchronized with other ranks
+                if zero3_enabled and max_grand_samples > 0:
+                    for _ in range(max_grand_samples):
                         dummy_out = zero3_dummy_align()
                         if dummy_out is not None:
                             base_loss = base_loss + dummy_out.mean() * 0.0
