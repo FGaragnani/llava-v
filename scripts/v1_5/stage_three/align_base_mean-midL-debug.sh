@@ -35,6 +35,9 @@ export HF_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 export GRAND_FORCE_MASK=1
 export GRAND_LOSS_DEBUG=1
+export NCCL_DEBUG=INFO
+export NCCL_ASYNC_ERROR_HANDLING=1
+export TORCH_DISTRIBUTED_DEBUG=DETAIL
 
 IFS=',' read -r -a nodelist <<<$SLURM_NODELIST
 export MASTER_ADDR=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
