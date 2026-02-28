@@ -35,9 +35,6 @@ export HF_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 export GRAND_FORCE_MASK=1
 export GRAND_LOSS_DEBUG=1
-export NCCL_DEBUG=INFO
-export NCCL_ASYNC_ERROR_HANDLING=1
-export TORCH_DISTRIBUTED_DEBUG=DETAIL
 
 IFS=',' read -r -a nodelist <<<$SLURM_NODELIST
 export MASTER_ADDR=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
@@ -50,7 +47,7 @@ clip_model_name_or_path="/leonardo_scratch/large/userexternal/fgaragna/models/lm
 learning_rate=2e-5
 per_device_train_batch_size=2
 gradient_accumulation_steps=4
-dataloader_num_workers=0 # 4
+dataloader_num_workers=4
 
 base_model_path="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-base/llava_s2"
 

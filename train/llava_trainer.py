@@ -402,6 +402,28 @@ class LLaVATrainer(Trainer):
                 grand_dense_labels is not None and \
                 grand_dense_captions is not None:
             grand_mask = grand_mask.bool()
+            # Resolve alignment encoder once to keep ZeRO-3 collectives consistent.
+            try:
+                base_model = model.get_model() if hasattr(model, 'get_model') else model
+                align_enc = getattr(base_model, 'alignment_encoder', None)
+            except Exception:
+                align_enc = None
+
+            def zero3_dummy_align():
+                if align_enc is None or self.args.align_with_image:
+                    return
+                enc_param = next(align_enc.parameters())
+                input_dim = None
+                for module in align_enc.modules():
+                    if isinstance(module, nn.Linear):
+                        input_dim = module.in_features
+                        break
+                if input_dim is None:
+                    return
+                dummy = torch.zeros(1, input_dim, device=enc_param.device, dtype=enc_param.dtype)
+                with torch.no_grad():
+                    _ = align_enc(dummy)
+
             if grand_mask.any():
                 # Obtain last hidden states
                 hidden_states = None
@@ -497,14 +519,17 @@ class LLaVATrainer(Trainer):
                     for b_idx, is_grand in enumerate(grand_mask):
                         # For each sample in the batch
                         if not is_grand:
+                            zero3_dummy_align()
                             continue
                         sample_bboxes = grand_bboxes[b_idx] if b_idx < len(grand_bboxes) else [] # list of bboxes
                         image_path = grand_image_paths[b_idx] if b_idx < len(grand_image_paths) else None
                         if not sample_bboxes or image_path is None:
+                            zero3_dummy_align()
                             continue
                         label_row = labels[b_idx]
                         token_mask = (label_row != IGNORE_INDEX)
                         if token_mask.sum() == 0:
+                            zero3_dummy_align()
                             continue
                         generated_token_ids = label_row[token_mask].tolist()
                         generated_indices = torch.nonzero(token_mask, as_tuple=False).squeeze(-1).tolist()
@@ -530,6 +555,7 @@ class LLaVATrainer(Trainer):
                             img = Image.open(image_path).convert('RGB')
                         except Exception as e:
                             logger.warning(f"[GrandAlignDebug] skip_sample b={b_idx} path={image_path} reason=image_open_fail error={repr(e)}")
+                            zero3_dummy_align()
                             continue
                         
                         # Compute embeddings once
@@ -552,6 +578,7 @@ class LLaVATrainer(Trainer):
                                 except Exception:
                                     continue
                             if not crops:
+                                zero3_dummy_align()
                                 continue
                             crop_total += len(crops)
                             with torch.no_grad():
@@ -561,11 +588,6 @@ class LLaVATrainer(Trainer):
                                         patch_tokens, patch_grid, patch_size = self.patch_embedder.forward_tokens(img)
                                     except Exception:
                                         patch_grid, patch_size = None, None
-                        try:
-                            base_model = model.get_model() if hasattr(model, 'get_model') else model
-                            align_enc = getattr(base_model, 'alignment_encoder', None)
-                        except Exception:
-                            align_enc = None
                         if align_enc is None:
                             logger.warning("Alignment encoder not found; skipping GranD loss.")
                             continue
@@ -655,6 +677,8 @@ class LLaVATrainer(Trainer):
                                 img_norm = F.normalize(img_vecs, dim=-1)
                                 sims = (proj_norm * img_norm).sum(dim=-1)
                                 crop_losses = (1 - sims)
+                            else:
+                                zero3_dummy_align()
 
                             if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
                                 per_sample_losses.append(crop_losses.mean())
@@ -673,11 +697,13 @@ class LLaVATrainer(Trainer):
                                 sample_input_ids = input_ids[b_idx]
                             spans = get_image_token_spans(sample_input_ids)
                             if not spans:
+                                zero3_dummy_align()
                                 continue
 
                             img_span = spans[0]
                             img_tokens = hidden_states[b_idx][img_span[0]:img_span[1]]
                             if img_tokens.dim() != 2:
+                                zero3_dummy_align()
                                 continue
 
                             img_token_count = img_tokens.size(0)
@@ -694,6 +720,7 @@ class LLaVATrainer(Trainer):
                                     logger.warning(
                                         f"[GrandAlignDebug] image_token_grid_mismatch: tokens={img_token_count}"
                                     )
+                                    zero3_dummy_align()
                                     continue
 
                             img_token_grid = (grid_h, grid_w)
@@ -709,6 +736,7 @@ class LLaVATrainer(Trainer):
                                 )
                             except Exception as e:
                                 logger.warning(f"[GrandAlignDebug] image_token_select_failed: {repr(e)}")
+                                zero3_dummy_align()
                                 continue
 
                             pooled_img_embeds = []
@@ -718,6 +746,7 @@ class LLaVATrainer(Trainer):
                                     continue
                                 if token_set.numel() == 0:
                                     continue
+
                                 if pool_mode == 'last':
                                     pooled = token_set[-1]
                                 elif pool_mode == 'mean':
@@ -753,6 +782,12 @@ class LLaVATrainer(Trainer):
                     if per_sample_losses:
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
                         print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")
+                        
+            else:
+                # Keep alignment encoder collectives in sync even when no GranD samples exist on this rank.
+                if grand_mask is not None:
+                    for _ in range(grand_mask.size(0)):
+                        zero3_dummy_align()
 
         total_loss = base_loss + (grand_extra_loss * weight)
         if return_outputs:
