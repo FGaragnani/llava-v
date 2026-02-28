@@ -410,7 +410,7 @@ class LLaVATrainer(Trainer):
                 align_enc = None
 
             def zero3_dummy_align():
-                if align_enc is None or self.args.align_with_image:
+                if align_enc is None:
                     return
                 enc_param = next(align_enc.parameters())
                 input_dim = None
@@ -421,8 +421,7 @@ class LLaVATrainer(Trainer):
                 if input_dim is None:
                     return
                 dummy = torch.zeros(1, input_dim, device=enc_param.device, dtype=enc_param.dtype)
-                with torch.no_grad():
-                    _ = align_enc(dummy)
+                return align_enc(dummy)
 
             if grand_mask.any():
                 # Obtain last hidden states
@@ -519,17 +518,23 @@ class LLaVATrainer(Trainer):
                     for b_idx, is_grand in enumerate(grand_mask):
                         # For each sample in the batch
                         if not is_grand:
-                            zero3_dummy_align()
+                            dummy_out = zero3_dummy_align()
+                            if dummy_out is not None:
+                                per_sample_losses.append(dummy_out.mean() * 0.0)
                             continue
                         sample_bboxes = grand_bboxes[b_idx] if b_idx < len(grand_bboxes) else [] # list of bboxes
                         image_path = grand_image_paths[b_idx] if b_idx < len(grand_image_paths) else None
                         if not sample_bboxes or image_path is None:
-                            zero3_dummy_align()
+                            dummy_out = zero3_dummy_align()
+                            if dummy_out is not None:
+                                per_sample_losses.append(dummy_out.mean() * 0.0)
                             continue
                         label_row = labels[b_idx]
                         token_mask = (label_row != IGNORE_INDEX)
                         if token_mask.sum() == 0:
-                            zero3_dummy_align()
+                            dummy_out = zero3_dummy_align()
+                            if dummy_out is not None:
+                                per_sample_losses.append(dummy_out.mean() * 0.0)
                             continue
                         generated_token_ids = label_row[token_mask].tolist()
                         generated_indices = torch.nonzero(token_mask, as_tuple=False).squeeze(-1).tolist()
@@ -555,7 +560,9 @@ class LLaVATrainer(Trainer):
                             img = Image.open(image_path).convert('RGB')
                         except Exception as e:
                             logger.warning(f"[GrandAlignDebug] skip_sample b={b_idx} path={image_path} reason=image_open_fail error={repr(e)}")
-                            zero3_dummy_align()
+                            dummy_out = zero3_dummy_align()
+                            if dummy_out is not None:
+                                per_sample_losses.append(dummy_out.mean() * 0.0)
                             continue
                         
                         # Compute embeddings once
@@ -578,7 +585,9 @@ class LLaVATrainer(Trainer):
                                 except Exception:
                                     continue
                             if not crops:
-                                zero3_dummy_align()
+                                dummy_out = zero3_dummy_align()
+                                if dummy_out is not None:
+                                    per_sample_losses.append(dummy_out.mean() * 0.0)
                                 continue
                             crop_total += len(crops)
                             with torch.no_grad():
@@ -678,7 +687,9 @@ class LLaVATrainer(Trainer):
                                 sims = (proj_norm * img_norm).sum(dim=-1)
                                 crop_losses = (1 - sims)
                             else:
-                                zero3_dummy_align()
+                                dummy_out = zero3_dummy_align()
+                                if dummy_out is not None:
+                                    per_sample_losses.append(dummy_out.mean() * 0.0)
 
                             if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
                                 per_sample_losses.append(crop_losses.mean())
@@ -689,6 +700,9 @@ class LLaVATrainer(Trainer):
                             dino_embeds = patch_embeds
                             
                             if dino_embeds is None or dino_embeds.numel() == 0:
+                                dummy_out = zero3_dummy_align()
+                                if dummy_out is not None:
+                                    per_sample_losses.append(dummy_out.mean() * 0.0)
                                 continue
                             pool_mode = getattr(self.args, 'image_token_pool', None)
 
@@ -697,13 +711,17 @@ class LLaVATrainer(Trainer):
                                 sample_input_ids = input_ids[b_idx]
                             spans = get_image_token_spans(sample_input_ids)
                             if not spans:
-                                zero3_dummy_align()
+                                dummy_out = zero3_dummy_align()
+                                if dummy_out is not None:
+                                    per_sample_losses.append(dummy_out.mean() * 0.0)
                                 continue
 
                             img_span = spans[0]
                             img_tokens = hidden_states[b_idx][img_span[0]:img_span[1]]
                             if img_tokens.dim() != 2:
-                                zero3_dummy_align()
+                                dummy_out = zero3_dummy_align()
+                                if dummy_out is not None:
+                                    per_sample_losses.append(dummy_out.mean() * 0.0)
                                 continue
 
                             img_token_count = img_tokens.size(0)
@@ -720,7 +738,9 @@ class LLaVATrainer(Trainer):
                                     logger.warning(
                                         f"[GrandAlignDebug] image_token_grid_mismatch: tokens={img_token_count}"
                                     )
-                                    zero3_dummy_align()
+                                    dummy_out = zero3_dummy_align()
+                                    if dummy_out is not None:
+                                        per_sample_losses.append(dummy_out.mean() * 0.0)
                                     continue
 
                             img_token_grid = (grid_h, grid_w)
@@ -736,7 +756,9 @@ class LLaVATrainer(Trainer):
                                 )
                             except Exception as e:
                                 logger.warning(f"[GrandAlignDebug] image_token_select_failed: {repr(e)}")
-                                zero3_dummy_align()
+                                dummy_out = zero3_dummy_align()
+                                if dummy_out is not None:
+                                    per_sample_losses.append(dummy_out.mean() * 0.0)
                                 continue
 
                             pooled_img_embeds = []
@@ -757,6 +779,9 @@ class LLaVATrainer(Trainer):
                                 matched_crop_indices.append(crop_i)
 
                             if not pooled_img_embeds:
+                                dummy_out = zero3_dummy_align()
+                                if dummy_out is not None:
+                                    per_sample_losses.append(dummy_out.mean() * 0.0)
                                 continue
 
                             img_batch = torch.stack(pooled_img_embeds, dim=0).to(patch_embeds.device)
@@ -787,7 +812,9 @@ class LLaVATrainer(Trainer):
                 # Keep alignment encoder collectives in sync even when no GranD samples exist on this rank.
                 if grand_mask is not None:
                     for _ in range(grand_mask.size(0)):
-                        zero3_dummy_align()
+                        dummy_out = zero3_dummy_align()
+                        if dummy_out is not None:
+                            base_loss = base_loss + dummy_out.mean() * 0.0
 
         total_loss = base_loss + (grand_extra_loss * weight)
         if return_outputs:
