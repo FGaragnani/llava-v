@@ -4,6 +4,7 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.distributed as dist
 from PIL import Image
 import bitsandbytes
 import os
@@ -409,6 +410,15 @@ class LLaVATrainer(Trainer):
             except Exception:
                 align_enc = None
 
+            zero3_enabled = getattr(self.args, "deepspeed", None) is not None
+
+            def _get_global_max_size(local_size, device):
+                if not zero3_enabled or not dist.is_available() or not dist.is_initialized():
+                    return local_size
+                size_tensor = torch.tensor([local_size], device=device, dtype=torch.int64)
+                dist.all_reduce(size_tensor, op=dist.ReduceOp.MAX)
+                return int(size_tensor.item())
+
             def zero3_dummy_align():
                 if align_enc is None:
                     return
@@ -656,21 +666,55 @@ class LLaVATrainer(Trainer):
                                     matched_phrase_total += 1
                                     matched_crop_total += 1
 
-                            if matched_text_embeds:
-                                text_vec = torch.stack(matched_text_embeds, dim=0).mean(dim=0)
+                            local_size = len(matched_text_embeds)
+                            if local_size > 0 or zero3_enabled:
+                                target_size = _get_global_max_size(local_size, hidden_states.device)
+                                if target_size == 0:
+                                    target_size = 1
+
+                                if local_size > 0:
+                                    text_batch = torch.stack(matched_text_embeds, dim=0)
+                                    img_vecs = patch_embeds[matched_crop_indices]
+                                else:
+                                    text_dim = hidden_states.size(-1)
+                                    img_dim = patch_embeds.size(-1)
+                                    text_batch = torch.zeros(0, text_dim, device=hidden_states.device, dtype=hidden_states.dtype)
+                                    img_vecs = torch.zeros(0, img_dim, device=patch_embeds.device, dtype=patch_embeds.dtype)
+
+                                if target_size > local_size:
+                                    text_pad = torch.zeros(
+                                        target_size - local_size,
+                                        text_batch.size(-1),
+                                        device=text_batch.device,
+                                        dtype=text_batch.dtype,
+                                    )
+                                    img_pad = torch.zeros(
+                                        target_size - local_size,
+                                        img_vecs.size(-1),
+                                        device=img_vecs.device,
+                                        dtype=img_vecs.dtype,
+                                    )
+                                    text_batch = torch.cat([text_batch, text_pad], dim=0)
+                                    img_vecs = torch.cat([img_vecs, img_pad], dim=0)
+
                                 enc_param = next(align_enc.parameters())
-                                text_vec = text_vec.to(device=enc_param.device, dtype=enc_param.dtype)
-                                align_vec = text_vec.unsqueeze(0)
-                                img_vec = patch_embeds[matched_crop_indices].mean(dim=0)
-                                img_vec = img_vec.to(device=enc_param.device, dtype=enc_param.dtype)
+                                text_batch = text_batch.to(device=enc_param.device, dtype=enc_param.dtype)
+                                img_vecs = img_vecs.to(device=enc_param.device, dtype=enc_param.dtype)
                                 try:
-                                    projected = align_enc(align_vec)
+                                    projected_text_batch = align_enc(text_batch)
                                 except Exception:
-                                    projected = align_enc(align_vec).squeeze(0)
-                                proj_norm = F.normalize(projected.squeeze(0), dim=-1)
-                                img_norm = F.normalize(img_vec, dim=-1)
+                                    projected_text_batch = align_enc(text_batch).squeeze(0)
+                                proj_norm = F.normalize(projected_text_batch, dim=-1)
+                                img_norm = F.normalize(img_vecs, dim=-1)
                                 sims = (proj_norm * img_norm).sum(dim=-1)
-                                per_sample_losses.append(1 - sims)
+                                mask = torch.zeros(target_size, device=sims.device, dtype=sims.dtype)
+                                if local_size > 0:
+                                    mask[:local_size] = 1.0
+                                denom = mask.sum()
+                                if denom > 0:
+                                    per_sample_losses.append(((1 - sims) * mask).sum() / denom)
+                                else:
+                                    per_sample_losses.append(projected_text_batch.mean() * 0.0)
                                 align_called = True
                             else:
                                 dummy_out = zero3_dummy_align()
@@ -753,24 +797,60 @@ class LLaVATrainer(Trainer):
                             if not pooled_img_embeds:
                                 continue
 
-                            img_vec = torch.stack(pooled_img_embeds, dim=0).mean(dim=0).to(patch_embeds.device)
-                            try:
-                                enc_param = next(align_enc.parameters())
-                                img_vec = img_vec.to(device=enc_param.device, dtype=enc_param.dtype)
-                            except Exception:
-                                pass
-                            align_vec = img_vec.unsqueeze(0)
-                            try:
-                                projected = align_enc(align_vec)
-                            except Exception:
-                                projected = align_enc(align_vec).squeeze(0)
+                            local_size = len(pooled_img_embeds)
+                            if local_size > 0 or zero3_enabled:
+                                target_size = _get_global_max_size(local_size, hidden_states.device)
+                                if target_size == 0:
+                                    target_size = 1
 
-                            proj_norm = F.normalize(projected.squeeze(0), dim=-1)
-                            dino_vecs = dino_embeds[matched_crop_indices].mean(dim=0)
-                            dino_norm = F.normalize(dino_vecs, dim=-1)
-                            sims = (proj_norm * dino_norm).sum(dim=-1)
-                            per_sample_losses.append(1 - sims)
-                            align_called = True
+                                if local_size > 0:
+                                    img_batch = torch.stack(pooled_img_embeds, dim=0).to(patch_embeds.device)
+                                    dino_vecs = dino_embeds[matched_crop_indices]
+                                else:
+                                    img_dim = patch_embeds.size(-1)
+                                    img_batch = torch.zeros(0, img_dim, device=patch_embeds.device, dtype=patch_embeds.dtype)
+                                    dino_vecs = torch.zeros(0, img_dim, device=patch_embeds.device, dtype=patch_embeds.dtype)
+
+                                if target_size > local_size:
+                                    img_pad = torch.zeros(
+                                        target_size - local_size,
+                                        img_batch.size(-1),
+                                        device=img_batch.device,
+                                        dtype=img_batch.dtype,
+                                    )
+                                    dino_pad = torch.zeros(
+                                        target_size - local_size,
+                                        dino_vecs.size(-1),
+                                        device=dino_vecs.device,
+                                        dtype=dino_vecs.dtype,
+                                    )
+                                    img_batch = torch.cat([img_batch, img_pad], dim=0)
+                                    dino_vecs = torch.cat([dino_vecs, dino_pad], dim=0)
+
+                                enc_param = next(align_enc.parameters())
+                                img_batch = img_batch.to(device=enc_param.device, dtype=enc_param.dtype)
+                                dino_vecs = dino_vecs.to(device=enc_param.device, dtype=enc_param.dtype)
+                                try:
+                                    projected_img_batch = align_enc(img_batch)
+                                except Exception:
+                                    projected_img_batch = align_enc(img_batch).squeeze(0)
+                                proj_norm = F.normalize(projected_img_batch, dim=-1)
+                                dino_norm = F.normalize(dino_vecs, dim=-1)
+                                sims = (proj_norm * dino_norm).sum(dim=-1)
+                                mask = torch.zeros(target_size, device=sims.device, dtype=sims.dtype)
+                                if local_size > 0:
+                                    mask[:local_size] = 1.0
+                                denom = mask.sum()
+                                if denom > 0:
+                                    per_sample_losses.append(((1 - sims) * mask).sum() / denom)
+                                else:
+                                    per_sample_losses.append(projected_img_batch.mean() * 0.0)
+                                align_called = True
+                            else:
+                                dummy_out = zero3_dummy_align()
+                                if dummy_out is not None:
+                                    per_sample_losses.append(dummy_out.mean() * 0.0)
+                                    align_called = True
 
                         if not align_called:
                             dummy_out = zero3_dummy_align()
