@@ -546,6 +546,7 @@ class LLaVATrainer(Trainer):
                         # For each sample in the batch
                         align_called = False
                         if not is_grand:
+                            _align_noop()
                             continue
                         sample_bboxes = grand_bboxes[b_idx] if b_idx < len(grand_bboxes) else [] # list of bboxes
                         image_path = grand_image_paths[b_idx] if b_idx < len(grand_image_paths) else None
@@ -907,8 +908,11 @@ class LLaVATrainer(Trainer):
                         
             else:
                 # Keep alignment encoder collectives in sync even when no GranD samples exist on this rank.
-                if grand_mask is not None:
-                    pass
+                if grand_mask is not None and zero3_enabled:
+                    for _ in range(grand_mask.size(0)):
+                        dummy_out = zero3_dummy_align()
+                        if dummy_out is not None:
+                            base_loss = base_loss + dummy_out.mean() * 0.0
 
         total_loss = base_loss + (grand_extra_loss * weight)
         if return_outputs:
