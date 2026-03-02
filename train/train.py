@@ -86,7 +86,6 @@ class DataArguments:
     patch_agg_mode: str = field(default="cls", metadata={"help": "Patch aggregation mode for PatchEmbedder: cls, mean, max, attn."})
     glamm_samples_limit: Optional[int] = field(default=None, metadata={"help": "Limit the number of samples loaded from GranD dataset; if None, load all samples."})
     glamm_instruction_label: Optional[str] = field(default=None, metadata={"help": "The instruction for GLAMM samples. If None, ''. Defaults to None."})
-    max_crops_glamm: Optional[int] = field(default=None, metadata={"help": "Maximum number of crops to use for each GLAMM sample. If None, use all crops. Defaults to None."})
 
 @dataclass
 class TrainingArguments(transformers.TrainingArguments):
@@ -130,6 +129,8 @@ class TrainingArguments(transformers.TrainingArguments):
     align_with_image: bool = field(default=False, metadata={"help": "Whether to align text with image features in GLAMM alignment; if False, align with text; if True, align with image embeddings in LLaVA."})
     image_token_pool: Optional[str] = field(default=None, metadata={"help": "Pooling method for image tokens in GLAMM alignment: mean, last; if None, throws an error if needed."})
     patch_model_name: str = field(default="facebook/dinov2-base", metadata={"help": "Model name for PatchEmbedder, e.g., facebook/dinov2-base."})
+    max_crops_glamm: Optional[int] = field(default=None, metadata={"help": "Maximum number of crops to use for each GLAMM sample. If None, use all crops. Defaults to None."})
+
 
 def maybe_zero_3(param, ignore_status=False, name=None):
     from deepspeed import zero
