@@ -548,6 +548,8 @@ class LLaVATrainer(Trainer):
                         else:
                             crops = []
                             for (l, t, r, b) in sample_bboxes:
+                                if self.args.max_crops_glamm is not None and len(crops) >= self.args.max_crops_glamm:
+                                    break
                                 try:
                                     crops.append(img.crop((l, t, r, b)))
                                 except Exception:
@@ -776,6 +778,7 @@ class LLaVATrainer(Trainer):
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
                         print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")
 
+        
         total_loss = base_loss + (grand_extra_loss * weight)
         if return_outputs:
             return total_loss, outputs

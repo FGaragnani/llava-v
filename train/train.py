@@ -86,6 +86,7 @@ class DataArguments:
     patch_agg_mode: str = field(default="cls", metadata={"help": "Patch aggregation mode for PatchEmbedder: cls, mean, max, attn."})
     glamm_samples_limit: Optional[int] = field(default=None, metadata={"help": "Limit the number of samples loaded from GranD dataset; if None, load all samples."})
     glamm_instruction_label: Optional[str] = field(default=None, metadata={"help": "The instruction for GLAMM samples. If None, ''. Defaults to None."})
+    max_crops_glamm: Optional[int] = field(default=None, metadata={"help": "Maximum number of crops to use for each GLAMM sample. If None, use all crops. Defaults to None."})
 
 @dataclass
 class TrainingArguments(transformers.TrainingArguments):

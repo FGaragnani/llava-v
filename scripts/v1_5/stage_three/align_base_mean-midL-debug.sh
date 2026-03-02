@@ -102,4 +102,5 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
 	--patch_agg_mode cls \
 	--grand_alignment_loss_weight 0.5 \
 	--text_token_pool mean \
-	--address_layer mid_layer
+	--address_layer mid_layer \
+	--max_crops_glamm 1
