@@ -555,7 +555,7 @@ class LLaVATrainer(Trainer):
                                 continue
                             crop_total += len(crops)
                             with torch.no_grad():
-                                patch_embeds = self.patch_embedder(crops)
+                                # patch_embeds = self.patch_embedder(crops)
                                 if self.args.align_with_image:
                                     try:
                                         patch_tokens, patch_grid, patch_size = self.patch_embedder.forward_tokens(img)
@@ -573,6 +573,7 @@ class LLaVATrainer(Trainer):
                         crop_losses = []
 
                         local_matched = 0
+                        local_crops = []
                         if not self.args.align_with_image:
                             # Batch-match phrases to TEXT spans, then batch project with alignment encoder
                             phrases = grand_dense_labels[b_idx] if b_idx < len(grand_dense_labels) else []
@@ -647,7 +648,6 @@ class LLaVATrainer(Trainer):
 
                             if matched_text_embeds:
                                 text_batch = torch.stack(matched_text_embeds, dim=0)
-                                print(f"[GrandAlignDebug] matched_phrases sample={b_idx} matched={len(matched_text_embeds)} attempted={len(phrases)}")
                             else:
                                 print(f"[GrandAlignDebug] no_matched_phrases sample={b_idx} attempted={len(phrases)}")
                                 print(f"[GrandAlignDebug] generated_tokens sample={b_idx} tokens={generated_token_ids}")
@@ -662,6 +662,9 @@ class LLaVATrainer(Trainer):
                                 projected_text_batch = align_enc(text_batch).squeeze(0)
                             # Compute cosine similarity batch-wise against corresponding image vectors
                             proj_norm = F.normalize(projected_text_batch, dim=-1)
+                            # Only compute patch embeddings for matched crops
+                            matched_crops = [crops[i] for i in matched_crop_indices]
+                            patch_embeds = self.patch_embedder(matched_crops) if matched_crops else torch.empty((0, self.patch_embedder.embed_dim), device=hidden_states.device)
                             img_vecs = patch_embeds[matched_crop_indices]
                             img_vecs = img_vecs.to(device=enc_param.device, dtype=enc_param.dtype)
                             img_norm = F.normalize(img_vecs, dim=-1)
