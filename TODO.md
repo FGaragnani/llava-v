@@ -1,6 +1,6 @@
 - [ ] dino.txt
 - [ ] SigLip:
-      - [ ] Pretrain
+      - [X] Pretrain
       - [ ] Finetune
       - [ ] Cambrian
       - [ ] Amber Disc

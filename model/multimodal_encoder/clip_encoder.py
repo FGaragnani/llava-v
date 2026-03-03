@@ -13,6 +13,7 @@ class CLIPVisionTower(nn.Module):
         self.vision_tower_name = vision_tower
         self.select_layer = args.mm_vision_select_layer
         self.select_feature = getattr(args, 'mm_vision_select_feature', 'patch')
+        self._warned_cls_drop = False
 
         if not delay_load:
             self.load_model()
@@ -35,6 +36,9 @@ class CLIPVisionTower(nn.Module):
     def feature_select(self, image_forward_outs):
         image_features = image_forward_outs.hidden_states[self.select_layer]
         if self.select_feature == 'patch':
+            if not self._warned_cls_drop:
+                print("CLIPVisionTower select_feature='patch' drops the CLS token.")
+                self._warned_cls_drop = True
             image_features = image_features[:, 1:]
         elif self.select_feature == 'cls_patch':
             image_features = image_features
