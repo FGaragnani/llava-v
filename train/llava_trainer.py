@@ -20,7 +20,6 @@ from transformers.trainer import (
     logger,
 )
 from typing import List, Optional
-MAX_ALIGNMENT_BATCH = 12
 
 # For masking ignored label positions
 try:
@@ -645,33 +644,15 @@ class LLaVATrainer(Trainer):
                             if matched_text_embeds:
                                 text_batch = torch.stack(matched_text_embeds, dim=0)
                             else:
-                                # Empty tensor (will be padded)
-                                hidden_dim = hidden_states.size(-1)
-                                text_batch = torch.zeros(
-                                    (0, hidden_dim),
-                                    device=hidden_states.device,
-                                    dtype=hidden_states.dtype,
-                                )
+                                print(f"[GrandAlignDebug] no_matched_phrases sample={b_idx} attempted={len(phrases)}")
 
                             enc_param = next(align_enc.parameters())
                             text_batch = text_batch.to(device=enc_param.device, dtype=enc_param.dtype)
-                            valid_count = min(text_batch.size(0), MAX_ALIGNMENT_BATCH)
-                            if text_batch.size(0) < MAX_ALIGNMENT_BATCH:
-                                pad = torch.zeros(
-                                    (MAX_ALIGNMENT_BATCH - text_batch.size(0), text_batch.size(1)),
-                                    device=text_batch.device,
-                                    dtype=text_batch.dtype,
-                                )
-                                text_batch = torch.cat([text_batch, pad], dim=0)
-
-                            text_batch = text_batch[:MAX_ALIGNMENT_BATCH]
                             # Align text to image dimensions
                             try:
                                 projected_text_batch = align_enc(text_batch)
                             except Exception:
                                 projected_text_batch = align_enc(text_batch).squeeze(0)
-                            # Keep valid vectors
-                            projected_text_batch = projected_text_batch[:valid_count]
                             # Compute cosine similarity batch-wise against corresponding image vectors
                             proj_norm = F.normalize(projected_text_batch, dim=-1)
                             img_vecs = patch_embeds[matched_crop_indices]
