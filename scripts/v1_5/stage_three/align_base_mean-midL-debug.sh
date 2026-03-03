@@ -101,6 +101,6 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
 	--glamm_samples_limit 100000 \
 	--patch_agg_mode cls \
 	--grand_alignment_loss_weight 0.5 \
-	--text_token_pool mean \
+	--text_token_pool last \
 	--address_layer mid_layer \
 	--max_crops_glamm 1
