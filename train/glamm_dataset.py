@@ -112,7 +112,7 @@ class GranDDataset(Dataset):
             ann = {}
 
         dense = ann.get("dense_caption", {})
-        dense_caption_text = dense.get("caption", "")
+        dense_caption_text = dense.get("caption", "").lower().strip()
         details = dense.get("details", [])
 
         # Image
@@ -136,7 +136,7 @@ class GranDDataset(Dataset):
         
         for d in details:
             v = d.get("phrase")
-            text = v.strip()
+            text = v.strip().lower() if v else ""
             bbox_values = d.get("bbox")
             if bbox_values and text:
                 bbox_values = bbox_values[0]
