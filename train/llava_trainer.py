@@ -547,8 +547,6 @@ class LLaVATrainer(Trainer):
                         else:
                             crops = []
                             for (l, t, r, b) in sample_bboxes:
-                                if self.args.max_crops_glamm is not None and len(crops) >= self.args.max_crops_glamm:
-                                    break
                                 try:
                                     crops.append(img.crop((l, t, r, b)))
                                 except Exception:
@@ -574,12 +572,15 @@ class LLaVATrainer(Trainer):
                         patch_embeds = patch_embeds.to(hidden_states.device)
                         crop_losses = []
 
+                        local_matched = 0
                         if not self.args.align_with_image:
                             # Batch-match phrases to TEXT spans, then batch project with alignment encoder
                             phrases = grand_dense_labels[b_idx] if b_idx < len(grand_dense_labels) else []
                             matched_text_embeds = []
                             matched_crop_indices = []
                             for crop_i, phrase in enumerate(phrases):
+                                if self.args.max_crops_glamm is not None and local_matched >= self.args.max_crops_glamm:
+                                    break
                                 phrase = phrase.strip()
                                 if not phrase:
                                     continue
@@ -640,6 +641,7 @@ class LLaVATrainer(Trainer):
                                 if found:
                                     matched_phrase_total += 1
                                     matched_crop_total += 1
+                                    local_matched += 1
                                 else:
                                     print(f"[GrandAlignDebug] no_match phrase='{phrase}'; model_output='{self.tokenizer.decode(generated_token_ids)}'")
 
