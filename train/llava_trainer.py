@@ -646,6 +646,8 @@ class LLaVATrainer(Trainer):
                                 print(f"[GrandAlignDebug] matched_phrases sample={b_idx} matched={len(matched_text_embeds)} attempted={len(phrases)}")
                             else:
                                 print(f"[GrandAlignDebug] no_matched_phrases sample={b_idx} attempted={len(phrases)}")
+                                print(f"[GrandAlignDebug] generated_tokens sample={b_idx} tokens={generated_token_ids}")
+                                break
 
                             enc_param = next(align_enc.parameters())
                             text_batch = text_batch.to(device=enc_param.device, dtype=enc_param.dtype)
