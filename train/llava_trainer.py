@@ -661,7 +661,7 @@ class LLaVATrainer(Trainer):
                             matched_crops = [crops[i] for i in matched_crop_indices]
                             patch_embeds = self.patch_embedder(matched_crops) if matched_crops else torch.empty((0, self.patch_embedder.embed_dim), device=hidden_states.device)
                             patch_embeds = patch_embeds.to(hidden_states.device)
-                            img_vecs = patch_embeds[matched_crop_indices]
+                            img_vecs = patch_embeds
                             img_vecs = img_vecs.to(device=enc_param.device, dtype=enc_param.dtype)
                             img_norm = F.normalize(img_vecs, dim=-1)
                             sims = (proj_norm * img_norm).sum(dim=-1)
