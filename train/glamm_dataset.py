@@ -162,9 +162,6 @@ class GranDDataset(Dataset):
         sources = preprocess_multimodal([conversation], self.data_args)
         data_dict = preprocess(sources, self.tokenizer, has_image=True)
         labels = data_dict["labels"][0]
-        
-        print("[GranDDatasetDebug] sample_idx={} image_path={} labels={} dense_labels={} bboxes_count={}, dense_caption={}".format(
-            idx, image_path, labels.tolist(), dense_labels, len(bboxes), dense_caption_text))
 
         return {
             "input_ids": data_dict["input_ids"][0],

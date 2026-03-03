@@ -589,63 +589,59 @@ class LLaVATrainer(Trainer):
                                 if self.tokenizer is None:
                                     continue
                                 variant_tokens = self.tokenizer(phrase, add_special_tokens=False).input_ids
-                                variant_tokens_ws = self.tokenizer(" " + phrase, add_special_tokens=False).input_ids
                                 found = False
                                 # Search for phrase tokens in generated tokens
-                                for variant in (variant_tokens, variant_tokens_ws):
-                                    if not variant:
-                                        continue
-                                    for start in range(len(generated_token_ids) - len(variant) + 1):
-                                        if generated_token_ids[start:start+len(variant)] == variant:
-                                            orig_span = generated_indices[start:start+len(variant)]
-                                            span_indices = compute_span_with_image_offset(orig_span, sample_input_ids)
-                                            span_embeds = hidden_states[b_idx][span_indices]
-                                            if span_embeds.numel() > 0:
-                                                if debug_align and self.tokenizer is not None:
-                                                    try:
-                                                        decoded_phrase = self.tokenizer.decode(variant)
-                                                        decoded_span = self.tokenizer.decode(generated_token_ids[start:start+len(variant)])
-                                                        print(
-                                                            f"[GrandAlignDebug] detok phrase='{decoded_phrase}' span='{decoded_span}'"
-                                                        )
-                                                    except Exception as e:
-                                                        logger.warning(
-                                                            f"[GrandAlignDebug] detok failed: {repr(e)}"
-                                                        )
-                                                matched_text = None
-                                                if self.args.text_token_pool == 'last':
-                                                    matched_text = span_embeds[-1]
-                                                elif self.args.text_token_pool == 'mean':
-                                                    matched_text = span_embeds.mean(dim=0)
-                                                elif self.args.text_token_pool == 'attn':
-                                                    # Ensure text_pooler exists and matches hidden_states device & dtype
-                                                    if not hasattr(self, 'text_pooler'):
-                                                        raise RuntimeError("text_pooler not initialized for attn pooling")
+                                for start in range(len(generated_token_ids) - len(variant_tokens) + 1):
+                                    if generated_token_ids[start:start+len(variant_tokens)] == variant_tokens:
+                                        orig_span = generated_indices[start:start+len(variant_tokens)]
+                                        span_indices = compute_span_with_image_offset(orig_span, sample_input_ids)
+                                        span_embeds = hidden_states[b_idx][span_indices]
+                                        if span_embeds.numel() > 0:
+                                            if debug_align and self.tokenizer is not None:
+                                                try:
+                                                    decoded_phrase = self.tokenizer.decode(variant_tokens)
+                                                    decoded_span = self.tokenizer.decode(generated_token_ids[start:start+len(variant_tokens)])
+                                                    print(
+                                                        f"[GrandAlignDebug] detok phrase='{decoded_phrase}' span='{decoded_span}'"
+                                                    )
+                                                except Exception as e:
+                                                    logger.warning(
+                                                        f"[GrandAlignDebug] detok failed: {repr(e)}"
+                                                    )
+                                            matched_text = None
+                                            if self.args.text_token_pool == 'last':
+                                                matched_text = span_embeds[-1]
+                                            elif self.args.text_token_pool == 'mean':
+                                                matched_text = span_embeds.mean(dim=0)
+                                            elif self.args.text_token_pool == 'attn':
+                                                # Ensure text_pooler exists and matches hidden_states device & dtype
+                                                if not hasattr(self, 'text_pooler'):
+                                                    raise RuntimeError("text_pooler not initialized for attn pooling")
 
-                                                    try:
-                                                        self.text_pooler = self.text_pooler.to(
-                                                            device=hidden_states.device,
-                                                            dtype=hidden_states.dtype,
-                                                        )
-                                                    except Exception as e:
-                                                        logger.warning(
-                                                            f"[GrandAlignDebug] Failed moving text_pooler to device/dtype: {repr(e)}"
-                                                        )
+                                                try:
+                                                    self.text_pooler = self.text_pooler.to(
+                                                        device=hidden_states.device,
+                                                        dtype=hidden_states.dtype,
+                                                    )
+                                                except Exception as e:
+                                                    logger.warning(
+                                                        f"[GrandAlignDebug] Failed moving text_pooler to device/dtype: {repr(e)}"
+                                                    )
 
-                                                    span_embeds = span_embeds.unsqueeze(0)  # [1, L, D]
-                                                    pooled_embed, _ = self.text_pooler(span_embeds)  # [1, D]
-                                                    matched_text = pooled_embed.squeeze(0)
-                                                else:
-                                                    matched_text = span_embeds.mean(dim=0)
-                                                matched_text_embeds.append(matched_text)
-                                                matched_crop_indices.append(crop_i)
-                                                found = True
-                                            break
-                                    if found:
+                                                span_embeds = span_embeds.unsqueeze(0)  # [1, L, D]
+                                                pooled_embed, _ = self.text_pooler(span_embeds)  # [1, D]
+                                                matched_text = pooled_embed.squeeze(0)
+                                            else:
+                                                matched_text = span_embeds.mean(dim=0)
+                                            matched_text_embeds.append(matched_text)
+                                            matched_crop_indices.append(crop_i)
+                                            found = True
                                         break
                                 if found:
                                     matched_phrase_total += 1
                                     matched_crop_total += 1
+                                else:
+                                    print(f"[GrandAlignDebug] no_match phrase='{phrase}'; model_output='{self.tokenizer.decode(generated_token_ids)}'")
 
                             if matched_text_embeds:
                                 text_batch = torch.stack(matched_text_embeds, dim=0)
