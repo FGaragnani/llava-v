@@ -643,6 +643,7 @@ class LLaVATrainer(Trainer):
 
                             if matched_text_embeds:
                                 text_batch = torch.stack(matched_text_embeds, dim=0)
+                                print(f"[GrandAlignDebug] matched_phrases sample={b_idx} matched={len(matched_text_embeds)} attempted={len(phrases)}")
                             else:
                                 print(f"[GrandAlignDebug] no_matched_phrases sample={b_idx} attempted={len(phrases)}")
 
