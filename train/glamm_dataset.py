@@ -153,22 +153,15 @@ class GranDDataset(Dataset):
 
         # Conversation
         instruction = self.prompt_template
-        conversation = \
-            [
-                {"from": "gpt" if instruction else "", "value": f"{DEFAULT_IMAGE_TOKEN}\n{instruction}"},
-                {"from": "human" if instruction else "", "value": dense_caption_text},
-            ]
+        caption_text = dense_caption_text
+        conversation = [
+            {"from": "human", "value": f"{DEFAULT_IMAGE_TOKEN}\n{instruction}" if instruction else DEFAULT_IMAGE_TOKEN},
+            {"from": "gpt", "value": caption_text},
+        ]
         
         sources = preprocess_multimodal([conversation], self.data_args)
         data_dict = preprocess(sources, self.tokenizer, has_image=True)
         labels = data_dict["labels"][0]
-        if instruction: # Mask instruction
-            instruction_ids = self.tokenizer(instruction, add_special_tokens=False).input_ids
-            if len(instruction_ids) > 0:
-                for i in range(len(labels) - len(instruction_ids) + 1):
-                    if labels[i:i+len(instruction_ids)].tolist() == instruction_ids:
-                        labels[i:i+len(instruction_ids)] = -100
-                        break
         
         print("[GranDDatasetDebug] sample_idx={} image_path={} labels={} dense_labels={} bboxes_count={}, dense_caption={}".format(
             idx, image_path, labels.tolist(), dense_labels, len(bboxes), dense_caption_text))
