@@ -1,13 +1,11 @@
-- [ ] CLIP invece di DiNO:
+- [ ] dino.txt
+- [ ] SigLip:
       - [ ] Pretrain
       - [ ] Finetune
       - [ ] Cambrian
-      - [ ] Amber Gen
       - [ ] Amber Disc
-      - [ ] MsCOCO
-
-- [ ] dino.txt
-- [ ] SigLip
+      - [ ] Amber Gen
+      - [ ] MSCoco
 
 - [ ] Stage tre -- LLaVA normale a cui aggiungi un terzo stage con LLaVA-v (100k immagini)
       - [ ] Mi raccomando: LLaVA3-extra-data (solo autoregressione sui dati) + LLaVA3-v (autoregressione + allineamento) 
@@ -17,5 +15,3 @@
 - [ ] VE: SigLip2 (no CLS + ultimo layer)
   
 - [ ] Contrastive loss per batch? 
-
-- [ ] Preparare i launch.json!!!!
