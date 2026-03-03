@@ -169,6 +169,9 @@ class GranDDataset(Dataset):
                     if labels[i:i+len(instruction_ids)].tolist() == instruction_ids:
                         labels[i:i+len(instruction_ids)] = -100
                         break
+        
+        print("[GranDDatasetDebug] sample_idx={} image_path={} labels={} dense_labels={} bboxes_count={}, dense_caption={}".format(
+            idx, image_path, labels.tolist(), dense_labels, len(bboxes), dense_caption_text))
 
         return {
             "input_ids": data_dict["input_ids"][0],
