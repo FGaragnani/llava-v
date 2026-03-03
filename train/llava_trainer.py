@@ -555,7 +555,6 @@ class LLaVATrainer(Trainer):
                                 continue
                             crop_total += len(crops)
                             with torch.no_grad():
-                                # patch_embeds = self.patch_embedder(crops)
                                 if self.args.align_with_image:
                                     try:
                                         patch_tokens, patch_grid, patch_size = self.patch_embedder.forward_tokens(img)
@@ -569,7 +568,6 @@ class LLaVATrainer(Trainer):
                         if align_enc is None:
                             logger.warning("Alignment encoder not found; skipping GranD loss.")
                             continue
-                        patch_embeds = patch_embeds.to(hidden_states.device)
                         crop_losses = []
 
                         local_matched = 0
@@ -665,6 +663,7 @@ class LLaVATrainer(Trainer):
                             # Only compute patch embeddings for matched crops
                             matched_crops = [crops[i] for i in matched_crop_indices]
                             patch_embeds = self.patch_embedder(matched_crops) if matched_crops else torch.empty((0, self.patch_embedder.embed_dim), device=hidden_states.device)
+                            patch_embeds = patch_embeds.to(hidden_states.device)
                             img_vecs = patch_embeds[matched_crop_indices]
                             img_vecs = img_vecs.to(device=enc_param.device, dtype=enc_param.dtype)
                             img_norm = F.normalize(img_vecs, dim=-1)
