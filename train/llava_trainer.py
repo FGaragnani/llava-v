@@ -571,7 +571,6 @@ class LLaVATrainer(Trainer):
                         crop_losses = []
 
                         local_matched = 0
-                        local_crops = []
                         if not self.args.align_with_image:
                             # Batch-match phrases to TEXT spans, then batch project with alignment encoder
                             phrases = grand_dense_labels[b_idx] if b_idx < len(grand_dense_labels) else []
@@ -584,8 +583,6 @@ class LLaVATrainer(Trainer):
                                 if not phrase:
                                     continue
                                 attempted_phrase_total += 1
-                                if crop_i >= patch_embeds.size(0):
-                                    continue
                                 if self.tokenizer is None:
                                     continue
                                 variant_tokens = self.tokenizer(phrase, add_special_tokens=False).input_ids
