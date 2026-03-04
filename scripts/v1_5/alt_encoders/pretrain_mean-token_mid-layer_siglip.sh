@@ -110,4 +110,4 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     --grand_alignment_loss_weight 0.5 \
     --text_token_pool mean \
     --address_layer mid_layer \
-    --patch_model_name "/leonardo_scratch/large/userexternal/fcocchi0/rag_mlmm/hf_models/models--google--siglip-large-patch16-256"
+    --patch_model_name /leonardo_scratch/large/userexternal/fgaragna/models/lmsys/models--google--siglip-large-patch16-256
