@@ -369,6 +369,17 @@ Answer the questions.""",
     sep="<|im_end|>",
 )
 
+conv_qwen2_5 = Conversation(
+    system="""<|im_start|>system
+You are Qwen, created by Alibaba Cloud. You are a helpful assistant.""",
+    roles=("<|im_start|>user\n", "<|im_start|>assistant\n"),
+    version="qwen2_5",
+    messages=(),
+    offset=0,
+    sep_style=SeparatorStyle.MPT,
+    sep="<|im_end|>\n",
+)
+
 default_conversation = conv_vicuna_v1
 conv_templates = {
     "default": conv_vicuna_v0,
@@ -379,6 +390,7 @@ conv_templates = {
     "mistral_instruct": conv_mistral_instruct,
     "chatml_direct": conv_chatml_direct,
     "mistral_direct": conv_chatml_direct,
+    "qwen2_5": conv_qwen2_5,
 
     "plain": conv_llava_plain,
     "v0_plain": conv_llava_plain,
