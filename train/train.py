@@ -709,6 +709,32 @@ class LazySupervisedDataset(Dataset):
             length_list.append(cur_len)
         return length_list
 
+    def _get_image_hw_from_processor(self):
+        processor = self.data_args.image_processor
+
+        def _from_size_field(size_field):
+            if isinstance(size_field, dict):
+                h = size_field.get('height') or size_field.get('shortest_edge') or size_field.get('shortest')
+                w = size_field.get('width') or h
+                if h is not None and w is not None:
+                    return int(h), int(w)
+            elif isinstance(size_field, (tuple, list)) and len(size_field) == 2:
+                return int(size_field[0]), int(size_field[1])
+            elif isinstance(size_field, int):
+                return int(size_field), int(size_field)
+            return None
+
+        hw = _from_size_field(getattr(processor, 'crop_size', None))
+        if hw is not None:
+            return hw
+
+        hw = _from_size_field(getattr(processor, 'size', None))
+        if hw is not None:
+            return hw
+
+        # Safe fallback if processor metadata is unavailable.
+        return 224, 224
+
     def __getitem__(self, i) -> Dict[str, torch.Tensor]:
         sources = self.list_data_dict[i]
         if isinstance(i, int):
@@ -754,8 +780,8 @@ class LazySupervisedDataset(Dataset):
             data_dict['image'] = image
         elif self.data_args.is_multimodal:
             # image does not exist in the data, but the model is multimodal
-            crop_size = self.data_args.image_processor.crop_size
-            data_dict['image'] = torch.zeros(3, crop_size['height'], crop_size['width'])
+            height, width = self._get_image_hw_from_processor()
+            data_dict['image'] = torch.zeros(3, height, width)
         # Flag non-GranD samples
         data_dict['is_grand'] = torch.tensor(False)
         return data_dict
