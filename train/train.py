@@ -1015,7 +1015,7 @@ def train(attn_implementation=None):
 
     if tokenizer.pad_token_id is None:
         raise ValueError(
-            "Tokenizer has no valid pad token (and no unk/eos/bos fallback). "
+            "Tokenizer has no valid pad token.\n"
             f"model={model_args.model_name_or_path}"
         )
 
