@@ -1005,6 +1005,24 @@ def train(attn_implementation=None):
         else:
             conversation_lib.default_conversation = conversation_lib.conv_templates["vicuna_v1"]
 
+    if tokenizer.pad_token_id is None:
+        for token_attr in ("unk_token", "eos_token", "bos_token"):
+            fallback_token = getattr(tokenizer, token_attr, None)
+            if fallback_token is not None:
+                tokenizer.pad_token = fallback_token
+                rank0_print(f"pad_token was unset; using {token_attr} as pad_token for {model_args.model_name_or_path}.")
+                break
+
+    if tokenizer.pad_token_id is None:
+        raise ValueError(
+            "Tokenizer has no valid pad token (and no unk/eos/bos fallback). "
+            f"model={model_args.model_name_or_path}"
+        )
+
+    model.config.pad_token_id = tokenizer.pad_token_id
+    if hasattr(model, "generation_config") and model.generation_config is not None:
+        model.generation_config.pad_token_id = tokenizer.pad_token_id
+
     if model_args.vision_tower is not None:
         model.get_model().initialize_vision_modules(
             model_args=model_args,
