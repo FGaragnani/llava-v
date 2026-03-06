@@ -1,14 +1,14 @@
 - [ ] dino.txt
 - [ ] SigLip:
       - [X] Pretrain
-      - [ ] Finetune
+      - [X] Finetune
       - [ ] Cambrian
       - [ ] Amber Disc
       - [ ] Amber Gen
       - [ ] MSCoco
   
 - [ ] LLM: Qwen2.5-3B (per ora solo questo):
-      - [ ] Pretrain
+      - [X] Pretrain
       - [ ] Finetune
       - [ ] Cambrian
       - [ ] Amber Disc
@@ -17,7 +17,7 @@
 
 - [ ] VE: SigLip2 (no CLS + ultimo layer):
       - [X] Pretrain
-      - [ ] Finetune
+      - [X] Finetune
       - [ ] Cambrian
       - [ ] Amber Disc
       - [ ] Amber Gen
