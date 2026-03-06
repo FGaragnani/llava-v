@@ -8,7 +8,7 @@
 #SBATCH --gpus-per-node=4
 #SBATCH --mem=480G
 #SBATCH --cpus-per-task=32
-#SBATCH --partition=dcgp
+#SBATCH --partition=dcgp_usr_prod
 #SBATCH --account=AIFAC_S02_096
 #SBATCH --time=24:00:00
 
