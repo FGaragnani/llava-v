@@ -8,7 +8,7 @@
 #SBATCH --gpus-per-node=4
 #SBATCH --mem=480G
 #SBATCH --cpus-per-task=32
-#SBATCH --partition=boost_usr_prod
+#SBATCH --partition=all_usr_prod
 #SBATCH --account=AIFAC_S02_096
 #SBATCH --time=24:00:00
 
