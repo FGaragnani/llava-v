@@ -90,4 +90,4 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
     --image_aspect_ratio pad \
     --group_by_modality_length True \
     --freeze_backbone False \
-    --version vicuna_v1
+    --version qwen2_5
