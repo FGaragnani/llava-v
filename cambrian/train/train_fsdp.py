@@ -605,7 +605,9 @@ def preprocess_v1(
 
     assert conv.sep_style == conversation_lib.SeparatorStyle.TWO
 
-    # Mask targets using exact prefix token counts (tokenizer-agnostic).
+    is_legacy_tokenizer = getattr(tokenizer, 'legacy', False)
+
+    # Non-legacy path uses exact prefix token counts (tokenizer-agnostic).
     token_count_cache = {}
 
     def _count_tokens(text: str) -> int:
@@ -623,36 +625,59 @@ def preprocess_v1(
         total_len = int(target.ne(tokenizer.pad_token_id).sum())
 
         rounds = conversation.split(conv.sep2)
-        prefix_text = ""
-        cur_len = min(_count_tokens(prefix_text), total_len)
-        target[:cur_len] = IGNORE_INDEX
-        for i, rou in enumerate(rounds):
-            if rou == "":
-                break
+        if is_legacy_tokenizer:
+            # Keep original v1 masking behavior for legacy tokenizers.
+            cur_len = 1
+            target[:cur_len] = IGNORE_INDEX
+            for i, rou in enumerate(rounds):
+                if rou == "":
+                    break
 
-            parts = rou.split(sep)
-            if len(parts) != 2:
-                break
-            parts[0] += sep
+                parts = rou.split(sep)
+                if len(parts) != 2:
+                    break
+                parts[0] += sep
 
-            round_text = rou + conv.sep2
-            prefix_len = _count_tokens(prefix_text)
-            instruction_end_len = _count_tokens(prefix_text + parts[0])
-            round_end_len = _count_tokens(prefix_text + round_text)
+                if has_image:
+                    round_len = len(tokenizer_image_token(rou, tokenizer))
+                    instruction_len = len(tokenizer_image_token(parts[0], tokenizer)) - 2
+                else:
+                    round_len = len(tokenizer(rou).input_ids)
+                    instruction_len = len(tokenizer(parts[0]).input_ids) - 2
 
-            round_len = max(0, round_end_len - prefix_len)
-            instruction_len = max(0, instruction_end_len - prefix_len)
+                target[cur_len : cur_len + instruction_len] = IGNORE_INDEX
+                cur_len += round_len
+        else:
+            prefix_text = ""
+            cur_len = min(_count_tokens(prefix_text), total_len)
+            target[:cur_len] = IGNORE_INDEX
+            for i, rou in enumerate(rounds):
+                if rou == "":
+                    break
 
-            remaining = total_len - cur_len
-            if remaining <= 0:
-                break
+                parts = rou.split(sep)
+                if len(parts) != 2:
+                    break
+                parts[0] += sep
 
-            effective_round_len = min(round_len, remaining)
-            effective_instruction_len = min(instruction_len, effective_round_len)
+                round_text = rou + conv.sep2
+                prefix_len = _count_tokens(prefix_text)
+                instruction_end_len = _count_tokens(prefix_text + parts[0])
+                round_end_len = _count_tokens(prefix_text + round_text)
 
-            target[cur_len : cur_len + effective_instruction_len] = IGNORE_INDEX
-            cur_len += effective_round_len
-            prefix_text += round_text
+                round_len = max(0, round_end_len - prefix_len)
+                instruction_len = max(0, instruction_end_len - prefix_len)
+
+                remaining = total_len - cur_len
+                if remaining <= 0:
+                    break
+
+                effective_round_len = min(round_len, remaining)
+                effective_instruction_len = min(instruction_len, effective_round_len)
+
+                target[cur_len : cur_len + effective_instruction_len] = IGNORE_INDEX
+                cur_len += effective_round_len
+                prefix_text += round_text
         target[cur_len:] = IGNORE_INDEX
 
         if cur_len < tokenizer.model_max_length and cur_len != total_len:
