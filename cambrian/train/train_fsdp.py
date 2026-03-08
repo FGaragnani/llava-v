@@ -605,13 +605,26 @@ def preprocess_v1(
 
     assert conv.sep_style == conversation_lib.SeparatorStyle.TWO
 
-    # Mask targets
+    # Mask targets using exact prefix token counts (tokenizer-agnostic).
+    token_count_cache = {}
+
+    def _count_tokens(text: str) -> int:
+        if text in token_count_cache:
+            return token_count_cache[text]
+        if has_image:
+            count = len(tokenizer_image_token(text, tokenizer))
+        else:
+            count = len(tokenizer(text).input_ids)
+        token_count_cache[text] = count
+        return count
+
     sep = conv.sep + conv.roles[1] + ": "
     for conversation, target in zip(conversations, targets):
         total_len = int(target.ne(tokenizer.pad_token_id).sum())
 
         rounds = conversation.split(conv.sep2)
-        cur_len = 1
+        prefix_text = ""
+        cur_len = min(_count_tokens(prefix_text), total_len)
         target[:cur_len] = IGNORE_INDEX
         for i, rou in enumerate(rounds):
             if rou == "":
@@ -622,29 +635,32 @@ def preprocess_v1(
                 break
             parts[0] += sep
 
-            if has_image:
-                round_len = len(tokenizer_image_token(rou, tokenizer))
-                instruction_len = len(tokenizer_image_token(parts[0], tokenizer)) - 2
-            else:
-                round_len = len(tokenizer(rou).input_ids)
-                instruction_len = len(tokenizer(parts[0]).input_ids) - 2
+            round_text = rou + conv.sep2
+            prefix_len = _count_tokens(prefix_text)
+            instruction_end_len = _count_tokens(prefix_text + parts[0])
+            round_end_len = _count_tokens(prefix_text + round_text)
 
-            if i != 0 and not getattr(tokenizer, 'legacy', False) and IS_TOKENIZER_GREATER_THAN_0_14:
-                round_len -= 1
-                instruction_len -= 1
+            round_len = max(0, round_end_len - prefix_len)
+            instruction_len = max(0, instruction_end_len - prefix_len)
 
-            target[cur_len : cur_len + instruction_len] = IGNORE_INDEX
+            remaining = total_len - cur_len
+            if remaining <= 0:
+                break
 
-            cur_len += round_len
+            effective_round_len = min(round_len, remaining)
+            effective_instruction_len = min(instruction_len, effective_round_len)
+
+            target[cur_len : cur_len + effective_instruction_len] = IGNORE_INDEX
+            cur_len += effective_round_len
+            prefix_text += round_text
         target[cur_len:] = IGNORE_INDEX
 
-        if cur_len < tokenizer.model_max_length:
-            if cur_len != total_len:
-                target[:] = IGNORE_INDEX
-                print_rank0(
-                    f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
-                    f" (ignored)"
-                )
+        if cur_len < tokenizer.model_max_length and cur_len != total_len:
+            target[:] = IGNORE_INDEX
+            print_rank0(
+                f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
+                f" (ignored)"
+            )
 
     return dict(
         input_ids=input_ids,
