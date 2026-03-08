@@ -11,7 +11,7 @@
 #SBATCH --partition=boost_usr_prod
 #SBATCH --account=AIFAC_S02_096
 #SBATCH --qos=boost_qos_dbg
-#SBATCH --time=24:00:00
+#SBATCH --time=00:30:00
 
 module load anaconda3/2022.05
 module load profile/deeplrn
