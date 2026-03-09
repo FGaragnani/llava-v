@@ -51,10 +51,7 @@ if [[ "$model_name" == *qwen* ]]; then
 fi
 
 # Prefer checkpoint tokenizer so added/special tokens are loaded when present.
-if [[ -f "$model_name/tokenizer_config.json" ]]; then
-    export TOKENIZER_PATH="$model_name"
-    echo "Using tokenizer from checkpoint: $TOKENIZER_PATH"
-elif [[ "$conv_mode" == *qwen* ]]; then
+if [[ "$conv_mode" == *qwen* ]]; then
     export TOKENIZER_PATH="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/Qwen/Qwen2.5-7B-Instruct"
     echo "Checkpoint tokenizer files missing; falling back to Qwen base tokenizer: $TOKENIZER_PATH"
 else

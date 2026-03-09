@@ -163,8 +163,7 @@ def eval_model(args):
 
             output_ids = model.generate(input_ids, **generate_kwargs)
 
-        generated_ids = output_ids[:, input_ids.shape[1]:]
-        outputs = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
+        outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
 
         ans_file.write(json.dumps({
             "question_id": idx,

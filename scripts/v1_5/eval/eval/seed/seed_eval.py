@@ -39,8 +39,8 @@ import math
 
 def split_list(lst, n):
     """Split a list into n (roughly) equal-sized chunks"""
-    chunk_size = math.ceil(lst / n)  # integer division
-    return [[i,i+chunk_size-1] for i in range(0, lst, chunk_size)]
+    chunk_size = math.ceil(len(lst) / n)  # integer division
+    return [[i,i+chunk_size-1] for i in range(0, len(lst), chunk_size)]
 
 
 def get_chunk(lst, n, k):
@@ -148,8 +148,7 @@ def eval_model(args):
 
             output_ids = model.generate(input_ids, **generate_kwargs)
 
-        generated_ids = output_ids[:, input_ids.shape[1]:]
-        outputs = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
+        outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
 
         ans_file.write(json.dumps({"question_id": idx,
                                    "answer": outputs,
