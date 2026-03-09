@@ -42,16 +42,18 @@ model_name="""${1:-llava_s2}"""
 llava_more="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/${model_name}" # <--
 conv_mode="${2:-llava_v1}"
 eval_output_dir="/leonardo_scratch/large/userexternal/fgaragna/logs/cambrian-eval-${model_name}" # <--
-gpu_devices="${3:-0}"
+gpu_devices="${3:-${CUDA_VISIBLE_DEVICES:-0}}"
 model_name="${llava_more}"
 safe_model_name=$(tr '/' '_' <<< $llava_more)
 
 if [[ "$model_name" == *qwen* ]]; then
     conv_mode="qwen2_5"
+    echo "Detected Qwen model in name, setting conversation mode to: $conv_mode"
 fi
 
 if [[ "$conv_mode" == *qwen* ]]; then
     export TOKENIZER_PATH="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/Qwen/Qwen2.5-7B-Instruct"
+    echo "Using Qwen conversation mode, setting tokenizer path to: $TOKENIZER_PATH"
 fi
 
 echo "Conversation mode: $conv_mode"
