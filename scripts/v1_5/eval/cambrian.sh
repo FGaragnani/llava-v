@@ -5,7 +5,7 @@
 #SBATCH --open-mode=truncate
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --gpus-per-node=1
+#SBATCH --gpus-per-node=2
 #SBATCH --mem=48G
 #SBATCH --cpus-per-task=4
 #SBATCH --partition=boost_usr_prod

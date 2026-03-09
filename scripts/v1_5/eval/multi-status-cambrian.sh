@@ -1,4 +1,3 @@
 #!/bin/bash
 
-bash scripts/v1_5/eval/status_cambrian.sh llava-v_s2--mean-midL_ve-siglip
-bash scripts/v1_5/eval/status_cambrian.sh llava-v_s2--mean-midL-siglip
+bash scripts/v1_5/eval/status_cambrian.sh llava-v_s2--mean-midL_ve-qwen2_5
