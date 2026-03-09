@@ -88,6 +88,8 @@ def eval_model(args):
     model_path = os.path.expanduser(args.model_path)
     model_name = get_model_name_from_path(model_path)
     tokenizer, model, image_processor, context_len = load_pretrained_model(model_path, args.model_base, model_name)
+    eos_token_id = tokenizer.eos_token_id
+    pad_token_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else eos_token_id
 
     validation_dataset = load_dataset("lmms-lab/VizWiz-VQA", split="val")
     dev_dataset = load_dataset("lmms-lab/VizWiz-VQA", split="test")
@@ -119,8 +121,8 @@ def eval_model(args):
         category = "val" if "val" in line["question_id"] else "test"
         input_ids = input_ids.to(device='cuda', non_blocking=True)
         with torch.inference_mode():
-            output_ids = model.generate(
-                input_ids,
+            generate_kwargs = dict(
+                input_ids=input_ids,
                 images=image_tensor,
                 image_sizes=image_sizes,
                 do_sample=True if args.temperature > 0 else False,
@@ -128,7 +130,13 @@ def eval_model(args):
                 top_p=args.top_p,
                 num_beams=args.num_beams,
                 max_new_tokens=args.max_new_tokens,
-                use_cache=True)
+                use_cache=True,
+            )
+            if eos_token_id is not None:
+                generate_kwargs["eos_token_id"] = eos_token_id
+            if pad_token_id is not None:
+                generate_kwargs["pad_token_id"] = pad_token_id
+            output_ids = model.generate(**generate_kwargs)
 
         outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
 
