@@ -40,7 +40,14 @@ class SiglipVisionTower(nn.Module):
             raise ImportError("SigLIP is not available in this transformers version.") from _siglip_import_error
 
         self.image_processor = SiglipImageProcessor.from_pretrained(self.vision_tower_name)
-        self.vision_tower = SiglipVisionModel.from_pretrained(self.vision_tower_name, device_map=device_map)
+
+        # For SigLIP 
+        if device_map == "auto":
+            self.vision_tower = SiglipVisionModel.from_pretrained(self.vision_tower_name)
+        elif device_map is None:
+            self.vision_tower = SiglipVisionModel.from_pretrained(self.vision_tower_name)
+        else:
+            self.vision_tower = SiglipVisionModel.from_pretrained(self.vision_tower_name, device_map=device_map)
         self.vision_tower.requires_grad_(False)
 
         self.is_loaded = True
