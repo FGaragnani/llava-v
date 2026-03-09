@@ -5,13 +5,13 @@
 #SBATCH --open-mode=truncate
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --gpus-per-node=2
+#SBATCH --gpus-per-node=4
 #SBATCH --mem=48G
 #SBATCH --cpus-per-task=4
 #SBATCH --partition=boost_usr_prod
 #SBATCH --account=AIFAC_S02_096
 #SBATCH --time=02:30:00
-#SBATCH --array=0-20
+#SBATCH --array=0-2
 
 set -e
 
