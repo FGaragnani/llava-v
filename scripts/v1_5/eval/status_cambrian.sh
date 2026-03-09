@@ -14,13 +14,13 @@ benchmarks=(
     textvqa
     pope
     mme
-    # mmbench_en
+    mmbench_en
     mmbench_cn
-    # seed
+    seed
     # mmvet
     mmmu
     mathvista
-    # ai2d
+    ai2d
     chartqa
     # docvqa
     # infovqa
