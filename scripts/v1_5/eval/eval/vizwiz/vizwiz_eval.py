@@ -120,23 +120,35 @@ def eval_model(args):
         gt_answer = line["answers"]
         category = "val" if "val" in line["question_id"] else "test"
         input_ids = input_ids.to(device='cuda', non_blocking=True)
+        attention_mask = torch.ones_like(input_ids)
+        image_inputs = image_tensor
+        if image_inputs is not None and torch.is_tensor(image_inputs):
+            if image_inputs.ndim == 3:
+                image_inputs = image_inputs.unsqueeze(0)
+            image_inputs = image_inputs.half().cuda()
         with torch.inference_mode():
+            do_sample = args.temperature > 0
             generate_kwargs = dict(
-                input_ids=input_ids,
-                images=image_tensor,
-                image_sizes=image_sizes,
-                do_sample=True if args.temperature > 0 else False,
-                temperature=args.temperature,
-                top_p=args.top_p,
+                do_sample=do_sample,
                 num_beams=args.num_beams,
                 max_new_tokens=args.max_new_tokens,
                 use_cache=True,
+                eos_token_id=eos_token_id,
+                pad_token_id=pad_token_id,
             )
-            if eos_token_id is not None:
-                generate_kwargs["eos_token_id"] = eos_token_id
-            if pad_token_id is not None:
-                generate_kwargs["pad_token_id"] = pad_token_id
-            output_ids = model.generate(**generate_kwargs)
+            if do_sample:
+                generate_kwargs.update(
+                    temperature=args.temperature,
+                    top_p=args.top_p,
+                )
+
+            output_ids = model.generate(
+                input_ids,
+                attention_mask=attention_mask,
+                images=image_inputs,
+                image_sizes=image_sizes,
+                **generate_kwargs,
+            )
 
         outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
 
