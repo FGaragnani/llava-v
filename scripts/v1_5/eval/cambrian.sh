@@ -46,6 +46,10 @@ gpu_devices="${3:-0}"
 model_name="${llava_more}"
 safe_model_name=$(tr '/' '_' <<< $llava_more)
 
+if [[ "$model_name" == *qwen* ]]; then
+    conv_mode="qwen2_5"
+fi
+
 if [[ "$conv_mode" == *qwen* ]]; then
     export TOKENIZER_PATH="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/Qwen/Qwen2.5-7B-Instruct"
 fi
