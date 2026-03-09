@@ -627,9 +627,16 @@ def preprocess_mpt(
                 round_len += 1
                 instruction_len += 1
 
-            target[cur_len : cur_len + instruction_len] = IGNORE_INDEX
+            # Prevent off-by-one drift from tokenizer/template edge cases.
+            remaining = total_len - cur_len
+            if remaining <= 0:
+                break
+            effective_round_len = min(round_len, remaining)
+            effective_instruction_len = min(instruction_len, effective_round_len)
 
-            cur_len += round_len
+            target[cur_len : cur_len + effective_instruction_len] = IGNORE_INDEX
+
+            cur_len += effective_round_len
         target[cur_len:] = IGNORE_INDEX
 
         if cur_len < tokenizer.model_max_length:
