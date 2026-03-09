@@ -93,8 +93,14 @@ def eval_model(args):
     model_path = os.path.expanduser(args.model_path)
     model_name = get_model_name_from_path(model_path)
     tokenizer, model, image_processor, context_len = load_pretrained_model(model_path, args.model_base, model_name)
-    eos_token_id = tokenizer.eos_token_id
-    pad_token_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else eos_token_id
+    eos_token_id = getattr(model.generation_config, "eos_token_id", None)
+    if eos_token_id is None:
+        eos_token_id = tokenizer.eos_token_id
+    pad_token_id = getattr(model.generation_config, "pad_token_id", None)
+    if pad_token_id is None:
+        pad_token_id = tokenizer.pad_token_id
+    if pad_token_id is None:
+        pad_token_id = eos_token_id[0] if isinstance(eos_token_id, list) and len(eos_token_id) > 0 else eos_token_id
     questions = load_dataset("lmms-lab/SEED-Bench", split="test")
     
     answers_file = os.path.expanduser(args.answers_file)
@@ -142,7 +148,8 @@ def eval_model(args):
 
             output_ids = model.generate(input_ids, **generate_kwargs)
 
-        outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
+        generated_ids = output_ids[:, input_ids.shape[1]:]
+        outputs = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
 
         ans_file.write(json.dumps({"question_id": idx,
                                    "answer": outputs,

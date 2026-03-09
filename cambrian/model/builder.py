@@ -182,18 +182,51 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
         eos_id = getattr(tokenizer, "eos_token_id", None)
         pad_id = getattr(tokenizer, "pad_token_id", None)
 
+        # Merge all plausible EOS ids. Qwen-family checkpoints may stop on <|im_end|>
+        # even when tokenizer/model configs disagree on eos_token_id.
+        eos_candidates = []
         eos_cfg = model.generation_config.eos_token_id
         if isinstance(eos_cfg, list):
-            eos_filtered = [x for x in eos_cfg if x != bos_id]
-            model.generation_config.eos_token_id = eos_filtered if len(eos_filtered) > 0 else eos_id
-        elif eos_cfg == bos_id and eos_id is not None:
-            model.generation_config.eos_token_id = eos_id
+            eos_candidates.extend(eos_cfg)
+        elif eos_cfg is not None:
+            eos_candidates.append(eos_cfg)
+        if eos_id is not None:
+            eos_candidates.append(eos_id)
 
-        if model.generation_config.eos_token_id is None and eos_id is not None:
-            model.generation_config.eos_token_id = eos_id
+        im_end_id = None
+        try:
+            im_end_id = tokenizer.convert_tokens_to_ids("<|im_end|>")
+        except Exception:
+            im_end_id = None
+        unk_id = getattr(tokenizer, "unk_token_id", None)
+        if im_end_id is not None and im_end_id != unk_id and im_end_id >= 0:
+            eos_candidates.append(im_end_id)
+
+        eos_filtered = []
+        for tid in eos_candidates:
+            if tid is None:
+                continue
+            if bos_id is not None and tid == bos_id:
+                continue
+            if tid not in eos_filtered:
+                eos_filtered.append(tid)
+
+        if len(eos_filtered) == 0 and eos_id is not None:
+            eos_filtered = [eos_id]
+
+        if len(eos_filtered) == 1:
+            model.generation_config.eos_token_id = eos_filtered[0]
+        elif len(eos_filtered) > 1:
+            model.generation_config.eos_token_id = eos_filtered
 
         if pad_id is None:
             pad_id = model.generation_config.eos_token_id
         model.generation_config.pad_token_id = pad_id
+
+        print(
+            f"[builder] tokenizer bos/eos/pad={bos_id}/{eos_id}/{getattr(tokenizer, 'pad_token_id', None)}; "
+            f"generation eos={model.generation_config.eos_token_id}; generation pad={model.generation_config.pad_token_id}; "
+            f"im_end_id={im_end_id}"
+        )
 
     return tokenizer, model, image_processor, context_len
