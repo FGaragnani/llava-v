@@ -180,4 +180,24 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
     else:
         context_len = 2048
 
+    # Keep generation defaults tokenizer-aligned for eval scripts that don't pass eos/pad ids.
+    if hasattr(model, "generation_config") and model.generation_config is not None:
+        bos_id = getattr(tokenizer, "bos_token_id", None)
+        eos_id = getattr(tokenizer, "eos_token_id", None)
+        pad_id = getattr(tokenizer, "pad_token_id", None)
+
+        eos_cfg = model.generation_config.eos_token_id
+        if isinstance(eos_cfg, list):
+            eos_filtered = [x for x in eos_cfg if x != bos_id]
+            model.generation_config.eos_token_id = eos_filtered if len(eos_filtered) > 0 else eos_id
+        elif eos_cfg == bos_id and eos_id is not None:
+            model.generation_config.eos_token_id = eos_id
+
+        if model.generation_config.eos_token_id is None and eos_id is not None:
+            model.generation_config.eos_token_id = eos_id
+
+        if pad_id is None:
+            pad_id = model.generation_config.eos_token_id
+        model.generation_config.pad_token_id = pad_id
+
     return tokenizer, model, image_processor, context_len

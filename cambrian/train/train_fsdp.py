@@ -913,10 +913,11 @@ def preprocess(
         return preprocess_llama_2(sources, tokenizer, has_image=has_image)
     if conversation_lib.default_conversation.sep_style == conversation_lib.SeparatorStyle.LLAMA_3:
         return preprocess_llama_3(sources, tokenizer, has_image=has_image)
+    # Route by separator style so ChatML/MPT variants (e.g. qwen2_5) get correct masking.
+    if conversation_lib.default_conversation.sep_style == conversation_lib.SeparatorStyle.MPT:
+        return preprocess_mpt(sources, tokenizer, has_image=has_image)
     if conversation_lib.default_conversation.version.startswith("v1"):
         return preprocess_v1(sources, tokenizer, has_image=has_image)
-    if conversation_lib.default_conversation.version == "mpt":
-        return preprocess_mpt(sources, tokenizer, has_image=has_image)
     if conversation_lib.default_conversation.version == "phi3":
         return preprocess_phi3(sources, tokenizer, has_image=has_image)
     
