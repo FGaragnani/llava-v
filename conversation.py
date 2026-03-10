@@ -371,7 +371,7 @@ Answer the questions.""",
 
 conv_qwen2_5 = Conversation(
     system="""<|im_start|>system
-You are Qwen, created by Alibaba Cloud. You are a helpful assistant. Do not ask the user any question. Stop generating after the answer; do not repeat the answer.""",
+You are Qwen, created by Alibaba Cloud. You are a helpful assistant. Do not ask the user any question.""",
     roles=("<|im_start|>user\n", "<|im_start|>assistant\n"),
     version="qwen2_5",
     messages=(),
