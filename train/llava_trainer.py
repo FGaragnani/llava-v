@@ -778,8 +778,7 @@ class LLaVATrainer(Trainer):
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
                         print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")
 
-                    # Batch-level safety: if every sample was skipped before any alignment pass,
-                    # still touch alignment_encoder once to keep distributed graphs compatible.
+                    # touch alignment_encoder once if it wasn't touched by actual matches
                     if not alignment_forward_touched and align_enc_ref is not None and hidden_states.size(0) > 0:
                         try:
                             fallback_text = hidden_states[0, 0:1, :]
@@ -791,25 +790,6 @@ class LLaVATrainer(Trainer):
                                 print("[GrandAlignDebug] batch_fallback_dummy_alignment=1")
                         except Exception as e:
                             logger.warning(f"[GrandAlignDebug] batch_fallback_dummy_alignment_failed: {repr(e)}")
-
-        if getattr(self.args, 'use_glamm', False):
-            try:
-                base_model = model.get_model() if hasattr(model, 'get_model') else model
-                align_enc = getattr(base_model, 'alignment_encoder', None)
-                hidden_seq = getattr(outputs, 'hidden_states', None)
-                hidden_last = None
-                if isinstance(hidden_seq, (list, tuple)) and len(hidden_seq) > 0 and isinstance(hidden_seq[-1], torch.Tensor):
-                    hidden_last = hidden_seq[-1]
-                elif isinstance(outputs, (list, tuple)) and len(outputs) > 2 and isinstance(outputs[2], torch.Tensor):
-                    hidden_last = outputs[2]
-                if align_enc is not None and isinstance(hidden_last, torch.Tensor) and hidden_last.size(0) > 0 and hidden_last.size(1) > 0:
-                    sync_text = hidden_last[0, 0:1, :]
-                    enc_param = next(align_enc.parameters())
-                    sync_text = sync_text.to(device=enc_param.device, dtype=enc_param.dtype)
-                    sync_proj = align_enc(sync_text)
-                    base_loss = base_loss + (sync_proj.mean() * 0.0)
-            except Exception as e:
-                logger.warning(f"[GrandAlignDebug] final_sync_dummy_alignment_failed: {repr(e)}")
 
         
         total_loss = base_loss + (grand_extra_loss * weight)
