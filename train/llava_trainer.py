@@ -421,6 +421,8 @@ class LLaVATrainer(Trainer):
                 elif hidden_states is not None:
                     input_ids = inputs.get('input_ids', None)
                     labels_len = labels.size(1) if hasattr(labels, 'size') else None
+                    alignment_forward_touched = False
+                    align_enc_ref = None
 
                     def compute_span_with_image_offset(span_indices, sample_input_ids):
                         # Adjust text token indices to account for image tokens in the hidden states, if necessary
@@ -568,6 +570,7 @@ class LLaVATrainer(Trainer):
                         if align_enc is None:
                             logger.warning("Alignment encoder not found; skipping GranD loss.")
                             continue
+                        align_enc_ref = align_enc
                         crop_losses = []
 
                         local_matched = 0
@@ -651,6 +654,7 @@ class LLaVATrainer(Trainer):
                                     dummy_text = dummy_text.to(device=enc_param.device, dtype=enc_param.dtype)
                                     dummy_proj = align_enc(dummy_text)
                                     per_sample_losses.append(dummy_proj.mean() * 0.0)
+                                    alignment_forward_touched = True
                                 except Exception as e:
                                     logger.warning(f"[GrandAlignDebug] dummy_align_no_match_failed: {repr(e)}")
                                 continue
@@ -662,6 +666,7 @@ class LLaVATrainer(Trainer):
                                 projected_text_batch = align_enc(text_batch)
                             except Exception:
                                 projected_text_batch = align_enc(text_batch).squeeze(0)
+                            alignment_forward_touched = True
                             # Compute cosine similarity batch-wise against corresponding image vectors
                             proj_norm = F.normalize(projected_text_batch, dim=-1)
                             # Only compute patch embeddings for matched crops
@@ -758,6 +763,7 @@ class LLaVATrainer(Trainer):
                                 projected_img_batch = align_enc(img_batch)
                             except Exception:
                                 projected_img_batch = align_enc(img_batch).squeeze(0)
+                            alignment_forward_touched = True
 
                             proj_norm = F.normalize(projected_img_batch, dim=-1)
                             dino_vecs = dino_embeds[matched_crop_indices]
@@ -771,6 +777,20 @@ class LLaVATrainer(Trainer):
                     if per_sample_losses:
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
                         print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")
+
+                    # Batch-level safety: if every sample was skipped before any alignment pass,
+                    # still touch alignment_encoder once to keep distributed graphs compatible.
+                    if not alignment_forward_touched and align_enc_ref is not None and hidden_states.size(0) > 0:
+                        try:
+                            fallback_text = hidden_states[0, 0:1, :]
+                            enc_param = next(align_enc_ref.parameters())
+                            fallback_text = fallback_text.to(device=enc_param.device, dtype=enc_param.dtype)
+                            fallback_proj = align_enc_ref(fallback_text)
+                            base_loss = base_loss + (fallback_proj.mean() * 0.0)
+                            if debug_align:
+                                print("[GrandAlignDebug] batch_fallback_dummy_alignment=1")
+                        except Exception as e:
+                            logger.warning(f"[GrandAlignDebug] batch_fallback_dummy_alignment_failed: {repr(e)}")
 
         
         total_loss = base_loss + (grand_extra_loss * weight)
