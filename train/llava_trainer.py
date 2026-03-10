@@ -423,8 +423,6 @@ class LLaVATrainer(Trainer):
                     labels_len = labels.size(1) if hasattr(labels, 'size') else None
                     alignment_forward_touched = False
                     align_enc_ref = None
-                    patch_embedder_touched = False
-                    patch_fallback_img = None
 
                     def compute_span_with_image_offset(span_indices, sample_input_ids):
                         # Adjust text token indices to account for image tokens in the hidden states, if necessary
@@ -532,8 +530,6 @@ class LLaVATrainer(Trainer):
 
                         try:
                             img = Image.open(image_path).convert('RGB')
-                            if patch_fallback_img is None:
-                                patch_fallback_img = img
                         except Exception as e:
                             logger.warning(f"[GrandAlignDebug] skip_sample b={b_idx} path={image_path} reason=image_open_fail error={repr(e)}")
                             continue
@@ -676,8 +672,6 @@ class LLaVATrainer(Trainer):
                             # Only compute patch embeddings for matched crops
                             matched_crops = [crops[i] for i in matched_crop_indices]
                             patch_embeds = self.patch_embedder(matched_crops) if matched_crops else torch.empty((0, self.patch_embedder.embed_dim), device=hidden_states.device)
-                            if matched_crops:
-                                patch_embedder_touched = True
                             patch_embeds = patch_embeds.to(hidden_states.device)
                             img_vecs = patch_embeds
                             img_vecs = img_vecs.to(device=enc_param.device, dtype=enc_param.dtype)
@@ -798,18 +792,24 @@ class LLaVATrainer(Trainer):
                         except Exception as e:
                             logger.warning(f"[GrandAlignDebug] batch_fallback_dummy_alignment_failed: {repr(e)}")
 
-                    # Patch embedder sync safety: if some ranks skipped all patch forwards
-                    # (e.g. no matched phrases), force one tiny forward to avoid ZeRO gather divergence.
-                    if not patch_embedder_touched:
-                        try:
-                            fallback_img = patch_fallback_img
-                            if fallback_img is None:
-                                fallback_img = Image.new("RGB", (224, 224), (0, 0, 0))
-                            _ = self.patch_embedder([fallback_img])
-                            if debug_align:
-                                print("[GrandAlignDebug] batch_fallback_patch_embedder=1")
-                        except Exception as e:
-                            logger.warning(f"[GrandAlignDebug] batch_fallback_patch_embedder_failed: {repr(e)}")
+        if getattr(self.args, 'use_glamm', False):
+            try:
+                base_model = model.get_model() if hasattr(model, 'get_model') else model
+                align_enc = getattr(base_model, 'alignment_encoder', None)
+                hidden_seq = getattr(outputs, 'hidden_states', None)
+                hidden_last = None
+                if isinstance(hidden_seq, (list, tuple)) and len(hidden_seq) > 0 and isinstance(hidden_seq[-1], torch.Tensor):
+                    hidden_last = hidden_seq[-1]
+                elif isinstance(outputs, (list, tuple)) and len(outputs) > 2 and isinstance(outputs[2], torch.Tensor):
+                    hidden_last = outputs[2]
+                if align_enc is not None and isinstance(hidden_last, torch.Tensor) and hidden_last.size(0) > 0 and hidden_last.size(1) > 0:
+                    sync_text = hidden_last[0, 0:1, :]
+                    enc_param = next(align_enc.parameters())
+                    sync_text = sync_text.to(device=enc_param.device, dtype=enc_param.dtype)
+                    sync_proj = align_enc(sync_text)
+                    base_loss = base_loss + (sync_proj.mean() * 0.0)
+            except Exception as e:
+                logger.warning(f"[GrandAlignDebug] final_sync_dummy_alignment_failed: {repr(e)}")
 
         
         total_loss = base_loss + (grand_extra_loss * weight)
