@@ -645,7 +645,14 @@ class LLaVATrainer(Trainer):
                                 text_batch = torch.stack(matched_text_embeds, dim=0)
                             else:
                                 print(f"[GrandAlignDebug] no_matched_phrases sample={b_idx} attempted={len(phrases)}")
-                                print(f"[GrandAlignDebug] generated_tokens sample={b_idx} tokens={generated_token_ids}")
+                                try:
+                                    dummy_text = hidden_states[b_idx][0:1]
+                                    enc_param = next(align_enc.parameters())
+                                    dummy_text = dummy_text.to(device=enc_param.device, dtype=enc_param.dtype)
+                                    dummy_proj = align_enc(dummy_text)
+                                    per_sample_losses.append(dummy_proj.mean() * 0.0)
+                                except Exception as e:
+                                    logger.warning(f"[GrandAlignDebug] dummy_align_no_match_failed: {repr(e)}")
                                 break
 
                             enc_param = next(align_enc.parameters())
