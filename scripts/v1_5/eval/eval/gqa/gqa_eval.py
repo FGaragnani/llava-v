@@ -12,7 +12,7 @@ from cambrian.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_I
 from cambrian.utils import disable_torch_init, IS_LLAVA_MORE, IS_ROSS, IS_LLAVA
 if IS_LLAVA_MORE:
     from llava.model.builder import load_pretrained_model
-    from llava.conversation import conv_templates, SeparatorStyle
+    from llava.conversation import conv_templates, SeparatorStyle, get_stopping_criteria
     from llava.mm_utils import tokenizer_image_token, process_images, get_model_name_from_path
     print("Using imports from LLAVA-MORE")
 elif IS_ROSS:
@@ -87,9 +87,7 @@ def eval_model(args):
     model_path = os.path.expanduser(args.model_path)
     model_name = get_model_name_from_path(model_path)
     tokenizer, model, image_processor, context_len = load_pretrained_model(model_path, args.model_base, model_name)
-    print(tokenizer.convert_tokens_to_ids("<|im_start|>"))
-    print(tokenizer.convert_tokens_to_ids("<|im_end|>"))
-    print(tokenizer.tokenize("<|im_start|>assistant\n"))
+    stopping_criteria = get_stopping_criteria(tokenizer)
 
     images_data = load_dataset("lmms-lab/GQA", "testdev_balanced_images", split="testdev")
     images = {}
@@ -135,7 +133,8 @@ def eval_model(args):
                 top_p=args.top_p,
                 num_beams=args.num_beams,
                 max_new_tokens=args.max_new_tokens,
-                use_cache=True)
+                use_cache=True,
+                stopping_criteria=stopping_criteria)
 
         outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
 
