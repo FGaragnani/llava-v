@@ -653,7 +653,7 @@ class LLaVATrainer(Trainer):
                                     per_sample_losses.append(dummy_proj.mean() * 0.0)
                                 except Exception as e:
                                     logger.warning(f"[GrandAlignDebug] dummy_align_no_match_failed: {repr(e)}")
-                                break
+                                continue
 
                             enc_param = next(align_enc.parameters())
                             text_batch = text_batch.to(device=enc_param.device, dtype=enc_param.dtype)
