@@ -87,6 +87,9 @@ def eval_model(args):
     model_path = os.path.expanduser(args.model_path)
     model_name = get_model_name_from_path(model_path)
     tokenizer, model, image_processor, context_len = load_pretrained_model(model_path, args.model_base, model_name)
+    print(tokenizer.convert_tokens_to_ids("<|im_start|>"))
+    print(tokenizer.convert_tokens_to_ids("<|im_end|>"))
+    print(tokenizer.tokenize("<|im_start|>assistant\n"))
 
     images_data = load_dataset("lmms-lab/GQA", "testdev_balanced_images", split="testdev")
     images = {}
