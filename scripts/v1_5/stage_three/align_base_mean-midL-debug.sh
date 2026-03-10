@@ -98,7 +98,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
 	--use_glamm True \
 	--grand_image_dir /leonardo_scratch/large/userexternal/fgaragna/dataset/GLAMM/images/ \
 	--grand_annotation_dir /leonardo_scratch/large/userexternal/fgaragna/dataset/GLAMM/annotations/simple/ \
-	--glamm_samples_limit 100000 \
+	--glamm_samples_limit 1000 \
 	--patch_agg_mode cls \
 	--grand_alignment_loss_weight 0.5 \
 	--text_token_pool last \
