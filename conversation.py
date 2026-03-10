@@ -377,7 +377,7 @@ You are Qwen, created by Alibaba Cloud. You are a helpful assistant.""",
     messages=(),
     offset=0,
     sep_style=SeparatorStyle.MPT,
-    sep="<|im_end|>\n",
+    sep="<|im_end|>",
 )
 
 default_conversation = conv_vicuna_v1
