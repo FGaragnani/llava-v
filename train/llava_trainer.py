@@ -423,6 +423,8 @@ class LLaVATrainer(Trainer):
                     labels_len = labels.size(1) if hasattr(labels, 'size') else None
                     alignment_forward_touched = False
                     align_enc_ref = None
+                    patch_embedder_touched = False
+                    patch_fallback_img = None
 
                     def compute_span_with_image_offset(span_indices, sample_input_ids):
                         # Adjust text token indices to account for image tokens in the hidden states, if necessary
@@ -530,6 +532,8 @@ class LLaVATrainer(Trainer):
 
                         try:
                             img = Image.open(image_path).convert('RGB')
+                            if patch_fallback_img is None:
+                                patch_fallback_img = img
                         except Exception as e:
                             logger.warning(f"[GrandAlignDebug] skip_sample b={b_idx} path={image_path} reason=image_open_fail error={repr(e)}")
                             continue
@@ -672,6 +676,8 @@ class LLaVATrainer(Trainer):
                             # Only compute patch embeddings for matched crops
                             matched_crops = [crops[i] for i in matched_crop_indices]
                             patch_embeds = self.patch_embedder(matched_crops) if matched_crops else torch.empty((0, self.patch_embedder.embed_dim), device=hidden_states.device)
+                            if matched_crops:
+                                patch_embedder_touched = True
                             patch_embeds = patch_embeds.to(hidden_states.device)
                             img_vecs = patch_embeds
                             img_vecs = img_vecs.to(device=enc_param.device, dtype=enc_param.dtype)
@@ -791,6 +797,19 @@ class LLaVATrainer(Trainer):
                                 print("[GrandAlignDebug] batch_fallback_dummy_alignment=1")
                         except Exception as e:
                             logger.warning(f"[GrandAlignDebug] batch_fallback_dummy_alignment_failed: {repr(e)}")
+
+                    # Patch embedder sync safety: if some ranks skipped all patch forwards
+                    # (e.g. no matched phrases), force one tiny forward to avoid ZeRO gather divergence.
+                    if not patch_embedder_touched:
+                        try:
+                            fallback_img = patch_fallback_img
+                            if fallback_img is None:
+                                fallback_img = Image.new("RGB", (224, 224), (0, 0, 0))
+                            _ = self.patch_embedder([fallback_img])
+                            if debug_align:
+                                print("[GrandAlignDebug] batch_fallback_patch_embedder=1")
+                        except Exception as e:
+                            logger.warning(f"[GrandAlignDebug] batch_fallback_patch_embedder_failed: {repr(e)}")
 
         
         total_loss = base_loss + (grand_extra_loss * weight)
