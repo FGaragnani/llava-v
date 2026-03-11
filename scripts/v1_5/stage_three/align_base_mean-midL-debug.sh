@@ -3,9 +3,9 @@
 #SBATCH --output=/leonardo_scratch/large/userexternal/fgaragna/logs/%x-%j.out
 #SBATCH --error=/leonardo_scratch/large/userexternal/fgaragna/logs/%x-%j.err
 #SBATCH --open-mode=truncate
-#SBATCH --nodes=1
+#SBATCH --nodes=4
 #SBATCH --ntasks-per-node=1
-#SBATCH --gpus-per-node=1
+#SBATCH --gpus-per-node=4
 #SBATCH --mem=480G
 #SBATCH --cpus-per-task=32
 #SBATCH --partition=boost_usr_prod
