@@ -649,7 +649,17 @@ class LLaVATrainer(Trainer):
                             else:
                                 print(f"[GrandAlignDebug] no_matched_phrases sample={b_idx} attempted={len(phrases)}")
                                 try:
-                                    dummy_text = hidden_states[b_idx][0:1]
+                                    # Keep align_enc graph usage consistent with a realistic batch size.
+                                    target_batch = len(phrases)
+                                    if self.args.max_crops_glamm is not None:
+                                        target_batch = min(target_batch, self.args.max_crops_glamm)
+                                    if target_batch <= 0:
+                                        target_batch = len(crops) if 'crops' in locals() else len(sample_bboxes)
+                                    if target_batch <= 0:
+                                        target_batch = 1
+
+                                    dummy_seed = hidden_states[b_idx][0:1]
+                                    dummy_text = dummy_seed.repeat(target_batch, 1)
                                     enc_param = next(align_enc.parameters())
                                     dummy_text = dummy_text.to(device=enc_param.device, dtype=enc_param.dtype)
                                     dummy_proj = align_enc(dummy_text)
@@ -777,19 +787,6 @@ class LLaVATrainer(Trainer):
                     if per_sample_losses:
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
                         print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")
-
-                    # touch alignment_encoder once if it wasn't touched by actual matches
-                    if not alignment_forward_touched and align_enc_ref is not None and hidden_states.size(0) > 0:
-                        try:
-                            fallback_text = hidden_states[0, 0:1, :]
-                            enc_param = next(align_enc_ref.parameters())
-                            fallback_text = fallback_text.to(device=enc_param.device, dtype=enc_param.dtype)
-                            fallback_proj = align_enc_ref(fallback_text)
-                            base_loss = base_loss + (fallback_proj.mean() * 0.0)
-                            if debug_align:
-                                print("[GrandAlignDebug] batch_fallback_dummy_alignment=1")
-                        except Exception as e:
-                            logger.warning(f"[GrandAlignDebug] batch_fallback_dummy_alignment_failed: {repr(e)}")
 
         
         total_loss = base_loss + (grand_extra_loss * weight)
