@@ -1008,11 +1008,11 @@ def train(attn_implementation=None):
             **bnb_model_from_pretrained_args
         )
         
-    try:
-        training_args.ddp_find_unused_parameters = True
-        rank0_print("Enabled ddp_find_unused_parameters=True to prevent hangs on unused grads.")
-    except Exception:
-        ...
+    # try:
+    #     training_args.ddp_find_unused_parameters = True
+    #     rank0_print("Enabled ddp_find_unused_parameters=True to prevent hangs on unused grads.")
+    # except Exception:
+    #     ...
 
     if model_args.freeze_backbone:
         model.model.requires_grad_(False)
