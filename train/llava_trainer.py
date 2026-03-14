@@ -365,21 +365,56 @@ class LLaVATrainer(Trainer):
                     hidden_last = hidden_seq[-1]
                 elif isinstance(outputs, (list, tuple)) and len(outputs) > 2 and isinstance(outputs[2], torch.Tensor):
                     hidden_last = outputs[2]
-                if align_enc is not None and isinstance(hidden_last, torch.Tensor) and hidden_last.size(1) > 0:
+                if align_enc is not None:
                     target_batch = getattr(self.args, 'max_crops_glamm', None)
                     if target_batch is None or target_batch <= 0:
                         target_batch = 1
-                    seed = hidden_last[:, 0, :].mean(dim=0, keepdim=True)
-                    masked_input = seed.repeat(target_batch, 1)
-                    # Ensure dtype match
+
+                    enc_param = None
+                    input_dim = None
                     try:
-                        param_dtype = next(align_enc.parameters()).dtype
-                        if masked_input.dtype != param_dtype:
-                            masked_input = masked_input.to(param_dtype)
-                    except Exception:
-                        pass
-                    dummy_out = align_enc(masked_input)
-                    grand_extra_loss = grand_extra_loss + dummy_out.mean() * 0.0
+                        enc_param = next(align_enc.parameters())
+                    except StopIteration:
+                        enc_param = None
+
+                    if hasattr(align_enc, 'in_features'):
+                        input_dim = align_enc.in_features
+                    if input_dim is None:
+                        for p in align_enc.parameters():
+                            if p.ndim >= 2:
+                                input_dim = p.shape[1]
+                                break
+                    if input_dim is None:
+                        input_dim = getattr(self.model.config, 'hidden_size', None)
+                    if input_dim is None:
+                        input_dim = 1
+
+                    if isinstance(hidden_last, torch.Tensor) and hidden_last.size(1) > 0:
+                        seed = hidden_last[:, 0, :].mean(dim=0, keepdim=True)
+                        masked_input = seed.repeat(target_batch, 1)
+                        if masked_input.size(-1) != input_dim:
+                            masked_input = torch.zeros((target_batch, input_dim), device=base_loss.device, dtype=base_loss.dtype)
+                    else:
+                        masked_input = torch.zeros((target_batch, input_dim), device=base_loss.device, dtype=base_loss.dtype)
+
+                    if enc_param is not None:
+                        masked_input = masked_input.to(device=enc_param.device, dtype=enc_param.dtype)
+
+                    projected_text = align_enc(masked_input)
+
+                    # Build synthetic crops and run patch_embedder to mirror the real alignment path.
+                    fake_crops = [Image.new('RGB', (224, 224), color=(0, 0, 0)) for _ in range(target_batch)]
+                    patch_embeds = self.patch_embedder(fake_crops)
+                    if enc_param is not None:
+                        patch_embeds = patch_embeds.to(device=enc_param.device, dtype=enc_param.dtype)
+                    else:
+                        patch_embeds = patch_embeds.to(device=projected_text.device, dtype=projected_text.dtype)
+
+                    proj_norm = F.normalize(projected_text, dim=-1)
+                    img_norm = F.normalize(patch_embeds, dim=-1)
+                    sims = (proj_norm * img_norm).sum(dim=-1)
+                    dummy_out = (1 - sims).mean()
+                    grand_extra_loss = grand_extra_loss + dummy_out * 0.0
             except Exception as e:
                 logger.warning(f"[GrandAlignDebug] Masked unification error: {repr(e)}")
 
@@ -787,57 +822,6 @@ class LLaVATrainer(Trainer):
                     if per_sample_losses:
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
                         print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")
-        else:
-            # Keep align_enc + patch_embedder usage consistent across steps for ZeRO-3.
-            try:
-                base_model = model.get_model() if hasattr(model, 'get_model') else model
-                align_enc = getattr(base_model, 'alignment_encoder', None)
-                if align_enc is not None:
-                    target_batch = getattr(self.args, 'max_crops_glamm', None)
-                    if target_batch is None or target_batch <= 0:
-                        target_batch = 1
-
-                    enc_param = None
-                    input_dim = None
-                    try:
-                        enc_param = next(align_enc.parameters())
-                    except StopIteration:
-                        enc_param = None
-
-                    if hasattr(align_enc, 'in_features'):
-                        input_dim = align_enc.in_features
-                    if input_dim is None:
-                        for p in align_enc.parameters():
-                            if p.ndim >= 2:
-                                input_dim = p.shape[1]
-                                break
-                    if input_dim is None:
-                        input_dim = getattr(self.model.config, 'hidden_size', None)
-                    if input_dim is None:
-                        input_dim = 1
-
-                    dummy_input = torch.zeros((target_batch, input_dim), device=base_loss.device, dtype=base_loss.dtype)
-                    if enc_param is not None:
-                        dummy_input = dummy_input.to(device=enc_param.device, dtype=enc_param.dtype)
-
-                    projected_text = align_enc(dummy_input)
-
-                    # Build synthetic crops and run patch_embedder to mirror the real alignment path.
-                    fake_crops = [Image.new('RGB', (224, 224), color=(0, 0, 0)) for _ in range(target_batch)]
-                    patch_embeds = self.patch_embedder(fake_crops)
-
-                    if enc_param is not None:
-                        patch_embeds = patch_embeds.to(device=enc_param.device, dtype=enc_param.dtype)
-                    else:
-                        patch_embeds = patch_embeds.to(device=projected_text.device, dtype=projected_text.dtype)
-
-                    proj_norm = F.normalize(projected_text, dim=-1)
-                    img_norm = F.normalize(patch_embeds, dim=-1)
-                    sims = (proj_norm * img_norm).sum(dim=-1)
-                    dummy_out = (1 - sims).mean()
-                    grand_extra_loss = grand_extra_loss + (dummy_out * 0.0)
-            except Exception as e:
-                logger.warning(f"[GrandAlignDebug] dummy_align_fallback_failed: {repr(e)}")
         
         total_loss = base_loss + (grand_extra_loss * weight)
         if return_outputs:
