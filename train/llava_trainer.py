@@ -788,7 +788,7 @@ class LLaVATrainer(Trainer):
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
                         print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")
         else:
-            # Keep align_enc parameter usage consistent across steps for ZeRO-3.
+            # Keep align_enc + patch_embedder usage consistent across steps for ZeRO-3.
             try:
                 base_model = model.get_model() if hasattr(model, 'get_model') else model
                 align_enc = getattr(base_model, 'alignment_encoder', None)
@@ -820,8 +820,22 @@ class LLaVATrainer(Trainer):
                     if enc_param is not None:
                         dummy_input = dummy_input.to(device=enc_param.device, dtype=enc_param.dtype)
 
-                    dummy_out = align_enc(dummy_input)
-                    grand_extra_loss = grand_extra_loss + (dummy_out.mean() * 0.0)
+                    projected_text = align_enc(dummy_input)
+
+                    # Build synthetic crops and run patch_embedder to mirror the real alignment path.
+                    fake_crops = [Image.new('RGB', (224, 224), color=(0, 0, 0)) for _ in range(target_batch)]
+                    patch_embeds = self.patch_embedder(fake_crops)
+
+                    if enc_param is not None:
+                        patch_embeds = patch_embeds.to(device=enc_param.device, dtype=enc_param.dtype)
+                    else:
+                        patch_embeds = patch_embeds.to(device=projected_text.device, dtype=projected_text.dtype)
+
+                    proj_norm = F.normalize(projected_text, dim=-1)
+                    img_norm = F.normalize(patch_embeds, dim=-1)
+                    sims = (proj_norm * img_norm).sum(dim=-1)
+                    dummy_out = (1 - sims).mean()
+                    grand_extra_loss = grand_extra_loss + (dummy_out * 0.0)
             except Exception as e:
                 logger.warning(f"[GrandAlignDebug] dummy_align_fallback_failed: {repr(e)}")
         
