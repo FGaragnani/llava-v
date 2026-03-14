@@ -149,7 +149,6 @@ class GranDDataset(Dataset):
 
         if not dense_labels:
             print(f"Warning: No details found for image {image_name}.jpg in annotation.")
-            dense_labels.append("")  # Add empty label to avoid empty list issues
         if not dense_caption_text:
             print(f"Warning: No dense caption found for image {image_name}.jpg in annotation.")
 

@@ -352,7 +352,6 @@ class LLaVATrainer(Trainer):
         outputs = model(**inputs)
         base_loss = outputs.loss if hasattr(outputs, 'loss') else outputs[0]
 
-
         # Masked unification path: always touch alignment_encoder with a masked batch 
         # to keep graph consistent.
         if os.environ.get("GRAND_FORCE_MASK", "0") == "1":
@@ -366,10 +365,11 @@ class LLaVATrainer(Trainer):
                 elif isinstance(outputs, (list, tuple)) and len(outputs) > 2 and isinstance(outputs[2], torch.Tensor):
                     hidden_last = outputs[2]
                 if align_enc is not None and isinstance(hidden_last, torch.Tensor) and hidden_last.size(1) > 0:
-                    dummy_tokens = hidden_last[:, 0, :]
-                    mask_vec = grand_mask.bool() if grand_mask is not None else torch.ones(dummy_tokens.size(0), dtype=torch.bool, device=dummy_tokens.device)
-                    mask_float = mask_vec.float().unsqueeze(-1)
-                    masked_input = dummy_tokens * mask_float
+                    target_batch = getattr(self.args, 'max_crops_glamm', None)
+                    if target_batch is None or target_batch <= 0:
+                        target_batch = 1
+                    seed = hidden_last[:, 0, :].mean(dim=0, keepdim=True)
+                    masked_input = seed.repeat(target_batch, 1)
                     # Ensure dtype match
                     try:
                         param_dtype = next(align_enc.parameters()).dtype
