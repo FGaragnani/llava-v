@@ -788,14 +788,8 @@ class LLaVATrainer(Trainer):
                     if per_sample_losses:
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
                         print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")
-        elif \
-            grand_mask is None or \
-                labels is None or \
-                grand_bboxes is None or \
-                grand_image_paths is None or \
-                grand_dense_labels is None or \
-                grand_dense_captions is None or \
-                alignment_forward_touched == False:
+                        
+        if alignment_forward_touched == False:
             print(f"[GrandAlignDebug] dummy forward")
             try:
                 base_model = model.get_model() if hasattr(model, 'get_model') else model
