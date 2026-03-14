@@ -134,6 +134,9 @@ class GranDDataset(Dataset):
         dense_labels: List[str] = []
         bboxes: List[Tuple[int, int, int, int]] = []
         
+        if not details:
+            print(f"Warning: No details found for image {image_name}.jpg in annotation.")
+
         for d in details:
             v = d.get("phrase")
             text = v.strip().lower() if v else ""
