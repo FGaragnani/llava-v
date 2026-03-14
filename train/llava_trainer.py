@@ -351,6 +351,7 @@ class LLaVATrainer(Trainer):
         labels = inputs.get('labels', None)
         outputs = model(**inputs)
         base_loss = outputs.loss if hasattr(outputs, 'loss') else outputs[0]
+        grand_extra_loss = torch.zeros((), device=base_loss.device)
 
         # Masked unification path: always touch alignment_encoder with a masked batch 
         # to keep graph consistent.
@@ -378,11 +379,10 @@ class LLaVATrainer(Trainer):
                     except Exception:
                         pass
                     dummy_out = align_enc(masked_input)
-                    base_loss = base_loss + dummy_out.mean() * 0.0
+                    grand_extra_loss = grand_extra_loss + dummy_out.mean() * 0.0
             except Exception as e:
                 logger.warning(f"[GrandAlignDebug] Masked unification error: {repr(e)}")
 
-        grand_extra_loss = torch.zeros((), device=base_loss.device)
         weight = getattr(self.args, 'grand_alignment_loss_weight', 0.5)
         if not weight:
             total_loss = base_loss
