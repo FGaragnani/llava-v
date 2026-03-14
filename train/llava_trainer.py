@@ -787,7 +787,43 @@ class LLaVATrainer(Trainer):
                     if per_sample_losses:
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
                         print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")
+        else:
+            # Keep align_enc parameter usage consistent across steps for ZeRO-3.
+            try:
+                base_model = model.get_model() if hasattr(model, 'get_model') else model
+                align_enc = getattr(base_model, 'alignment_encoder', None)
+                if align_enc is not None:
+                    target_batch = getattr(self.args, 'max_crops_glamm', None)
+                    if target_batch is None or target_batch <= 0:
+                        target_batch = 1
 
+                    enc_param = None
+                    input_dim = None
+                    try:
+                        enc_param = next(align_enc.parameters())
+                    except StopIteration:
+                        enc_param = None
+
+                    if hasattr(align_enc, 'in_features'):
+                        input_dim = align_enc.in_features
+                    if input_dim is None:
+                        for p in align_enc.parameters():
+                            if p.ndim >= 2:
+                                input_dim = p.shape[1]
+                                break
+                    if input_dim is None:
+                        input_dim = getattr(self.model.config, 'hidden_size', None)
+                    if input_dim is None:
+                        input_dim = 1
+
+                    dummy_input = torch.zeros((target_batch, input_dim), device=base_loss.device, dtype=base_loss.dtype)
+                    if enc_param is not None:
+                        dummy_input = dummy_input.to(device=enc_param.device, dtype=enc_param.dtype)
+
+                    dummy_out = align_enc(dummy_input)
+                    grand_extra_loss = grand_extra_loss + (dummy_out.mean() * 0.0)
+            except Exception as e:
+                logger.warning(f"[GrandAlignDebug] dummy_align_fallback_failed: {repr(e)}")
         
         total_loss = base_loss + (grand_extra_loss * weight)
         if return_outputs:
