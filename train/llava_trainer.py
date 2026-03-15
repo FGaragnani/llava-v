@@ -373,15 +373,12 @@ class LLaVATrainer(Trainer):
                 except StopIteration:
                     enc_param = None
 
-                if hasattr(align_enc, 'in_features'):
-                    input_dim = align_enc.in_features
-                if input_dim is None:
-                    for p in align_enc.parameters():
-                        if p.ndim >= 2:
-                            input_dim = p.shape[1]
-                            break
+                if isinstance(seed_vec, torch.Tensor) and seed_vec.ndim == 1:
+                    input_dim = int(seed_vec.numel())
                 if input_dim is None:
                     input_dim = getattr(self.model.config, 'hidden_size', None)
+                if input_dim is None and hasattr(align_enc, 'in_features'):
+                    input_dim = int(align_enc.in_features)
                 if input_dim is None:
                     input_dim = 1
 
@@ -396,7 +393,8 @@ class LLaVATrainer(Trainer):
                 projected_text = align_enc(dummy_input)
 
                 fake_crops = [Image.new('RGB', (224, 224), color=(0, 0, 0)) for _ in range(target_batch)]
-                patch_embeds = self.patch_embedder(fake_crops)
+                with torch.no_grad():
+                    patch_embeds = self.patch_embedder(fake_crops)
                 if enc_param is not None:
                     patch_embeds = patch_embeds.to(device=enc_param.device, dtype=enc_param.dtype)
                 else:
@@ -687,12 +685,12 @@ class LLaVATrainer(Trainer):
                                     matched_crop_total += 1
                                     local_matched += 1
                                 else:
-                                    print(f"[GrandAlignDebug] no_match phrase='{phrase}'; model_output='{self.tokenizer.decode(generated_token_ids)}'")
+                                    logger.warning(f"[GrandAlignDebug] no_match phrase='{phrase}'; model_output='{self.tokenizer.decode(generated_token_ids)}'")
 
                             if matched_text_embeds:
                                 text_batch = torch.stack(matched_text_embeds, dim=0)
                             else:
-                                print(f"[GrandAlignDebug] no_matched_phrases sample={b_idx} attempted={len(phrases)}")
+                                logger.warning(f"[GrandAlignDebug] no_matched_phrases sample={b_idx} attempted={len(phrases)}")
                                 continue
 
                             enc_param = next(align_enc.parameters())
