@@ -813,7 +813,9 @@ class LLaVATrainer(Trainer):
                         grand_loss_applied = True
                         print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")
 
-        if os.environ.get("GRAND_FORCE_MASK", "0") != "1" and not grand_loss_applied:
+        if os.environ.get("GRAND_FORCE_MASK", "0") != "1":
+            if not grand_loss_applied:
+                print("[GrandAlignDebug] No GranD loss applied; running dummy alignment for graph consistency.")
             run_dummy_text_image_alignment()
         
         total_loss = base_loss + (grand_extra_loss * weight)
