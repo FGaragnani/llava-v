@@ -392,13 +392,28 @@ class LLaVATrainer(Trainer):
 
                 projected_text = align_enc(dummy_input)
 
-                fake_crops = [Image.new('RGB', (224, 224), color=(0, 0, 0)) for _ in range(target_batch)]
-                with torch.no_grad():
-                    patch_embeds = self.patch_embedder(fake_crops)
-                if enc_param is not None:
-                    patch_embeds = patch_embeds.to(device=enc_param.device, dtype=enc_param.dtype)
+                patch_model = getattr(self.patch_embedder, 'model', None)
+                patch_is_zero_sharded = False
+                try:
+                    if patch_model is not None:
+                        patch_is_zero_sharded = any(hasattr(p, 'ds_id') for p in patch_model.parameters())
+                except Exception:
+                    patch_is_zero_sharded = False
+
+                if patch_is_zero_sharded:
+                    patch_embeds = torch.zeros(
+                        (target_batch, projected_text.size(-1)),
+                        device=projected_text.device,
+                        dtype=projected_text.dtype,
+                    )
                 else:
-                    patch_embeds = patch_embeds.to(device=projected_text.device, dtype=projected_text.dtype)
+                    fake_crops = [Image.new('RGB', (224, 224), color=(0, 0, 0)) for _ in range(target_batch)]
+                    with torch.no_grad():
+                        patch_embeds = self.patch_embedder(fake_crops)
+                    if enc_param is not None:
+                        patch_embeds = patch_embeds.to(device=enc_param.device, dtype=enc_param.dtype)
+                    else:
+                        patch_embeds = patch_embeds.to(device=projected_text.device, dtype=projected_text.dtype)
 
                 proj_norm = F.normalize(projected_text, dim=-1)
                 img_norm = F.normalize(patch_embeds, dim=-1)
@@ -409,6 +424,10 @@ class LLaVATrainer(Trainer):
                 grand_extra_loss = grand_extra_loss + (dummy_out * 0.0)
             except Exception as e:
                 logger.warning(f"[GrandAlignDebug] dummy_align_fallback_failed: {repr(e)}")
+
+        def sync_ranks_before_dummy():
+            if torch.distributed.is_available() and torch.distributed.is_initialized():
+                torch.distributed.barrier()
 
         # Masked unification path: always touch alignment_encoder with a masked batch 
         # to keep graph consistent.
@@ -814,6 +833,7 @@ class LLaVATrainer(Trainer):
         if os.environ.get("GRAND_FORCE_MASK", "0") != "1":
             if not grand_loss_applied:
                 print("[GrandAlignDebug] No GranD loss applied; running dummy alignment for graph consistency.")
+            sync_ranks_before_dummy()
             run_dummy_text_image_alignment()
         
         total_loss = base_loss + (grand_extra_loss * weight)
