@@ -706,6 +706,10 @@ class LLaVATrainer(Trainer):
                                 text_batch = torch.cat([text_batch, pad_tensor], dim=0)
                                 print(f"[GrandAlignDebug] padding_text_batch sample={b_idx} pad_size={pad_size}")
 
+                            # Keep path shape-safe when no matches and max_crops_glamm is unset.
+                            if valid_count == 0 and text_batch.size(0) == 0:
+                                text_batch = torch.zeros((1, hidden_states.size(-1)), device=hidden_states.device, dtype=hidden_states.dtype)
+
                             enc_param = next(align_enc.parameters())
                             text_batch = text_batch.to(device=enc_param.device, dtype=enc_param.dtype)
                             # Align text to image dimensions
