@@ -731,7 +731,7 @@ class LLaVATrainer(Trainer):
                             if matched_crops:
                                 patch_embeds = self.patch_embedder(matched_crops)
                             if not matched_crops:
-                                patch_embeds = torch.zeros((0, proj_norm.size(-1)), dtype=proj_norm.dtype)
+                                patch_embeds = torch.zeros((0, text_batch.size(1)), dtype=text_batch.dtype)
                             
                             patch_embeds = patch_embeds.to(hidden_states.device)
                             img_vecs = patch_embeds
