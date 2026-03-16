@@ -49,7 +49,7 @@ output_dir="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/st
 clip_model_name_or_path="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/openai/clip-vit-large-patch14-336"
 
 learning_rate=2e-5
-per_device_train_batch_size=1
+per_device_train_batch_size=2
 gradient_accumulation_steps=4
 dataloader_num_workers=0
 
