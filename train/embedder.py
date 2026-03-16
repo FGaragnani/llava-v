@@ -297,4 +297,8 @@ class PatchEmbedder(nn.Module):
             return outputs.last_hidden_state
 
     def _run_vision_model(self, inputs):
+        if deepspeed is not None and any(hasattr(p, "ds_id") for p in self.vision_model.parameters()):
+            # ZeRO-3 shards parameters; gather them for the forward pass.
+            with deepspeed.zero.GatheredParameters(list(self.vision_model.parameters()), modifier_rank=None):
+                return self.vision_model(**inputs, output_hidden_states=True)
         return self.vision_model(**inputs, output_hidden_states=True)
