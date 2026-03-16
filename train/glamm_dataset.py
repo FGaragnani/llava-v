@@ -54,6 +54,23 @@ class GranDDataset(Dataset):
         ]
         if self.samples_limit is not None:
             self.image_files = self.image_files[:self.samples_limit]
+            
+        correct_img_files = []
+        for img_file in self.image_files:
+            annotation_path = os.path.join(self.annotation_dir, os.path.splitext(img_file)[0] + ".json")
+            with open(annotation_path, "r", encoding="utf-8") as f:
+                ann_data = json.load(f)
+            dense_caption_text = ann_data.get("dense_caption", {}).get("caption", "").lower().strip()
+            details = ann_data.get("dense_caption", {}).get("details", [])
+            found = False
+            for d in details:
+                if d.get("phrase", "").strip().lower() in dense_caption_text:
+                    found = True
+                    break
+            if found:
+                correct_img_files.append(img_file)
+
+        self.image_files = correct_img_files
         self._image_index: List[Dict[str, str]] = []
         self._build_image_index()
 
@@ -138,6 +155,8 @@ class GranDDataset(Dataset):
         for d in details:
             v = d.get("phrase")
             text = v.strip().lower() if v else ""
+            if not text or text not in dense_caption_text:
+                continue
             bbox_values = d.get("bbox")
             if bbox_values and text:
                 bbox_values = bbox_values[0]
@@ -149,7 +168,7 @@ class GranDDataset(Dataset):
 
         if not dense_labels:
             print(f"Warning: No details found for image {image_name}.jpg in annotation.")
-            dense_labels = ["background"]
+            dense_labels = ["empty detail"]
         if not dense_caption_text:
             print(f"Warning: No dense caption found for image {image_name}.jpg in annotation.")
             dense_caption_text = "empty image"
