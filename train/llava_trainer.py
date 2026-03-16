@@ -556,14 +556,17 @@ class LLaVATrainer(Trainer):
                     for b_idx, is_grand in enumerate(grand_mask):
                         # For each sample in the batch
                         if not is_grand:
+                            print(f"[GrandAlignDebug] skip_sample b={b_idx} reason=not_grand")
                             continue
                         sample_bboxes = grand_bboxes[b_idx] if b_idx < len(grand_bboxes) else [] # list of bboxes
                         image_path = grand_image_paths[b_idx] if b_idx < len(grand_image_paths) else None
                         if not sample_bboxes or image_path is None:
+                            print(f"[GrandAlignDebug] skip_sample b={b_idx} reason=missing_bboxes_or_image_path")
                             continue
                         label_row = labels[b_idx]
                         token_mask = (label_row != IGNORE_INDEX)
                         if token_mask.sum() == 0:
+                            print(f"[GrandAlignDebug] skip_sample b={b_idx} reason=no_valid_tokens")
                             continue
                         generated_token_ids = label_row[token_mask].tolist()
                         generated_indices = torch.nonzero(token_mask, as_tuple=False).squeeze(-1).tolist()
@@ -702,10 +705,11 @@ class LLaVATrainer(Trainer):
 
                             if matched_text_embeds:
                                 text_batch = torch.stack(matched_text_embeds, dim=0)
+                                print(f"[GrandAlignDebug] text_batch_successfull shape: {text_batch.shape}")
                             else:
                                 text_batch = torch.zeros((0, hidden_states.size(-1)))
-                                logger.warning(f"[GrandAlignDebug] no_matched_phrases sample={b_idx} attempted={len(phrases)}")
-                            
+                                logger.warning(f"[GrandAlignDebug] no_matched_phrases sample={b_idx} attempted={len(phrases)}, text_batch shape={text_batch.shape}")
+
                             valid_count = text_batch.size(0)
                             if self.args.max_crops_glamm is not None and valid_count >= self.args.max_crops_glamm:
                                 text_batch = text_batch[:self.args.max_crops_glamm]
@@ -843,7 +847,7 @@ class LLaVATrainer(Trainer):
         print(f"Rank {torch.distributed.get_rank()} running alignment")
         if not grand_loss_applied:
             print("[GrandAlignDebug] No GranD loss applied; running dummy alignment for graph consistency.")
-        run_dummy_text_image_alignment()
+            run_dummy_text_image_alignment()
         
         total_loss = base_loss + (grand_extra_loss * weight)
         if return_outputs:

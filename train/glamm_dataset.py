@@ -149,13 +149,13 @@ class GranDDataset(Dataset):
 
         if not dense_labels:
             print(f"Warning: No details found for image {image_name}.jpg in annotation.")
-            dense_labels = ["<|empty|>"]
+            dense_labels = ["background"]
         if not dense_caption_text:
             print(f"Warning: No dense caption found for image {image_name}.jpg in annotation.")
-            dense_caption_text = "<|empty_caption|>"
+            dense_caption_text = "empty image"
         if not bboxes:
             print(f"Warning: No valid bounding boxes found for image {image_name}.jpg in annotation.")
-            bboxes = [(0, 0, 1, 1)]
+            bboxes = [(0, 0, 100, 100)]
 
         if self.image_processor is None:
             image_tensor = F.to_tensor(image)
@@ -173,6 +173,10 @@ class GranDDataset(Dataset):
         sources = preprocess_multimodal([conversation], self.data_args)
         data_dict = preprocess(sources, self.tokenizer, has_image=True)
         labels = data_dict["labels"][0]
+
+        if labels is None:
+            print(f"Warning: No labels generated for image {image_name}.jpg. Using empty labels.")
+            labels = torch.tensor([])
 
         return {
             "input_ids": data_dict["input_ids"][0],
