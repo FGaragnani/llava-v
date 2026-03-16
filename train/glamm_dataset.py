@@ -1,6 +1,7 @@
 import os
 import json
 import math
+import re
 from typing import List, Tuple, Optional, Dict
 
 import torch
@@ -60,11 +61,13 @@ class GranDDataset(Dataset):
             annotation_path = os.path.join(self.annotation_dir, os.path.splitext(img_file)[0] + ".json")
             with open(annotation_path, "r", encoding="utf-8") as f:
                 ann_data = json.load(f)
+            ann_data = self._extract_ann_for_image(ann_data, os.path.splitext(img_file)[0])
             dense_caption_text = ann_data.get("dense_caption", {}).get("caption", "").lower().strip()
             details = ann_data.get("dense_caption", {}).get("details", [])
             found = False
             for d in details:
-                if d.get("phrase", "").strip().lower() in dense_caption_text:
+                phrase = d.get("phrase", "").strip().lower()
+                if self._phrase_in_caption(phrase, dense_caption_text):
                     found = True
                     break
             if found:
@@ -73,6 +76,21 @@ class GranDDataset(Dataset):
         self.image_files = correct_img_files
         self._image_index: List[Dict[str, str]] = []
         self._build_image_index()
+
+    @staticmethod
+    def _extract_ann_for_image(ann_file: Dict, image_name: str) -> Dict:
+        ann = ann_file.get(image_name + ".jpg") if isinstance(ann_file, dict) else None
+        if isinstance(ann, dict):
+            return ann
+        if isinstance(ann_file, dict) and "dense_caption" in ann_file:
+            return ann_file
+        return {}
+
+    @staticmethod
+    def _phrase_in_caption(phrase: str, caption: str) -> bool:
+        if not phrase or not caption:
+            return False
+        return re.search(r"(?<!\w)" + re.escape(phrase) + r"(?!\w)", caption) is not None
 
     def _resize_and_pad(self, img: Image.Image) -> torch.Tensor:
         target_w, target_h = self.patch_size
@@ -122,7 +140,7 @@ class GranDDataset(Dataset):
             try:
                 with open(ann_path, "r", encoding="utf-8") as f:
                     ann_file = json.load(f)
-                ann = ann_file.get(image_name + ".jpg")
+                ann = self._extract_ann_for_image(ann_file, image_name)
             except Exception:
                 ann = {}
         else:
@@ -155,7 +173,7 @@ class GranDDataset(Dataset):
         for d in details:
             v = d.get("phrase")
             text = v.strip().lower() if v else ""
-            if not text or text not in dense_caption_text:
+            if not self._phrase_in_caption(text, dense_caption_text):
                 continue
             bbox_values = d.get("bbox")
             if bbox_values and text:
