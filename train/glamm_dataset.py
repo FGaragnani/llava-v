@@ -54,29 +54,7 @@ class GranDDataset(Dataset):
         ]
         if self.samples_limit is not None:
             self.image_files = self.image_files[:self.samples_limit]
-            
-        correct_img_files = []
-        for img_file in self.image_files:
-            annotation_path = os.path.join(self.annotation_dir, os.path.splitext(img_file)[0] + ".json")
-            with open(annotation_path, "r", encoding="utf-8") as f:
-                ann_data = json.load(f)
-            ann_data = ann_data.get(os.path.splitext(img_file)[0] + ".jpg", {})
-            dense = ann_data.get("dense_caption", {})
-            dense_caption_text = dense.get("caption", "").lower().strip()
-            details = dense.get("details", [])
-            found = (False, "")
-            for d in details:
-                if d.get("phrase", "").strip().lower() in dense_caption_text:
-                    if d.get("bbox", None) is not None:
-                        found = (True, d.get("phrase", "").strip().lower())
-                        break
-            if found[0]:
-                correct_img_files.append(img_file)
-                print(f"[GranDDataset] Keeping image {img_file} with valid annotation {found[1]} in {dense_caption_text}.")
-            else:
-                print(f"[GranDDataset] Skipping image {img_file} with invalid annotations {details} in {dense_caption_text}.")
-                
-        self.image_files = correct_img_files
+
         self._image_index: List[Dict[str, str]] = []
         self._build_image_index()
 
