@@ -39,6 +39,8 @@ export GRAND_LOSS_DEBUG=0
 export NCCL_DEBUG=WARN
 export NCCL_ASYNC_ERROR_HANDLING=1
 export TORCH_DISTRIBUTED_DEBUG=OFF
+export NCCL_BLOCKING_WAIT=1
+export NCCL_TIMEOUT=300
 
 IFS=',' read -r -a nodelist <<<$SLURM_NODELIST
 export MASTER_ADDR=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
