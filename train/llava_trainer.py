@@ -715,6 +715,13 @@ class LLaVATrainer(Trainer):
                             except Exception as e:
                                 logger.warning(f"[GrandAlignDebug] text_align_forward_failed: {repr(e)}")
                                 continue
+
+                            # If nothing matched, still attach alignment_encoder to autograd graph
+                            # with a zero-weight term so ZeRO-3 sees consistent parameter usage.
+                            if valid_count == 0:
+                                grand_extra_loss = grand_extra_loss + (projected_text_batch.sum() * 0.0)
+                                continue
+
                             # Compute cosine similarity batch-wise against corresponding image vectors
                             proj_norm = F.normalize(projected_text_batch[:valid_count], dim=-1)
                             # Only compute patch embeddings for matched crops
@@ -842,6 +849,10 @@ class LLaVATrainer(Trainer):
             expected_align_calls = int(labels.size(0))
         elif inputs.get('input_ids', None) is not None and hasattr(inputs['input_ids'], 'size'):
             expected_align_calls = int(inputs['input_ids'].size(0))
+
+        # GRAND_FORCE_MASK triggers one additional alignment_encoder forward.
+        if os.environ.get("GRAND_FORCE_MASK", "0") == "1":
+            expected_align_calls += 1
 
         if expected_align_calls > 0 and align_forward_calls < expected_align_calls:
             missing_calls = expected_align_calls - align_forward_calls
