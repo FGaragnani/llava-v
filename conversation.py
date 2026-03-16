@@ -371,7 +371,7 @@ Answer the questions.""",
 
 conv_qwen2_5 = Conversation(
     system="""<|im_start|>system
-You are Qwen, created by Alibaba Cloud. You are a helpful assistant.""",
+You are Qwen, created by Alibaba Cloud. You are a helpful assistant. Do not ask the user any question.""",
     roles=("<|im_start|>user\n", "<|im_start|>assistant\n"),
     version="qwen2_5",
     messages=(),
@@ -403,6 +403,29 @@ conv_templates = {
     "mpt": conv_mpt,
 }
 
+from transformers import StoppingCriteria
+
+class StopOnStrings(StoppingCriteria):
+    def __init__(self, tokenizer, stop_strings):
+        self.tokenizer = tokenizer
+        self.stop_strings = stop_strings
+
+    def __call__(self, input_ids, scores, **kwargs):
+        text = self.tokenizer.decode(input_ids[0], skip_special_tokens=False)
+        return any(stop in text for stop in self.stop_strings)
+    
+from transformers import StoppingCriteriaList
+
+stop_strings = [
+    "<|im_end|>",
+    "\nassistant",
+    "\nuser"
+]
+
+def get_stopping_criteria(tokenizer):
+    return StoppingCriteriaList([
+        StopOnStrings(tokenizer, stop_strings)
+    ])
 
 if __name__ == "__main__":
     print(default_conversation.get_prompt())

@@ -88,6 +88,10 @@ def eval_model(args):
     model_path = os.path.expanduser(args.model_path)
     model_name = get_model_name_from_path(model_path)
     tokenizer, model, image_processor, context_len = load_pretrained_model(model_path, args.model_base, model_name)
+    eos_token_id = tokenizer.eos_token_id
+    pad_token_id = getattr(model.generation_config, "pad_token_id", None)
+    if pad_token_id is None:
+        pad_token_id = tokenizer.pad_token_id
 
     validation_dataset = load_dataset("lmms-lab/VizWiz-VQA", split="val")
     dev_dataset = load_dataset("lmms-lab/VizWiz-VQA", split="test")
@@ -118,17 +122,35 @@ def eval_model(args):
         gt_answer = line["answers"]
         category = "val" if "val" in line["question_id"] else "test"
         input_ids = input_ids.to(device='cuda', non_blocking=True)
+        attention_mask = torch.ones_like(input_ids)
+        image_inputs = image_tensor
+        if image_inputs is not None and torch.is_tensor(image_inputs):
+            if image_inputs.ndim == 3:
+                image_inputs = image_inputs.unsqueeze(0)
+            image_inputs = image_inputs.half().cuda()
         with torch.inference_mode():
-            output_ids = model.generate(
-                input_ids,
-                images=image_tensor,
-                image_sizes=image_sizes,
-                do_sample=True if args.temperature > 0 else False,
-                temperature=args.temperature,
-                top_p=args.top_p,
+            do_sample = args.temperature > 0
+            generate_kwargs = dict(
+                do_sample=do_sample,
                 num_beams=args.num_beams,
                 max_new_tokens=args.max_new_tokens,
-                use_cache=True)
+                use_cache=True,
+                eos_token_id=eos_token_id,
+                pad_token_id=pad_token_id,
+            )
+            if do_sample:
+                generate_kwargs.update(
+                    temperature=args.temperature,
+                    top_p=args.top_p,
+                )
+
+            output_ids = model.generate(
+                input_ids,
+                attention_mask=attention_mask,
+                images=image_inputs,
+                image_sizes=image_sizes,
+                **generate_kwargs,
+            )
 
         outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
 

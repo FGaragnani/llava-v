@@ -351,38 +351,96 @@ class LLaVATrainer(Trainer):
         labels = inputs.get('labels', None)
         outputs = model(**inputs)
         base_loss = outputs.loss if hasattr(outputs, 'loss') else outputs[0]
+        grand_extra_loss = torch.zeros((), device=base_loss.device)
+        grand_loss_applied = False
 
+        def run_dummy_text_image_alignment(seed_vec: Optional[torch.Tensor] = None):
+            """Run one zero-weight dummy text-image alignment pass for graph consistency."""
+            try:
+                base_model = model.get_model() if hasattr(model, 'get_model') else model
+                align_enc = getattr(base_model, 'alignment_encoder', None)
+                if align_enc is None:
+                    return
+
+                target_batch = getattr(self.args, 'max_crops_glamm', None)
+                if target_batch is None or target_batch <= 0:
+                    target_batch = 1
+
+                enc_param = None
+                input_dim = None
+                try:
+                    enc_param = next(align_enc.parameters())
+                except StopIteration:
+                    enc_param = None
+
+                if input_dim is None:
+                    input_dim = getattr(self.model.config, 'hidden_size', None)
+                if input_dim is None and hasattr(align_enc, 'in_features'):
+                    input_dim = int(align_enc.in_features)
+                if input_dim is None:
+                    input_dim = 1
+
+                if isinstance(seed_vec, torch.Tensor) and seed_vec.ndim == 1 and seed_vec.numel() == input_dim:
+                    dummy_input = seed_vec.unsqueeze(0).repeat(target_batch, 1)
+                else:
+                    dummy_input = torch.zeros((target_batch, input_dim), device=base_loss.device, dtype=base_loss.dtype)
+
+                if enc_param is not None:
+                    dummy_input = dummy_input.to(device=enc_param.device, dtype=enc_param.dtype)
+
+                projected_text = align_enc(dummy_input)
+
+                patch_model = getattr(self.patch_embedder, 'model', None)
+                patch_is_zero_sharded = False
+                try:
+                    if patch_model is not None:
+                        patch_is_zero_sharded = any(hasattr(p, 'ds_id') for p in patch_model.parameters())
+                except Exception:
+                    patch_is_zero_sharded = False
+
+                if patch_is_zero_sharded:
+                    patch_embeds = torch.zeros(
+                        (target_batch, projected_text.size(-1)),
+                        device=projected_text.device,
+                        dtype=projected_text.dtype,
+                    )
+                else:
+                    fake_crops = [Image.new('RGB', (224, 224), color=(0, 0, 0)) for _ in range(target_batch)]
+                    with torch.no_grad():
+                        patch_embeds = self.patch_embedder(fake_crops)
+                    if enc_param is not None:
+                        patch_embeds = patch_embeds.to(device=enc_param.device, dtype=enc_param.dtype)
+                    else:
+                        patch_embeds = patch_embeds.to(device=projected_text.device, dtype=projected_text.dtype)
+
+                proj_norm = F.normalize(projected_text, dim=-1)
+                img_norm = F.normalize(patch_embeds, dim=-1)
+                sims = (proj_norm * img_norm).sum(dim=-1)
+                dummy_out = (1 - sims).mean()
+
+                nonlocal grand_extra_loss
+                grand_extra_loss = grand_extra_loss + (dummy_out * 0.0)
+            except Exception as e:
+                logger.warning(f"[GrandAlignDebug] dummy_align_fallback_failed: {repr(e)}")
 
         # Masked unification path: always touch alignment_encoder with a masked batch 
         # to keep graph consistent.
         if os.environ.get("GRAND_FORCE_MASK", "0") == "1":
             try:
-                base_model = model.get_model() if hasattr(model, 'get_model') else model
-                align_enc = getattr(base_model, 'alignment_encoder', None)
                 hidden_seq = getattr(outputs, 'hidden_states', None)
-                hidden_last = None
+                seed_vec = None
                 if isinstance(hidden_seq, (list, tuple)) and len(hidden_seq) > 0 and isinstance(hidden_seq[-1], torch.Tensor):
                     hidden_last = hidden_seq[-1]
+                    if hidden_last.ndim >= 3 and hidden_last.size(1) > 0:
+                        seed_vec = hidden_last[:, 0, :].mean(dim=0)
                 elif isinstance(outputs, (list, tuple)) and len(outputs) > 2 and isinstance(outputs[2], torch.Tensor):
                     hidden_last = outputs[2]
-                if align_enc is not None and isinstance(hidden_last, torch.Tensor) and hidden_last.size(1) > 0:
-                    dummy_tokens = hidden_last[:, 0, :]
-                    mask_vec = grand_mask.bool() if grand_mask is not None else torch.ones(dummy_tokens.size(0), dtype=torch.bool, device=dummy_tokens.device)
-                    mask_float = mask_vec.float().unsqueeze(-1)
-                    masked_input = dummy_tokens * mask_float
-                    # Ensure dtype match
-                    try:
-                        param_dtype = next(align_enc.parameters()).dtype
-                        if masked_input.dtype != param_dtype:
-                            masked_input = masked_input.to(param_dtype)
-                    except Exception:
-                        pass
-                    dummy_out = align_enc(masked_input)
-                    base_loss = base_loss + dummy_out.mean() * 0.0
+                    if hidden_last.ndim >= 3 and hidden_last.size(1) > 0:
+                        seed_vec = hidden_last[:, 0, :].mean(dim=0)
+                run_dummy_text_image_alignment(seed_vec)
             except Exception as e:
                 logger.warning(f"[GrandAlignDebug] Masked unification error: {repr(e)}")
 
-        grand_extra_loss = torch.zeros((), device=base_loss.device)
         weight = getattr(self.args, 'grand_alignment_loss_weight', 0.5)
         if not weight:
             total_loss = base_loss
@@ -394,6 +452,7 @@ class LLaVATrainer(Trainer):
         crop_total = 0
         matched_crop_total = 0
         debug_align = os.environ.get("GRAND_ALIGN_DEBUG", "0") == "1"
+
         if \
             grand_mask is not None and \
                 labels is not None and \
@@ -497,14 +556,17 @@ class LLaVATrainer(Trainer):
                     for b_idx, is_grand in enumerate(grand_mask):
                         # For each sample in the batch
                         if not is_grand:
+                            print(f"[GrandAlignDebug] skip_sample b={b_idx} reason=not_grand")
                             continue
                         sample_bboxes = grand_bboxes[b_idx] if b_idx < len(grand_bboxes) else [] # list of bboxes
                         image_path = grand_image_paths[b_idx] if b_idx < len(grand_image_paths) else None
                         if not sample_bboxes or image_path is None:
+                            print(f"[GrandAlignDebug] skip_sample b={b_idx} reason=missing_bboxes_or_image_path")
                             continue
                         label_row = labels[b_idx]
                         token_mask = (label_row != IGNORE_INDEX)
                         if token_mask.sum() == 0:
+                            print(f"[GrandAlignDebug] skip_sample b={b_idx} reason=no_valid_tokens")
                             continue
                         generated_token_ids = label_row[token_mask].tolist()
                         generated_indices = torch.nonzero(token_mask, as_tuple=False).squeeze(-1).tolist()
@@ -552,6 +614,7 @@ class LLaVATrainer(Trainer):
                                 except Exception:
                                     continue
                             if not crops:
+                                print(f"[GrandAlignDebug] skip_sample b={b_idx} reason=no_valid_crops")
                                 continue
                             crop_total += len(crops)
                             with torch.no_grad():
@@ -581,6 +644,7 @@ class LLaVATrainer(Trainer):
                                     break
                                 phrase = phrase.strip()
                                 if not phrase:
+                                    print(f"[GrandAlignDebug] skip_phrase b={b_idx} crop_i={crop_i} reason=empty_phrase")
                                     continue
                                 attempted_phrase_total += 1
                                 if self.tokenizer is None:
@@ -639,14 +703,26 @@ class LLaVATrainer(Trainer):
                                     matched_crop_total += 1
                                     local_matched += 1
                                 else:
-                                    print(f"[GrandAlignDebug] no_match phrase='{phrase}'; model_output='{self.tokenizer.decode(generated_token_ids)}'")
+                                    logger.warning(f"[GrandAlignDebug] no_match phrase='{phrase}'; model_output='{self.tokenizer.decode(generated_token_ids)}'")
 
                             if matched_text_embeds:
                                 text_batch = torch.stack(matched_text_embeds, dim=0)
                             else:
-                                print(f"[GrandAlignDebug] no_matched_phrases sample={b_idx} attempted={len(phrases)}")
-                                print(f"[GrandAlignDebug] generated_tokens sample={b_idx} tokens={generated_token_ids}")
-                                break
+                                text_batch = torch.zeros((0, hidden_states.size(-1)))
+                                logger.warning(f"[GrandAlignDebug] no_matched_phrases sample={b_idx} attempted={len(phrases)}")
+                                logger.warning(f"[GrandAlignDebug] model_output='{self.tokenizer.decode(generated_token_ids)}', phrases={phrases}")
+
+                            valid_count = text_batch.size(0)
+                            if self.args.max_crops_glamm is not None and valid_count >= self.args.max_crops_glamm:
+                                text_batch = text_batch[:self.args.max_crops_glamm]
+                                matched_crop_indices = matched_crop_indices[:self.args.max_crops_glamm]
+
+                            # deal with missing matches, padding
+                            if self.args.max_crops_glamm is not None and valid_count < self.args.max_crops_glamm:
+                                pad_size = self.args.max_crops_glamm - text_batch.size(0)
+                                pad_tensor = torch.zeros((pad_size, text_batch.size(1)), device=text_batch.device, dtype=text_batch.dtype)
+                                text_batch = torch.cat([text_batch, pad_tensor], dim=0)
+                                print(f"[GrandAlignDebug] padding_text_batch sample={b_idx} pad_size={pad_size}")
 
                             enc_param = next(align_enc.parameters())
                             text_batch = text_batch.to(device=enc_param.device, dtype=enc_param.dtype)
@@ -656,14 +732,19 @@ class LLaVATrainer(Trainer):
                             except Exception:
                                 projected_text_batch = align_enc(text_batch).squeeze(0)
                             # Compute cosine similarity batch-wise against corresponding image vectors
-                            proj_norm = F.normalize(projected_text_batch, dim=-1)
+                            proj_norm = F.normalize(projected_text_batch[:valid_count], dim=-1)
                             # Only compute patch embeddings for matched crops
                             matched_crops = [crops[i] for i in matched_crop_indices]
-                            patch_embeds = self.patch_embedder(matched_crops) if matched_crops else torch.empty((0, self.patch_embedder.embed_dim), device=hidden_states.device)
+
+                            if matched_crops:
+                                patch_embeds = self.patch_embedder(matched_crops)
+                            if not matched_crops:
+                                patch_embeds = torch.zeros((0, proj_norm.size(-1)), dtype=proj_norm.dtype)
+                            
                             patch_embeds = patch_embeds.to(hidden_states.device)
                             img_vecs = patch_embeds
                             img_vecs = img_vecs.to(device=enc_param.device, dtype=enc_param.dtype)
-                            img_norm = F.normalize(img_vecs, dim=-1)
+                            img_norm = F.normalize(img_vecs[:valid_count], dim=-1)
                             sims = (proj_norm * img_norm).sum(dim=-1)
                             crop_losses = (1 - sims)
 
@@ -763,8 +844,16 @@ class LLaVATrainer(Trainer):
 
                     if per_sample_losses:
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
+                        grand_loss_applied = True
                         print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")
 
+        else:
+            print("[GrandAlignDebug] Missing required inputs for GranD loss; skipping alignment.")
+
+        if not grand_loss_applied:
+            print(f"Rank {torch.distributed.get_rank()} running alignment")
+            print("[GrandAlignDebug] No GranD loss applied; running dummy alignment for graph consistency.")
+            run_dummy_text_image_alignment()
         
         total_loss = base_loss + (grand_extra_loss * weight)
         if return_outputs:

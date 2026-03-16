@@ -39,8 +39,8 @@ import math
 
 def split_list(lst, n):
     """Split a list into n (roughly) equal-sized chunks"""
-    chunk_size = math.ceil(lst / n)  # integer division
-    return [[i,i+chunk_size-1] for i in range(0, lst, chunk_size)]
+    chunk_size = math.ceil(len(lst) / n)  # integer division
+    return [[i,i+chunk_size-1] for i in range(0, len(lst), chunk_size)]
 
 
 def get_chunk(lst, n, k):
@@ -93,8 +93,14 @@ def eval_model(args):
     model_path = os.path.expanduser(args.model_path)
     model_name = get_model_name_from_path(model_path)
     tokenizer, model, image_processor, context_len = load_pretrained_model(model_path, args.model_base, model_name)
-    eos_token_id = tokenizer.eos_token_id
-    pad_token_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else eos_token_id
+    eos_token_id = getattr(model.generation_config, "eos_token_id", None)
+    if eos_token_id is None:
+        eos_token_id = tokenizer.eos_token_id
+    pad_token_id = getattr(model.generation_config, "pad_token_id", None)
+    if pad_token_id is None:
+        pad_token_id = tokenizer.pad_token_id
+    if pad_token_id is None:
+        pad_token_id = eos_token_id[0] if isinstance(eos_token_id, list) and len(eos_token_id) > 0 else eos_token_id
     questions = load_dataset("lmms-lab/SEED-Bench", split="test")
     
     answers_file = os.path.expanduser(args.answers_file)

@@ -618,18 +618,25 @@ def preprocess_mpt(
 
             if has_image:
                 round_len = len(tokenizer_image_token(rou, tokenizer))
-                instruction_len = len(tokenizer_image_token(parts[0], tokenizer)) - 1
+                instruction_len = len(tokenizer_image_token(parts[0], tokenizer))
             else:
                 round_len = len(tokenizer(rou).input_ids)
-                instruction_len = len(tokenizer(parts[0]).input_ids) - 1
+                instruction_len = len(tokenizer(parts[0]).input_ids)
 
             if i != 0 and getattr(tokenizer, 'legacy', False) and IS_TOKENIZER_GREATER_THAN_0_14:
                 round_len += 1
                 instruction_len += 1
 
-            target[cur_len : cur_len + instruction_len] = IGNORE_INDEX
+            # Prevent off-by-one drift from tokenizer/template edge cases.
+            remaining = total_len - cur_len
+            if remaining <= 0:
+                break
+            effective_round_len = min(round_len, remaining)
+            effective_instruction_len = min(instruction_len, effective_round_len)
 
-            cur_len += round_len
+            target[cur_len : cur_len + effective_instruction_len] = IGNORE_INDEX
+
+            cur_len += effective_round_len
         target[cur_len:] = IGNORE_INDEX
 
         if cur_len < tokenizer.model_max_length:
@@ -684,10 +691,11 @@ def preprocess(
         return preprocess_plain(sources, tokenizer)
     if conversation_lib.default_conversation.sep_style == conversation_lib.SeparatorStyle.LLAMA_2:
         return preprocess_llama_2(sources, tokenizer, has_image=has_image)
+    # Route by separator style so ChatML/MPT variants (e.g. qwen2_5) get correct masking.
+    if conversation_lib.default_conversation.sep_style == conversation_lib.SeparatorStyle.MPT:
+        return preprocess_mpt(sources, tokenizer, has_image=has_image)
     if conversation_lib.default_conversation.version.startswith("v1"):
         return preprocess_v1(sources, tokenizer, has_image=has_image)
-    if conversation_lib.default_conversation.version == "mpt":
-        return preprocess_mpt(sources, tokenizer, has_image=has_image)
     # add end signal and concatenate together
     conversations = []
     for source in sources:
@@ -1000,11 +1008,11 @@ def train(attn_implementation=None):
             **bnb_model_from_pretrained_args
         )
         
-    try:
-        training_args.ddp_find_unused_parameters = True
-        rank0_print("Enabled ddp_find_unused_parameters=True to prevent hangs on unused grads.")
-    except Exception:
-        ...
+    # try:
+    #     training_args.ddp_find_unused_parameters = True
+    #     rank0_print("Enabled ddp_find_unused_parameters=True to prevent hangs on unused grads.")
+    # except Exception:
+    #     ...
 
     if model_args.freeze_backbone:
         model.model.requires_grad_(False)

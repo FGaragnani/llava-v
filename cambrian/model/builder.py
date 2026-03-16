@@ -29,6 +29,11 @@ from cambrian.model.language_model.cambrian_mistral import CambrianMistralForCau
 
 def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, load_4bit=False, device_map="auto", device="cuda", use_flash_attn=False, **kwargs):
     kwargs = {"device_map": device_map, **kwargs}
+    tokenizer_path_override = os.getenv("TOKENIZER_PATH")
+
+    def load_tokenizer(default_path, use_fast=False):
+        tokenizer_path = tokenizer_path_override if tokenizer_path_override else default_path
+        return AutoTokenizer.from_pretrained(tokenizer_path, use_fast=use_fast)
 
     if device != "cuda":
         kwargs['device_map'] = {"": device}
@@ -56,7 +61,7 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
         if 'lora' in model_name.lower() and model_base is not None:
             from cambrian.model.language_model.cambrian_llama import CambrianConfig
             lora_cfg_pretrained = CambrianConfig.from_pretrained(model_path)
-            tokenizer = AutoTokenizer.from_pretrained(model_base, use_fast=False)
+            tokenizer = load_tokenizer(model_base, use_fast=False)
             logger.info('Loading Cambrian from base model...')
             model = CambrianLlamaForCausalLM.from_pretrained(model_base, low_cpu_mem_usage=True, config=lora_cfg_pretrained, **kwargs)
             token_num, tokem_dim = model.lm_head.out_features, model.lm_head.in_features
@@ -91,7 +96,7 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
         elif model_base is not None:
             # this may be mm projector only
             logger.info(f'Loading Cambrian-1 from base model... {model_base}')
-            tokenizer = AutoTokenizer.from_pretrained(model_base, use_fast=False)
+            tokenizer = load_tokenizer(model_base, use_fast=False)
             cfg_pretrained = AutoConfig.from_pretrained(model_path)
             model = CambrianLlamaForCausalLM.from_pretrained(model_base, low_cpu_mem_usage=True, config=cfg_pretrained, **kwargs)
 
@@ -100,7 +105,7 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
             model.load_state_dict(mm_projector_weights, strict=False)
         else:
             if 'mistral' in model_name.lower():
-                tokenizer = AutoTokenizer.from_pretrained(model_path)
+                tokenizer = load_tokenizer(model_path)
                 model = CambrianMistralForCausalLM.from_pretrained(
                     model_path,
                     low_cpu_mem_usage=True,
@@ -109,7 +114,7 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
                 )
             elif 'phi3' in model_name.lower():
                 from cambrian.model.language_model.cambrian_phi3 import CambrianPhi3ForCausalLM
-                tokenizer = AutoTokenizer.from_pretrained(model_path)
+                tokenizer = load_tokenizer(model_path)
                 model = CambrianPhi3ForCausalLM.from_pretrained(
                     model_path,
                     low_cpu_mem_usage=True,
@@ -118,7 +123,7 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
                 )
             else:
                 logger.info(f'Loading Cambrian from {model_path}')
-                tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
+                tokenizer = load_tokenizer(model_path, use_fast=False)
                 model = CambrianLlamaForCausalLM.from_pretrained(
                     model_path,
                     low_cpu_mem_usage=True,
@@ -129,7 +134,7 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
         if model_base is not None:
             # PEFT model
             from peft import PeftModel
-            tokenizer = AutoTokenizer.from_pretrained(model_base, use_fast=False)
+            tokenizer = load_tokenizer(model_base, use_fast=False)
             model = AutoModelForCausalLM.from_pretrained(model_base, low_cpu_mem_usage=True, **kwargs)
             print(f"Loading LoRA weights from {model_path}")
             model = PeftModel.from_pretrained(model, model_path)
@@ -140,10 +145,10 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
         else:
             use_fast = False
             if 'mpt' in model_name.lower():
-                tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True)
+                tokenizer = load_tokenizer(model_path, use_fast=True)
                 model = AutoModelForCausalLM.from_pretrained(model_path, low_cpu_mem_usage=True, trust_remote_code=True, **kwargs)
             else:
-                tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
+                tokenizer = load_tokenizer(model_path, use_fast=False)
                 model = LlavaLlamaForCausalLM.from_pretrained(model_path, low_cpu_mem_usage=True, **kwargs)
 
     image_processor = None
@@ -170,5 +175,58 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
         context_len = model.config.max_sequence_length
     else:
         context_len = 2048
+
+    # Keep generation defaults tokenizer-aligned for eval scripts that don't pass eos/pad ids.
+    if hasattr(model, "generation_config") and model.generation_config is not None:
+        bos_id = getattr(tokenizer, "bos_token_id", None)
+        eos_id = getattr(tokenizer, "eos_token_id", None)
+        pad_id = getattr(tokenizer, "pad_token_id", None)
+
+        # Merge all plausible EOS ids. Qwen-family checkpoints may stop on <|im_end|>
+        # even when tokenizer/model configs disagree on eos_token_id.
+        eos_candidates = []
+        eos_cfg = model.generation_config.eos_token_id
+        if isinstance(eos_cfg, list):
+            eos_candidates.extend(eos_cfg)
+        elif eos_cfg is not None:
+            eos_candidates.append(eos_cfg)
+        if eos_id is not None:
+            eos_candidates.append(eos_id)
+
+        im_end_id = None
+        try:
+            im_end_id = tokenizer.convert_tokens_to_ids("<|im_end|>")
+        except Exception:
+            im_end_id = None
+        unk_id = getattr(tokenizer, "unk_token_id", None)
+        if im_end_id is not None and im_end_id != unk_id and im_end_id >= 0:
+            eos_candidates.append(im_end_id)
+
+        eos_filtered = []
+        for tid in eos_candidates:
+            if tid is None:
+                continue
+            if bos_id is not None and tid == bos_id:
+                continue
+            if tid not in eos_filtered:
+                eos_filtered.append(tid)
+
+        if len(eos_filtered) == 0 and eos_id is not None:
+            eos_filtered = [eos_id]
+
+        if len(eos_filtered) == 1:
+            model.generation_config.eos_token_id = eos_filtered[0]
+        elif len(eos_filtered) > 1:
+            model.generation_config.eos_token_id = eos_filtered
+
+        if pad_id is None:
+            pad_id = model.generation_config.eos_token_id
+        model.generation_config.pad_token_id = pad_id
+
+        print(
+            f"[builder] tokenizer bos/eos/pad={bos_id}/{eos_id}/{getattr(tokenizer, 'pad_token_id', None)}; "
+            f"generation eos={model.generation_config.eos_token_id}; generation pad={model.generation_config.pad_token_id}; "
+            f"im_end_id={im_end_id}"
+        )
 
     return tokenizer, model, image_processor, context_len

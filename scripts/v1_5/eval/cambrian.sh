@@ -11,7 +11,7 @@
 #SBATCH --partition=boost_usr_prod
 #SBATCH --account=AIFAC_S02_096
 #SBATCH --time=02:30:00
-#SBATCH --array=0-20
+#SBATCH --array=0-0
 
 set -e
 
@@ -33,7 +33,6 @@ export HF_HUB_CACHE="/leonardo_scratch/large/userexternal/fgaragna/dataset/mllm_
 export HF_HOME="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/"
 export HF_DATASETS_CACHE="/leonardo_scratch/large/userexternal/fgaragna/dataset/mllm_evaluation/cvprw"
 export TRANSFORMERS_OFFLINE=1
-export TOKENIZER_PATH="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/vicuna-7b-v1.5"
 export IS_LLAVA_MORE=1
 PROJECT_ROOT="$HOME"
 export PYTHONPATH="$PROJECT_ROOT/llava:$PROJECT_ROOT:$PYTHONPATH"
@@ -51,9 +50,13 @@ if [[ "$model_name" == *qwen* ]]; then
     echo "Detected Qwen model in name, setting conversation mode to: $conv_mode"
 fi
 
+# Prefer checkpoint tokenizer so added/special tokens are loaded when present.
 if [[ "$conv_mode" == *qwen* ]]; then
     export TOKENIZER_PATH="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/Qwen/Qwen2.5-7B-Instruct"
-    echo "Using Qwen conversation mode, setting tokenizer path to: $TOKENIZER_PATH"
+    echo "Checkpoint tokenizer files missing; falling back to Qwen base tokenizer: $TOKENIZER_PATH"
+else
+    export TOKENIZER_PATH="/leonardo_scratch/large/userexternal/fgaragna/models/lmsys/vicuna-7b-v1.5"
+    echo "Checkpoint tokenizer files missing; falling back to Vicuna base tokenizer: $TOKENIZER_PATH"
 fi
 
 echo "Conversation mode: $conv_mode"
