@@ -720,6 +720,7 @@ class LLaVATrainer(Trainer):
                             # with a zero-weight term so ZeRO-3 sees consistent parameter usage.
                             if valid_count == 0:
                                 grand_extra_loss = grand_extra_loss + (projected_text_batch.sum() * 0.0)
+                                print(f"[GrandAlignDebug] no_valid_alignment sample={b_idx} reason=no_matched_phrases")
                                 continue
 
                             # Compute cosine similarity batch-wise against corresponding image vectors
