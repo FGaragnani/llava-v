@@ -423,10 +423,6 @@ class LLaVATrainer(Trainer):
             except Exception as e:
                 logger.warning(f"[GrandAlignDebug] dummy_align_fallback_failed: {repr(e)}")
 
-        def sync_ranks_before_dummy():
-            if torch.distributed.is_available() and torch.distributed.is_initialized():
-                torch.distributed.barrier()
-
         # Masked unification path: always touch alignment_encoder with a masked batch 
         # to keep graph consistent.
         if os.environ.get("GRAND_FORCE_MASK", "0") == "1":
