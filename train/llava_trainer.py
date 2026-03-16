@@ -848,7 +848,7 @@ class LLaVATrainer(Trainer):
             for _ in range(missing_calls):
                 run_dummy_text_image_alignment(forced_batch=1)
 
-        if os.environ.get("GRAND_loss_DEBUG", "0") == "1":
+        if os.environ.get("GRAND_LOSS_DEBUG", "0") == "1":
             try:
                 rank = torch.distributed.get_rank() if torch.distributed.is_available() and torch.distributed.is_initialized() else -1
                 step = int(getattr(self.state, "global_step", -1))
