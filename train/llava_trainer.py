@@ -728,9 +728,13 @@ class LLaVATrainer(Trainer):
                             proj_norm = F.normalize(projected_text_batch[:valid_count], dim=-1)
                             # Only compute patch embeddings for matched crops
                             matched_crops = [crops[i] for i in matched_crop_indices]
-                            patch_embeds = self.patch_embedder(matched_crops) if matched_crops else torch.empty((0, self.patch_embedder.embed_dim), device=hidden_states.device)
-                            patch_embeds = patch_embeds.to(hidden_states.device)
 
+                            if matched_crops:
+                                patch_embeds = self.patch_embedder(matched_crops)
+                            if not matched_crops:
+                                patch_embeds = torch.zeros((0, proj_norm.size(-1)), dtype=proj_norm.dtype)
+                            
+                            patch_embeds = patch_embeds.to(hidden_states.device)
                             img_vecs = patch_embeds
                             img_vecs = img_vecs.to(device=enc_param.device, dtype=enc_param.dtype)
                             img_norm = F.normalize(img_vecs[:valid_count], dim=-1)
