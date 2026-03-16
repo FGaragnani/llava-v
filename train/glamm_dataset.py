@@ -149,8 +149,12 @@ class GranDDataset(Dataset):
 
         if not dense_labels:
             print(f"Warning: No details found for image {image_name}.jpg in annotation.")
+            dense_labels = ["<|empty|>"]
         if not dense_caption_text:
             print(f"Warning: No dense caption found for image {image_name}.jpg in annotation.")
+            dense_caption_text = "<|empty_caption|>"
+        if not bboxes:
+            print(f"Warning: No valid bounding boxes found for image {image_name}.jpg in annotation.")
 
         if self.image_processor is None:
             image_tensor = F.to_tensor(image)
