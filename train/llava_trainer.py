@@ -715,7 +715,7 @@ class LLaVATrainer(Trainer):
                             except Exception as e:
                                 logger.warning(f"[GrandAlignDebug] text_align_forward_failed: {repr(e)}")
                                 continue
-                            
+
                             invalid = False
                             if valid_count == 0:
                                 invalid = True
@@ -729,7 +729,11 @@ class LLaVATrainer(Trainer):
                             if matched_crops:
                                 patch_embeds = self.patch_embedder(matched_crops)
                             if not matched_crops:
-                                patch_embeds = torch.zeros((0, proj_norm.size(-1)), dtype=proj_norm.dtype)
+                                patch_embeds = torch.zeros(
+                                    (valid_count, proj_norm.size(-1)),
+                                    device=proj_norm.device,
+                                    dtype=proj_norm.dtype,
+                                )
                             
                             patch_embeds = patch_embeds.to(hidden_states.device)
                             img_vecs = patch_embeds
@@ -739,7 +743,10 @@ class LLaVATrainer(Trainer):
                             crop_losses = (1 - sims)
 
                             if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
-                                per_sample_losses.append(crop_losses.mean() * 0.0 if invalid else 1.0)
+                                sample_loss = crop_losses.mean()
+                                if invalid:
+                                    sample_loss = sample_loss * 0.0
+                                per_sample_losses.append(sample_loss)
                             
                         else:
                             # Match image-to-image Caffo style
