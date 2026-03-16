@@ -467,6 +467,13 @@ class LLaVATrainer(Trainer):
                 elif hidden_states is not None:
                     input_ids = inputs.get('input_ids', None)
                     labels_len = labels.size(1) if hasattr(labels, 'size') else None
+                    try:
+                        base_model = model.get_model() if hasattr(model, 'get_model') else model
+                        align_enc = getattr(base_model, 'alignment_encoder', None)
+                    except Exception:
+                        align_enc = None
+                    if align_enc is None:
+                        logger.warning("Alignment encoder not found; skipping GranD loss.")
 
                     def compute_span_with_image_offset(span_indices, sample_input_ids):
                         # Adjust text token indices to account for image tokens in the hidden states, if necessary
@@ -539,8 +546,27 @@ class LLaVATrainer(Trainer):
                             spans.append((start, end))
                         return spans
 
+                    def append_forced_dummy_sample_loss(seed_vec: Optional[torch.Tensor] = None):
+                        """Always produce one alignment term so GranD path stays active on local failures."""
+                        try:
+                            enc_param = next(align_enc.parameters())
+                            input_dim = getattr(self.model.config, 'hidden_size', None) or int(enc_param.shape[1])
+                            if isinstance(seed_vec, torch.Tensor) and seed_vec.ndim == 1 and seed_vec.numel() == input_dim:
+                                text_in = seed_vec.unsqueeze(0).to(device=enc_param.device, dtype=enc_param.dtype)
+                            else:
+                                text_in = torch.zeros((1, input_dim), device=enc_param.device, dtype=enc_param.dtype)
+                            projected = align_enc(text_in)
+                            with torch.no_grad():
+                                patch_embed = self.patch_embedder([Image.new('RGB', (224, 224), color=(0, 0, 0))])
+                            patch_embed = patch_embed.to(device=enc_param.device, dtype=enc_param.dtype)
+                            sim = (F.normalize(projected, dim=-1) * F.normalize(patch_embed, dim=-1)).sum(dim=-1)
+                            per_sample_losses.append((1 - sim).mean())
+                        except Exception as e:
+                            logger.warning(f"[GrandAlignDebug] forced_dummy_failed: {repr(e)}")
+
                     per_sample_losses = []
                     for b_idx, is_grand in enumerate(grand_mask):
+                        seed_vec = hidden_states[b_idx, 0, :] if hidden_states.ndim == 3 and hidden_states.size(1) > 0 else None
                         # For each sample in the batch
                         if not is_grand:
                             print(f"[GrandAlignDebug] skip_sample b={b_idx} reason=not_grand")
@@ -549,11 +575,13 @@ class LLaVATrainer(Trainer):
                         image_path = grand_image_paths[b_idx] if b_idx < len(grand_image_paths) else None
                         if not sample_bboxes or image_path is None:
                             print(f"[GrandAlignDebug] skip_sample b={b_idx} reason=missing_bboxes_or_image_path")
+                            append_forced_dummy_sample_loss(seed_vec)
                             continue
                         label_row = labels[b_idx]
                         token_mask = (label_row != IGNORE_INDEX)
                         if token_mask.sum() == 0:
                             print(f"[GrandAlignDebug] skip_sample b={b_idx} reason=no_valid_tokens")
+                            append_forced_dummy_sample_loss(seed_vec)
                             continue
                         generated_token_ids = label_row[token_mask].tolist()
                         generated_indices = torch.nonzero(token_mask, as_tuple=False).squeeze(-1).tolist()
@@ -579,6 +607,7 @@ class LLaVATrainer(Trainer):
                             img = Image.open(image_path).convert('RGB')
                         except Exception as e:
                             logger.warning(f"[GrandAlignDebug] skip_sample b={b_idx} path={image_path} reason=image_open_fail error={repr(e)}")
+                            append_forced_dummy_sample_loss(seed_vec)
                             continue
                         
                         # Compute embeddings once
@@ -602,6 +631,7 @@ class LLaVATrainer(Trainer):
                                     continue
                             if not crops:
                                 print(f"[GrandAlignDebug] skip_sample b={b_idx} reason=no_valid_crops")
+                                append_forced_dummy_sample_loss(seed_vec)
                                 continue
                             crop_total += len(crops)
                             with torch.no_grad():
@@ -610,14 +640,6 @@ class LLaVATrainer(Trainer):
                                         patch_tokens, patch_grid, patch_size = self.patch_embedder.forward_tokens(img)
                                     except Exception:
                                         patch_grid, patch_size = None, None
-                        try:
-                            base_model = model.get_model() if hasattr(model, 'get_model') else model
-                            align_enc = getattr(base_model, 'alignment_encoder', None)
-                        except Exception:
-                            align_enc = None
-                        if align_enc is None:
-                            logger.warning("Alignment encoder not found; skipping GranD loss.")
-                            continue
                         crop_losses = []
 
                         local_matched = 0
@@ -745,6 +767,8 @@ class LLaVATrainer(Trainer):
 
                             if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
                                 per_sample_losses.append(crop_losses.mean())
+                            else:
+                                append_forced_dummy_sample_loss(seed_vec)
                             
                         else:
                             # Match image-to-image Caffo style
@@ -752,6 +776,7 @@ class LLaVATrainer(Trainer):
                             dino_embeds = patch_embeds
                             
                             if dino_embeds is None or dino_embeds.numel() == 0:
+                                append_forced_dummy_sample_loss(seed_vec)
                                 continue
                             pool_mode = getattr(self.args, 'image_token_pool', None)
 
@@ -760,11 +785,13 @@ class LLaVATrainer(Trainer):
                                 sample_input_ids = input_ids[b_idx]
                             spans = get_image_token_spans(sample_input_ids)
                             if not spans:
+                                append_forced_dummy_sample_loss(seed_vec)
                                 continue
 
                             img_span = spans[0]
                             img_tokens = hidden_states[b_idx][img_span[0]:img_span[1]]
                             if img_tokens.dim() != 2:
+                                append_forced_dummy_sample_loss(seed_vec)
                                 continue
 
                             img_token_count = img_tokens.size(0)
@@ -781,6 +808,7 @@ class LLaVATrainer(Trainer):
                                     logger.warning(
                                         f"[GrandAlignDebug] image_token_grid_mismatch: tokens={img_token_count}"
                                     )
+                                    append_forced_dummy_sample_loss(seed_vec)
                                     continue
 
                             img_token_grid = (grid_h, grid_w)
@@ -796,6 +824,7 @@ class LLaVATrainer(Trainer):
                                 )
                             except Exception as e:
                                 logger.warning(f"[GrandAlignDebug] image_token_select_failed: {repr(e)}")
+                                append_forced_dummy_sample_loss(seed_vec)
                                 continue
 
                             pooled_img_embeds = []
@@ -815,6 +844,7 @@ class LLaVATrainer(Trainer):
                                 matched_crop_indices.append(crop_i)
 
                             if not pooled_img_embeds:
+                                append_forced_dummy_sample_loss(seed_vec)
                                 continue
 
                             img_batch = torch.stack(pooled_img_embeds, dim=0).to(patch_embeds.device)
@@ -836,6 +866,8 @@ class LLaVATrainer(Trainer):
 
                             if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
                                 per_sample_losses.append(crop_losses.mean())
+                            else:
+                                append_forced_dummy_sample_loss(seed_vec)
 
                     if per_sample_losses:
                         grand_extra_loss = torch.stack(per_sample_losses).mean()
