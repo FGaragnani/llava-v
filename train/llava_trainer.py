@@ -749,7 +749,7 @@ class LLaVATrainer(Trainer):
                             if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
                                 sample_loss = crop_losses.mean()
                                 if invalid:
-                                    sample_loss = sample_loss * 0.0
+                                    sample_loss = sample_loss + (projected_text_batch.sum() * 0.0)
                                 per_sample_losses.append(sample_loss)
                             
                         else:
