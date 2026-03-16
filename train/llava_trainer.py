@@ -641,6 +641,7 @@ class LLaVATrainer(Trainer):
                             matched_crop_indices = []
                             for crop_i, phrase in enumerate(phrases):
                                 if self.args.max_crops_glamm is not None and local_matched >= self.args.max_crops_glamm:
+                                    print(f"[GrandAlignDebug] reached max_crops_glamm for sample={b_idx} after {local_matched} matches")
                                     break
                                 phrase = phrase.strip()
                                 if not phrase:
