@@ -155,6 +155,7 @@ class GranDDataset(Dataset):
             dense_caption_text = "<|empty_caption|>"
         if not bboxes:
             print(f"Warning: No valid bounding boxes found for image {image_name}.jpg in annotation.")
+            bboxes = [(0, 0, 1, 1)]
 
         if self.image_processor is None:
             image_tensor = F.to_tensor(image)
