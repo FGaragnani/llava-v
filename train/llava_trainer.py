@@ -552,7 +552,8 @@ class LLaVATrainer(Trainer):
                             spans.append((start, end))
                         return spans
 
-                    per_sample_losses = []
+                    align_input_chunks = []
+                    align_target_chunks = []
                     for b_idx, is_grand in enumerate(grand_mask):
                         # For each sample in the batch
                         if not is_grand:
@@ -631,8 +632,6 @@ class LLaVATrainer(Trainer):
                         if align_enc is None:
                             logger.warning("Alignment encoder not found; skipping GranD loss.")
                             continue
-                        crop_losses = []
-
                         local_matched = 0
                         if not self.args.align_with_image:
                             # Batch-match phrases to TEXT spans, then batch project with alignment encoder
@@ -726,13 +725,6 @@ class LLaVATrainer(Trainer):
 
                             enc_param = next(align_enc.parameters())
                             text_batch = text_batch.to(device=enc_param.device, dtype=enc_param.dtype)
-                            # Align text to image dimensions
-                            try:
-                                projected_text_batch = align_enc(text_batch)
-                            except Exception:
-                                projected_text_batch = align_enc(text_batch).squeeze(0)
-                            # Compute cosine similarity batch-wise against corresponding image vectors
-                            proj_norm = F.normalize(projected_text_batch[:valid_count], dim=-1)
                             # Only compute patch embeddings for matched crops
                             matched_crops = [crops[i] for i in matched_crop_indices]
 
@@ -744,12 +736,9 @@ class LLaVATrainer(Trainer):
                             patch_embeds = patch_embeds.to(hidden_states.device)
                             img_vecs = patch_embeds
                             img_vecs = img_vecs.to(device=enc_param.device, dtype=enc_param.dtype)
-                            img_norm = F.normalize(img_vecs[:valid_count], dim=-1)
-                            sims = (proj_norm * img_norm).sum(dim=-1)
-                            crop_losses = (1 - sims)
-
-                            if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
-                                per_sample_losses.append(crop_losses.mean())
+                            if valid_count > 0:
+                                align_input_chunks.append(text_batch[:valid_count])
+                                align_target_chunks.append(img_vecs[:valid_count])
                             
                         else:
                             # Match image-to-image Caffo style
@@ -828,22 +817,24 @@ class LLaVATrainer(Trainer):
                                 img_batch = img_batch.to(device=enc_param.device, dtype=enc_param.dtype)
                             except Exception:
                                 pass
-                            try:
-                                projected_img_batch = align_enc(img_batch)
-                            except Exception:
-                                projected_img_batch = align_enc(img_batch).squeeze(0)
-
-                            proj_norm = F.normalize(projected_img_batch, dim=-1)
                             dino_vecs = dino_embeds[matched_crop_indices]
-                            dino_norm = F.normalize(dino_vecs, dim=-1)
-                            sims = (proj_norm * dino_norm).sum(dim=-1)
-                            crop_losses = (1 - sims)
+                            dino_vecs = dino_vecs.to(device=img_batch.device, dtype=img_batch.dtype)
+                            if img_batch.numel() > 0 and dino_vecs.numel() > 0:
+                                align_input_chunks.append(img_batch)
+                                align_target_chunks.append(dino_vecs)
 
-                            if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
-                                per_sample_losses.append(crop_losses.mean())
+                    if align_input_chunks:
+                        all_align_inputs = torch.cat(align_input_chunks, dim=0)
+                        all_align_targets = torch.cat(align_target_chunks, dim=0)
+                        try:
+                            projected_batch = align_enc(all_align_inputs)
+                        except Exception:
+                            projected_batch = align_enc(all_align_inputs).squeeze(0)
 
-                    if per_sample_losses:
-                        grand_extra_loss = torch.stack(per_sample_losses).mean()
+                        proj_norm = F.normalize(projected_batch, dim=-1)
+                        tgt_norm = F.normalize(all_align_targets, dim=-1)
+                        sims = (proj_norm * tgt_norm).sum(dim=-1)
+                        grand_extra_loss = (1 - sims).mean()
                         grand_loss_applied = True
                         print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")
 
@@ -851,7 +842,8 @@ class LLaVATrainer(Trainer):
             print("[GrandAlignDebug] Missing required inputs for GranD loss; skipping alignment.")
 
         if not grand_loss_applied:
-            print(f"Rank {torch.distributed.get_rank()} running alignment")
+            rank_id = torch.distributed.get_rank() if (torch.distributed.is_available() and torch.distributed.is_initialized()) else -1
+            print(f"Rank {rank_id} running alignment")
             print("[GrandAlignDebug] No GranD loss applied; running dummy alignment for graph consistency.")
             run_dummy_text_image_alignment()
         
