@@ -15,6 +15,7 @@
     "gradient_accumulation_steps": "auto",
     "zero_optimization": {
         "stage": 3,
+           "ignore_unused_parameters": true,
         "offload_optimizer": {
             "device": "none"
         },
