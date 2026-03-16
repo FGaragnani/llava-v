@@ -353,16 +353,19 @@ class LLaVATrainer(Trainer):
         base_loss = outputs.loss if hasattr(outputs, 'loss') else outputs[0]
         grand_extra_loss = torch.zeros((), device=base_loss.device)
         grand_loss_applied = False
+        align_forward_calls = 0
 
-        def run_dummy_text_image_alignment(seed_vec: Optional[torch.Tensor] = None):
+        def run_dummy_text_image_alignment(seed_vec: Optional[torch.Tensor] = None, forced_batch: Optional[int] = None):
             """Run one zero-weight dummy text-image alignment pass for graph consistency."""
             try:
                 base_model = model.get_model() if hasattr(model, 'get_model') else model
                 align_enc = getattr(base_model, 'alignment_encoder', None)
                 if align_enc is None:
-                    return
+                    return False
 
-                target_batch = getattr(self.args, 'max_crops_glamm', None)
+                target_batch = forced_batch
+                if target_batch is None:
+                    target_batch = getattr(self.args, 'max_crops_glamm', None)
                 if target_batch is None or target_batch <= 0:
                     target_batch = 1
 
@@ -389,6 +392,8 @@ class LLaVATrainer(Trainer):
                     dummy_input = dummy_input.to(device=enc_param.device, dtype=enc_param.dtype)
 
                 projected_text = align_enc(dummy_input)
+                nonlocal align_forward_calls
+                align_forward_calls += 1
 
                 patch_model = getattr(self.patch_embedder, 'model', None)
                 patch_is_zero_sharded = False
@@ -420,8 +425,10 @@ class LLaVATrainer(Trainer):
 
                 nonlocal grand_extra_loss
                 grand_extra_loss = grand_extra_loss + (dummy_out * 0.0)
+                return True
             except Exception as e:
                 logger.warning(f"[GrandAlignDebug] dummy_align_fallback_failed: {repr(e)}")
+                return False
 
         # Masked unification path: always touch alignment_encoder with a masked batch 
         # to keep graph consistent.
@@ -729,8 +736,10 @@ class LLaVATrainer(Trainer):
                             # Align text to image dimensions
                             try:
                                 projected_text_batch = align_enc(text_batch)
-                            except Exception:
-                                projected_text_batch = align_enc(text_batch).squeeze(0)
+                                align_forward_calls += 1
+                            except Exception as e:
+                                logger.warning(f"[GrandAlignDebug] text_align_forward_failed: {repr(e)}")
+                                continue
                             # Compute cosine similarity batch-wise against corresponding image vectors
                             proj_norm = F.normalize(projected_text_batch[:valid_count], dim=-1)
                             # Only compute patch embeddings for matched crops
@@ -830,8 +839,10 @@ class LLaVATrainer(Trainer):
                                 pass
                             try:
                                 projected_img_batch = align_enc(img_batch)
-                            except Exception:
-                                projected_img_batch = align_enc(img_batch).squeeze(0)
+                                align_forward_calls += 1
+                            except Exception as e:
+                                logger.warning(f"[GrandAlignDebug] image_align_forward_failed: {repr(e)}")
+                                continue
 
                             proj_norm = F.normalize(projected_img_batch, dim=-1)
                             dino_vecs = dino_embeds[matched_crop_indices]
@@ -849,6 +860,19 @@ class LLaVATrainer(Trainer):
 
         else:
             print("[GrandAlignDebug] Missing required inputs for GranD loss; skipping alignment.")
+
+        # ZeRO-3 safety: keep alignment_encoder forward-call count identical across ranks.
+        # Local per-device batch size is consistent across ranks, while valid/matched samples are not.
+        expected_align_calls = 0
+        if labels is not None and hasattr(labels, 'size'):
+            expected_align_calls = int(labels.size(0))
+        elif inputs.get('input_ids', None) is not None and hasattr(inputs['input_ids'], 'size'):
+            expected_align_calls = int(inputs['input_ids'].size(0))
+
+        if expected_align_calls > 0 and align_forward_calls < expected_align_calls:
+            missing_calls = expected_align_calls - align_forward_calls
+            for _ in range(missing_calls):
+                run_dummy_text_image_alignment(forced_batch=1)
 
         # if not grand_loss_applied:
         #     print(f"Rank {torch.distributed.get_rank()} running alignment")
