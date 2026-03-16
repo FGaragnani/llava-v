@@ -369,12 +369,7 @@ class LLaVATrainer(Trainer):
                 if target_batch is None or target_batch <= 0:
                     target_batch = 1
 
-                enc_param = None
                 input_dim = None
-                try:
-                    enc_param = next(align_enc.parameters())
-                except StopIteration:
-                    enc_param = None
 
                 if input_dim is None:
                     input_dim = getattr(self.model.config, 'hidden_size', None)
@@ -383,13 +378,19 @@ class LLaVATrainer(Trainer):
                 if input_dim is None:
                     input_dim = 1
 
+                target_device = base_loss.device
+                target_dtype = base_loss.dtype
+                if isinstance(seed_vec, torch.Tensor):
+                    target_device = seed_vec.device
+                    if seed_vec.is_floating_point():
+                        target_dtype = seed_vec.dtype
+
                 if isinstance(seed_vec, torch.Tensor) and seed_vec.ndim == 1 and seed_vec.numel() == input_dim:
                     dummy_input = seed_vec.unsqueeze(0).repeat(target_batch, 1)
                 else:
-                    dummy_input = torch.zeros((target_batch, input_dim), device=base_loss.device, dtype=base_loss.dtype)
+                    dummy_input = torch.zeros((target_batch, input_dim), device=target_device, dtype=target_dtype)
 
-                if enc_param is not None:
-                    dummy_input = dummy_input.to(device=enc_param.device, dtype=enc_param.dtype)
+                dummy_input = dummy_input.to(device=target_device, dtype=target_dtype)
 
                 projected_text = align_enc(dummy_input)
                 nonlocal align_forward_calls
@@ -710,8 +711,7 @@ class LLaVATrainer(Trainer):
                             if valid_count == 0 and text_batch.size(0) == 0:
                                 text_batch = torch.zeros((1, hidden_states.size(-1)), device=hidden_states.device, dtype=hidden_states.dtype)
 
-                            enc_param = next(align_enc.parameters())
-                            text_batch = text_batch.to(device=enc_param.device, dtype=enc_param.dtype)
+                            text_batch = text_batch.to(device=hidden_states.device, dtype=hidden_states.dtype)
                             # Align text to image dimensions
                             try:
                                 projected_text_batch = align_enc(text_batch)
@@ -741,7 +741,7 @@ class LLaVATrainer(Trainer):
                             
                             patch_embeds = patch_embeds.to(hidden_states.device)
                             img_vecs = patch_embeds
-                            img_vecs = img_vecs.to(device=enc_param.device, dtype=enc_param.dtype)
+                            img_vecs = img_vecs.to(device=projected_text_batch.device, dtype=projected_text_batch.dtype)
                             img_norm = F.normalize(img_vecs[:valid_count], dim=-1)
                             sims = (proj_norm * img_norm).sum(dim=-1)
                             crop_losses = (1 - sims)
@@ -823,12 +823,7 @@ class LLaVATrainer(Trainer):
                             if not pooled_img_embeds:
                                 continue
 
-                            img_batch = torch.stack(pooled_img_embeds, dim=0).to(patch_embeds.device)
-                            try:
-                                enc_param = next(align_enc.parameters())
-                                img_batch = img_batch.to(device=enc_param.device, dtype=enc_param.dtype)
-                            except Exception:
-                                pass
+                            img_batch = torch.stack(pooled_img_embeds, dim=0).to(device=hidden_states.device, dtype=hidden_states.dtype)
                             try:
                                 projected_img_batch = align_enc(img_batch)
                                 align_forward_calls += 1
