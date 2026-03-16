@@ -390,28 +390,15 @@ class LLaVATrainer(Trainer):
 
                 projected_text = align_enc(dummy_input)
 
-                patch_model = getattr(self.patch_embedder, 'model', None)
-                patch_is_zero_sharded = False
-                try:
-                    if patch_model is not None:
-                        patch_is_zero_sharded = any(hasattr(p, 'ds_id') for p in patch_model.parameters())
-                except Exception:
-                    patch_is_zero_sharded = False
-
-                if patch_is_zero_sharded:
-                    patch_embeds = torch.zeros(
-                        (target_batch, projected_text.size(-1)),
-                        device=projected_text.device,
-                        dtype=projected_text.dtype,
-                    )
+                # Always execute one patch_embedder call so fallback path participates in
+                # the same ZeRO collectives as the real path.
+                fake_crops = [Image.new('RGB', (224, 224), color=(0, 0, 0)) for _ in range(target_batch)]
+                with torch.no_grad():
+                    patch_embeds = self.patch_embedder(fake_crops)
+                if enc_param is not None:
+                    patch_embeds = patch_embeds.to(device=enc_param.device, dtype=enc_param.dtype)
                 else:
-                    fake_crops = [Image.new('RGB', (224, 224), color=(0, 0, 0)) for _ in range(target_batch)]
-                    with torch.no_grad():
-                        patch_embeds = self.patch_embedder(fake_crops)
-                    if enc_param is not None:
-                        patch_embeds = patch_embeds.to(device=enc_param.device, dtype=enc_param.dtype)
-                    else:
-                        patch_embeds = patch_embeds.to(device=projected_text.device, dtype=projected_text.dtype)
+                    patch_embeds = patch_embeds.to(device=projected_text.device, dtype=projected_text.dtype)
 
                 proj_norm = F.normalize(projected_text, dim=-1)
                 img_norm = F.normalize(patch_embeds, dim=-1)
@@ -738,8 +725,16 @@ class LLaVATrainer(Trainer):
 
                             if matched_crops:
                                 patch_embeds = self.patch_embedder(matched_crops)
-                            if not matched_crops:
-                                patch_embeds = torch.zeros((0, proj_norm.size(-1)), dtype=proj_norm.dtype)
+                            else:
+                                # Keep collective order stable even when no crop matched on this rank.
+                                fake_crop = Image.new('RGB', (224, 224), color=(0, 0, 0))
+                                with torch.no_grad():
+                                    _dummy_patch = self.patch_embedder([fake_crop])
+                                patch_embeds = torch.zeros(
+                                    (0, proj_norm.size(-1)),
+                                    device=_dummy_patch.device,
+                                    dtype=_dummy_patch.dtype,
+                                )
                             
                             patch_embeds = patch_embeds.to(hidden_states.device)
                             img_vecs = patch_embeds
