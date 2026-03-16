@@ -36,9 +36,9 @@ export TRANSFORMERS_OFFLINE=1
 export GRAND_FORCE_MASK=1
 export GRAND_ALIGN_DEBUG=0
 export GRAND_LOSS_DEBUG=1
-export NCCL_DEBUG=WARN
+export NCCL_DEBUG=INFO
 export NCCL_ASYNC_ERROR_HANDLING=1
-export TORCH_DISTRIBUTED_DEBUG=OFF
+export TORCH_DISTRIBUTED_DEBUG=DETAIL
 export NCCL_BLOCKING_WAIT=1
 export NCCL_TIMEOUT=300
 
@@ -94,6 +94,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
 	--model_max_length 2048 \
 	--image_aspect_ratio pad \
 	--group_by_modality_length False \
+	--ddp_find_unused_parameters True \
 	--freeze_backbone False \
 	--version plain \
 	--use_llava_data False \
