@@ -703,8 +703,8 @@ class LLaVATrainer(Trainer):
                             if matched_text_embeds:
                                 text_batch = torch.stack(matched_text_embeds, dim=0)
                             else:
+                                text_batch = torch.zeros((0, hidden_states.size(-1)))
                                 logger.warning(f"[GrandAlignDebug] no_matched_phrases sample={b_idx} attempted={len(phrases)}")
-                                continue
                             
                             valid_count = text_batch.size(0)
                             if self.args.max_crops_glamm is not None and valid_count >= self.args.max_crops_glamm:
@@ -712,7 +712,7 @@ class LLaVATrainer(Trainer):
                                 matched_crop_indices = matched_crop_indices[:self.args.max_crops_glamm]
 
                             # deal with missing matches, padding
-                            if self.args.max_crops_glamm is not None and text_batch.size(0) < self.args.max_crops_glamm:
+                            if self.args.max_crops_glamm is not None and valid_count < self.args.max_crops_glamm:
                                 pad_size = self.args.max_crops_glamm - text_batch.size(0)
                                 pad_tensor = torch.zeros((pad_size, text_batch.size(1)), device=text_batch.device, dtype=text_batch.dtype)
                                 text_batch = torch.cat([text_batch, pad_tensor], dim=0)
@@ -839,7 +839,7 @@ class LLaVATrainer(Trainer):
         print(f"Rank {torch.distributed.get_rank()} running alignment")
         if not grand_loss_applied:
             print("[GrandAlignDebug] No GranD loss applied; running dummy alignment for graph consistency.")
-        run_dummy_text_image_alignment()
+            run_dummy_text_image_alignment()
         
         total_loss = base_loss + (grand_extra_loss * weight)
         if return_outputs:
