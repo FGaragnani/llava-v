@@ -61,13 +61,15 @@ class GranDDataset(Dataset):
             with open(annotation_path, "r", encoding="utf-8") as f:
                 ann_data = json.load(f)
             ann_data = ann_data.get(os.path.splitext(img_file)[0] + ".jpg", {})
-            dense_caption_text = ann_data.get("dense_caption", {}).get("caption", "").lower().strip()
-            details = ann_data.get("dense_caption", {}).get("details", [])
+            dense = ann_data.get("dense_caption", {})
+            dense_caption_text = dense.get("caption", "").lower().strip()
+            details = dense.get("details", [])
             found = (False, "")
             for d in details:
                 if d.get("phrase", "").strip().lower() in dense_caption_text:
-                    found = (True, d.get("phrase", "").strip().lower())
-                    break
+                    if d.get("bbox", None) is not None:
+                        found = (True, d.get("phrase", "").strip().lower())
+                        break
             if found[0]:
                 correct_img_files.append(img_file)
                 print(f"[GranDDataset] Keeping image {img_file} with valid annotation {found[1]} in {dense_caption_text}.")
