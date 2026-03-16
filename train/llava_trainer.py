@@ -395,33 +395,8 @@ class LLaVATrainer(Trainer):
                 nonlocal align_forward_calls
                 align_forward_calls += 1
 
-                patch_model = getattr(self.patch_embedder, 'model', None)
-                patch_is_zero_sharded = False
-                try:
-                    if patch_model is not None:
-                        patch_is_zero_sharded = any(hasattr(p, 'ds_id') for p in patch_model.parameters())
-                except Exception:
-                    patch_is_zero_sharded = False
-
-                if patch_is_zero_sharded:
-                    patch_embeds = torch.zeros(
-                        (target_batch, projected_text.size(-1)),
-                        device=projected_text.device,
-                        dtype=projected_text.dtype,
-                    )
-                else:
-                    fake_crops = [Image.new('RGB', (224, 224), color=(0, 0, 0)) for _ in range(target_batch)]
-                    with torch.no_grad():
-                        patch_embeds = self.patch_embedder(fake_crops)
-                    if enc_param is not None:
-                        patch_embeds = patch_embeds.to(device=enc_param.device, dtype=enc_param.dtype)
-                    else:
-                        patch_embeds = patch_embeds.to(device=projected_text.device, dtype=projected_text.dtype)
-
-                proj_norm = F.normalize(projected_text, dim=-1)
-                img_norm = F.normalize(patch_embeds, dim=-1)
-                sims = (proj_norm * img_norm).sum(dim=-1)
-                dummy_out = (1 - sims).mean()
+                # Pure graph touch: ensures alignment_encoder participates, but contributes zero loss.
+                dummy_out = projected_text.sum() * 0.0
 
                 nonlocal grand_extra_loss
                 grand_extra_loss = grand_extra_loss + (dummy_out * 0.0)
@@ -861,8 +836,7 @@ class LLaVATrainer(Trainer):
         else:
             print("[GrandAlignDebug] Missing required inputs for GranD loss; skipping alignment.")
 
-        # ZeRO-3 safety: keep alignment_encoder forward-call count identical across ranks.
-        # Local per-device batch size is consistent across ranks, while valid/matched samples are not.
+        # ZeRO-3 safety: keep alignment_encoder forward-call count consistent across ranks.
         expected_align_calls = 0
         if labels is not None and hasattr(labels, 'size'):
             expected_align_calls = int(labels.size(0))
@@ -873,6 +847,18 @@ class LLaVATrainer(Trainer):
             missing_calls = expected_align_calls - align_forward_calls
             for _ in range(missing_calls):
                 run_dummy_text_image_alignment(forced_batch=1)
+
+        if os.environ.get("GRAND_loss_DEBUG", "0") == "1":
+            try:
+                rank = torch.distributed.get_rank() if torch.distributed.is_available() and torch.distributed.is_initialized() else -1
+                step = int(getattr(self.state, "global_step", -1))
+                max_steps = 20
+                if step < max_steps:
+                    logger.warning(
+                        f"[GrandAlignDebug] rank={rank} step={step} align_calls={align_forward_calls} expected={expected_align_calls} topup={max(0, expected_align_calls - align_forward_calls)}"
+                    )
+            except Exception as e:
+                logger.warning(f"[GrandAlignDebug] align_call_debug_failed: {repr(e)}")
 
         # if not grand_loss_applied:
         #     print(f"Rank {torch.distributed.get_rank()} running alignment")
