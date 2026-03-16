@@ -614,6 +614,7 @@ class LLaVATrainer(Trainer):
                                 except Exception:
                                     continue
                             if not crops:
+                                print(f"[GrandAlignDebug] skip_sample b={b_idx} reason=no_valid_crops")
                                 continue
                             crop_total += len(crops)
                             with torch.no_grad():
@@ -643,6 +644,7 @@ class LLaVATrainer(Trainer):
                                     break
                                 phrase = phrase.strip()
                                 if not phrase:
+                                    print(f"[GrandAlignDebug] skip_phrase b={b_idx} crop_i={crop_i} reason=empty_phrase")
                                     continue
                                 attempted_phrase_total += 1
                                 if self.tokenizer is None:
@@ -844,8 +846,11 @@ class LLaVATrainer(Trainer):
                         grand_loss_applied = True
                         print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")
 
-        print(f"Rank {torch.distributed.get_rank()} running alignment")
+        else:
+            print("[GrandAlignDebug] Missing required inputs for GranD loss; skipping alignment.")
+
         if not grand_loss_applied:
+            print(f"Rank {torch.distributed.get_rank()} running alignment")
             print("[GrandAlignDebug] No GranD loss applied; running dummy alignment for graph consistency.")
             run_dummy_text_image_alignment()
         
