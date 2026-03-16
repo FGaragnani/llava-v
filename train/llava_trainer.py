@@ -722,6 +722,7 @@ class LLaVATrainer(Trainer):
                                 pad_size = self.args.max_crops_glamm - text_batch.size(0)
                                 pad_tensor = torch.zeros((pad_size, text_batch.size(1)), device=text_batch.device, dtype=text_batch.dtype)
                                 text_batch = torch.cat([text_batch, pad_tensor], dim=0)
+                                print(f"[GrandAlignDebug] padding_text_batch sample={b_idx} pad_size={pad_size}")
 
                             enc_param = next(align_enc.parameters())
                             text_batch = text_batch.to(device=enc_param.device, dtype=enc_param.dtype)
