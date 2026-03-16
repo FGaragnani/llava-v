@@ -715,13 +715,11 @@ class LLaVATrainer(Trainer):
                             except Exception as e:
                                 logger.warning(f"[GrandAlignDebug] text_align_forward_failed: {repr(e)}")
                                 continue
-
-                            # If nothing matched, still attach alignment_encoder to autograd graph
-                            # with a zero-weight term so ZeRO-3 sees consistent parameter usage.
+                            
+                            invalid = False
                             if valid_count == 0:
-                                grand_extra_loss = grand_extra_loss + (projected_text_batch.sum() * 0.0)
-                                print(f"[GrandAlignDebug] no_valid_alignment sample={b_idx} reason=no_matched_phrases")
-                                continue
+                                invalid = True
+                                valid_count = self.args.max_crops_glamm if self.args.max_crops_glamm is not None else 1
 
                             # Compute cosine similarity batch-wise against corresponding image vectors
                             proj_norm = F.normalize(projected_text_batch[:valid_count], dim=-1)
@@ -741,7 +739,7 @@ class LLaVATrainer(Trainer):
                             crop_losses = (1 - sims)
 
                             if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
-                                per_sample_losses.append(crop_losses.mean())
+                                per_sample_losses.append(crop_losses.mean() * 0.0 if invalid else 1.0)
                             
                         else:
                             # Match image-to-image Caffo style
