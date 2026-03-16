@@ -705,10 +705,10 @@ class LLaVATrainer(Trainer):
 
                             if matched_text_embeds:
                                 text_batch = torch.stack(matched_text_embeds, dim=0)
-                                print(f"[GrandAlignDebug] text_batch_successfull shape: {text_batch.shape}")
                             else:
                                 text_batch = torch.zeros((0, hidden_states.size(-1)))
-                                logger.warning(f"[GrandAlignDebug] no_matched_phrases sample={b_idx} attempted={len(phrases)}, text_batch shape={text_batch.shape}")
+                                logger.warning(f"[GrandAlignDebug] no_matched_phrases sample={b_idx} attempted={len(phrases)}")
+                                logger.warning(f"[GrandAlignDebug] model_output='{self.tokenizer.decode(generated_token_ids)}', phrases={phrases}")
 
                             valid_count = text_batch.size(0)
                             if self.args.max_crops_glamm is not None and valid_count >= self.args.max_crops_glamm:
