@@ -709,7 +709,7 @@ class LLaVATrainer(Trainer):
 
                             # Keep path shape-safe when no matches and max_crops_glamm is unset.
                             if valid_count == 0 and text_batch.size(0) == 0:
-                                text_batch = torch.zeros((1, hidden_states.size(-1)), device=hidden_states.device, dtype=hidden_states.dtype)
+                                text_batch = hidden_states[b_idx][:1]
 
                             text_batch = text_batch.to(device=hidden_states.device, dtype=hidden_states.dtype)
                             # Align text to image dimensions
@@ -731,15 +731,14 @@ class LLaVATrainer(Trainer):
                             matched_crops = [crops[i] for i in matched_crop_indices]
 
                             if matched_crops:
-                                patch_embeds = self.patch_embedder(matched_crops)
-                            if not matched_crops:
-                                patch_embeds = torch.zeros(
-                                    (valid_count, proj_norm.size(-1)),
-                                    requires_grad=True,
-                                    device=proj_norm.device,
-                                    dtype=proj_norm.dtype,
-                                )
+                                input_crops = matched_crops
+                            else:
+                                dummy_img = Image.new('RGB', (patch_size, patch_size))
+                                input_crops = [dummy_img]
+                            patch_embeds = self.patch_embedder(input_crops)
                             
+                            if not matched_crops:
+                                patch_embeds = patch_embeds - patch_embeds.detach()
                             patch_embeds = patch_embeds.to(hidden_states.device)
                             img_vecs = patch_embeds
                             img_vecs = img_vecs.to(device=projected_text_batch.device, dtype=projected_text_batch.dtype)
