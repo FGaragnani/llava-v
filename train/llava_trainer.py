@@ -536,6 +536,7 @@ class LLaVATrainer(Trainer):
                         return spans
 
                     per_sample_losses = []
+                    loss_buffer = torch.zeros(labels.size(0), device=base_loss.device)
                     for b_idx, is_grand in enumerate(grand_mask):
                         # For each sample in the batch
                         if not is_grand:
@@ -751,6 +752,7 @@ class LLaVATrainer(Trainer):
                                 if invalid:
                                     sample_loss = sample_loss + (crop_losses.sum() - crop_losses.sum().detach())
                                 per_sample_losses.append(sample_loss)
+                                loss_buffer[b_idx] = sample_loss
                             
                         else:
                             # Match image-to-image Caffo style
@@ -841,8 +843,7 @@ class LLaVATrainer(Trainer):
                                 per_sample_losses.append(crop_losses.mean())
 
                     if per_sample_losses:
-                        grand_extra_loss = torch.stack(per_sample_losses).mean()
-                        grand_loss_applied = True
+                        grand_extra_loss = loss_buffer.mean()
                         print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")
 
         else:
