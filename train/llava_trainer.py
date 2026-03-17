@@ -361,7 +361,7 @@ class LLaVATrainer(Trainer):
                 return
             nonlocal grand_extra_loss
             touched = tensor.sum()
-            grand_extra_loss = grand_extra_loss + (touched - touched.detach())
+            grand_extra_loss = grand_extra_loss + touched * 0.0
 
         def run_dummy_text_image_alignment(seed_vec: Optional[torch.Tensor] = None, forced_batch: Optional[int] = None):
             """Run one zero-weight dummy text-image alignment pass for graph consistency."""
