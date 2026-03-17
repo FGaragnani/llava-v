@@ -32,7 +32,7 @@ export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 export HF_HUB_CACHE="/leonardo_scratch/large/userexternal/fcocchi0/rag_mlmm/hf_models"
 export HF_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
-export GRAND_FORCE_MASK=1
+export GRAND_FORCE_MASK=0
 export GRAND_LOSS_DEBUG=1
 
 IFS=',' read -r -a nodelist <<<$SLURM_NODELIST
@@ -65,7 +65,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
 	--vision_tower $clip_model_name_or_path \
 	--report_to wandb \
 	--remove_unused_columns False \
-	--bf16 False \
+	--bf16 True \
 	--fp16 False \
 	--num_train_epochs 1 \
 	--per_device_train_batch_size $per_device_train_batch_size \
