@@ -733,7 +733,7 @@ class LLaVATrainer(Trainer):
                             if matched_crops:
                                 input_crops = matched_crops
                             else:
-                                dummy_img = Image.new('RGB', (patch_size, patch_size))
+                                dummy_img = Image.new('RGB', (224, 224))
                                 input_crops = [dummy_img]
                             patch_embeds = self.patch_embedder(input_crops)
                             
