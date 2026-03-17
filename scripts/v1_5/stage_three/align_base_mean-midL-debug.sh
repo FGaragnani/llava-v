@@ -54,7 +54,7 @@ clip_model_name_or_path="/leonardo_scratch/large/userexternal/fgaragna/models/lm
 learning_rate=2e-5
 per_device_train_batch_size=4
 gradient_accumulation_steps=4
-dataloader_num_workers=0
+dataloader_num_workers=4
 
 base_model_path="/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-base/llava_s2"
 
