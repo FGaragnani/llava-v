@@ -862,6 +862,7 @@ class LLaVATrainer(Trainer):
         if expected_align_calls > 0 and align_forward_calls < expected_align_calls:
             missing_calls = expected_align_calls - align_forward_calls
             for _ in range(missing_calls):
+                print(f"[GrandAlignDebug] Running dummy alignment rank={torch.distributed.get_rank() if torch.distributed.is_available() and torch.distributed.is_initialized() else -1} to top up forward calls: {align_forward_calls}/{expected_align_calls}")
                 run_dummy_text_image_alignment(forced_batch=1)
 
         if os.environ.get("GRAND_LOSS_DEBUG", "0") == "1":
