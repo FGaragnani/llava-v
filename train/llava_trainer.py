@@ -361,8 +361,7 @@ class LLaVATrainer(Trainer):
                 return
             nonlocal grand_extra_loss
             touched = tensor.sum()
-            # Keep params in graph for distributed consistency, but with zero gradient.
-            grand_extra_loss = grand_extra_loss + (touched * 0.0)
+            grand_extra_loss = grand_extra_loss + (touched - touched.detach())
 
         def run_dummy_text_image_alignment(seed_vec: Optional[torch.Tensor] = None, forced_batch: Optional[int] = None):
             """Run one zero-weight dummy text-image alignment pass for graph consistency."""
@@ -726,7 +725,7 @@ class LLaVATrainer(Trainer):
                                 logger.warning(f"[GrandAlignDebug] text_align_forward_failed: {repr(e)}")
                                 continue
 
-                            # No matched phrase/crop pair: keep only the alignment graph touch above.
+                            # No matched text/crop pairs: keep only graph-touch for ZeRO-3 consistency.
                             if valid_count == 0:
                                 continue
 
