@@ -361,7 +361,8 @@ class LLaVATrainer(Trainer):
                 return
             nonlocal grand_extra_loss
             touched = tensor.sum()
-            grand_extra_loss = grand_extra_loss + (touched - touched.detach())
+            # Keep params in graph for distributed consistency, but with zero gradient.
+            grand_extra_loss = grand_extra_loss + (touched * 0.0)
 
         def run_dummy_text_image_alignment(seed_vec: Optional[torch.Tensor] = None, forced_batch: Optional[int] = None):
             """Run one zero-weight dummy text-image alignment pass for graph consistency."""
@@ -725,26 +726,20 @@ class LLaVATrainer(Trainer):
                                 logger.warning(f"[GrandAlignDebug] text_align_forward_failed: {repr(e)}")
                                 continue
 
-                            invalid = False
+                            # No matched phrase/crop pair: keep only the alignment graph touch above.
                             if valid_count == 0:
-                                invalid = True
-                                valid_count = self.args.max_crops_glamm if self.args.max_crops_glamm is not None else 1
+                                continue
 
                             # Compute cosine similarity batch-wise against corresponding image vectors
                             proj_norm = F.normalize(projected_text_batch[:valid_count], dim=-1)
                             # Only compute patch embeddings for matched crops
                             matched_crops = [crops[i] for i in matched_crop_indices]
 
-                            if matched_crops:
-                                input_crops = matched_crops
-                            else:
-                                dummy_img = Image.new('RGB', (224, 224))
-                                input_crops = [dummy_img] * valid_count
-                                print(f"Dummyfied crops rank={torch.distributed.get_rank() if torch.distributed.is_initialized() else 0} sample={b_idx} valid_count={valid_count}")
-                            patch_embeds = self.patch_embedder(input_crops)
-
                             if not matched_crops:
-                                patch_embeds = patch_embeds - patch_embeds.detach()
+                                logger.warning(f"[GrandAlignDebug] no_matched_crops sample={b_idx} valid_count={valid_count}")
+                                continue
+
+                            patch_embeds = self.patch_embedder(matched_crops)
                             patch_embeds = patch_embeds.to(hidden_states.device)
                             img_vecs = patch_embeds
                             img_vecs = img_vecs.to(device=projected_text_batch.device, dtype=projected_text_batch.dtype)
@@ -754,10 +749,7 @@ class LLaVATrainer(Trainer):
 
                             if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
                                 sample_loss = crop_losses.mean()
-                                if invalid:
-                                    sample_loss = sample_loss + (crop_losses.sum() - crop_losses.sum().detach())
-                                else:
-                                    per_sample_losses.append(sample_loss)
+                                per_sample_losses.append(sample_loss)
                             
                         else:
                             # Match image-to-image Caffo style
