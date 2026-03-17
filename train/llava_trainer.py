@@ -692,9 +692,8 @@ class LLaVATrainer(Trainer):
                             if matched_text_embeds:
                                 text_batch = torch.stack(matched_text_embeds, dim=0)
                             else:
-                                text_batch = torch.zeros((0, hidden_states.size(-1)))
+                                text_batch = torch.zeros((0, hidden_states.size(-1)), requires_grad=True)
                                 logger.warning(f"[GrandAlignDebug] no_matched_phrases sample={b_idx} attempted={len(phrases)} rank={torch.distributed.get_rank() if torch.distributed.is_initialized() else 0}")
-                                logger.warning(f"[GrandAlignDebug] model_output='{self.tokenizer.decode(generated_token_ids)}', phrases={phrases}")
 
                             valid_count = text_batch.size(0)
                             if self.args.max_crops_glamm is not None and valid_count >= self.args.max_crops_glamm:
@@ -705,6 +704,7 @@ class LLaVATrainer(Trainer):
                             if self.args.max_crops_glamm is not None and valid_count < self.args.max_crops_glamm:
                                 pad_size = self.args.max_crops_glamm - text_batch.size(0)
                                 pad_tensor = torch.zeros((pad_size, text_batch.size(1)), requires_grad=True, device=text_batch.device, dtype=text_batch.dtype)
+                                pad_tensor += hidden_states[b_idx][:1]
                                 text_batch = torch.cat([text_batch, pad_tensor], dim=0)
                                 print(f"[GrandAlignDebug] padding_text_batch sample={b_idx} pad_size={pad_size}")
 
@@ -735,9 +735,10 @@ class LLaVATrainer(Trainer):
                                 input_crops = matched_crops
                             else:
                                 dummy_img = Image.new('RGB', (224, 224))
-                                input_crops = [dummy_img]
+                                input_crops = [dummy_img] * valid_count
+                                print(f"Dummyfied crops rank={torch.distributed.get_rank() if torch.distributed.is_initialized() else 0} sample={b_idx} valid_count={valid_count}")
                             patch_embeds = self.patch_embedder(input_crops)
-                            
+
                             if not matched_crops:
                                 patch_embeds = patch_embeds - patch_embeds.detach()
                             patch_embeds = patch_embeds.to(hidden_states.device)
@@ -843,7 +844,7 @@ class LLaVATrainer(Trainer):
                                 per_sample_losses.append(crop_losses.mean())
 
                     if per_sample_losses:
-                        grand_extra_loss = loss_buffer.mean()
+                        grand_extra_loss = grand_extra_loss + loss_buffer.mean()
                         print(f"[GrandAlignDebug] grand_loss={grand_extra_loss.item():.6f}")
 
         else:
