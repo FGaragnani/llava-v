@@ -692,7 +692,7 @@ class LLaVATrainer(Trainer):
                                 text_batch = torch.stack(matched_text_embeds, dim=0)
                             else:
                                 text_batch = torch.zeros((0, hidden_states.size(-1)))
-                                logger.warning(f"[GrandAlignDebug] no_matched_phrases sample={b_idx} attempted={len(phrases)}")
+                                logger.warning(f"[GrandAlignDebug] no_matched_phrases sample={b_idx} attempted={len(phrases)} rank={torch.distributed.get_rank() if torch.distributed.is_initialized() else 0}")
                                 logger.warning(f"[GrandAlignDebug] model_output='{self.tokenizer.decode(generated_token_ids)}', phrases={phrases}")
 
                             valid_count = text_batch.size(0)
