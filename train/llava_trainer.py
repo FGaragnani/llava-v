@@ -880,6 +880,10 @@ class LLaVATrainer(Trainer):
         #     print(f"Rank {torch.distributed.get_rank()} running alignment")
         #     print("[GrandAlignDebug] No GranD loss applied; running dummy alignment for graph consistency.")
         #     run_dummy_text_image_alignment()
+
+        for name, p in align_enc.named_parameters():
+            if p.grad is None:
+                print(f"[Rank {torch.distributed.get_rank()}] No grad for {name}")
         
         total_loss = base_loss + (grand_extra_loss * weight)
         if return_outputs:
