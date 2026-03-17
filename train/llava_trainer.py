@@ -397,10 +397,10 @@ class LLaVATrainer(Trainer):
                 align_forward_calls += 1
 
                 # Pure graph touch: ensures alignment_encoder participates, but contributes zero loss.
-                dummy_out = projected_text.sum() * 0.0
+                dummy_out = projected_text.sum()
 
                 nonlocal grand_extra_loss
-                grand_extra_loss = grand_extra_loss + (dummy_out * 0.0)
+                grand_extra_loss = grand_extra_loss + (dummy_out - dummy_out.detach())
                 return True
             except Exception as e:
                 logger.warning(f"[GrandAlignDebug] dummy_align_fallback_failed: {repr(e)}")
@@ -703,7 +703,7 @@ class LLaVATrainer(Trainer):
                             # deal with missing matches, padding
                             if self.args.max_crops_glamm is not None and valid_count < self.args.max_crops_glamm:
                                 pad_size = self.args.max_crops_glamm - text_batch.size(0)
-                                pad_tensor = torch.zeros((pad_size, text_batch.size(1)), device=text_batch.device, dtype=text_batch.dtype)
+                                pad_tensor = torch.zeros((pad_size, text_batch.size(1)), requires_grad=True, device=text_batch.device, dtype=text_batch.dtype)
                                 text_batch = torch.cat([text_batch, pad_tensor], dim=0)
                                 print(f"[GrandAlignDebug] padding_text_batch sample={b_idx} pad_size={pad_size}")
 
@@ -735,6 +735,7 @@ class LLaVATrainer(Trainer):
                             if not matched_crops:
                                 patch_embeds = torch.zeros(
                                     (valid_count, proj_norm.size(-1)),
+                                    requires_grad=True,
                                     device=proj_norm.device,
                                     dtype=proj_norm.dtype,
                                 )
@@ -749,7 +750,7 @@ class LLaVATrainer(Trainer):
                             if isinstance(crop_losses, torch.Tensor) and crop_losses.numel() > 0:
                                 sample_loss = crop_losses.mean()
                                 if invalid:
-                                    sample_loss = sample_loss + (projected_text_batch.sum() * 0.0)
+                                    sample_loss = sample_loss + (crop_losses.sum() - crop_losses.sum().detach())
                                 per_sample_losses.append(sample_loss)
                             
                         else:
@@ -880,10 +881,6 @@ class LLaVATrainer(Trainer):
         #     print(f"Rank {torch.distributed.get_rank()} running alignment")
         #     print("[GrandAlignDebug] No GranD loss applied; running dummy alignment for graph consistency.")
         #     run_dummy_text_image_alignment()
-
-        for name, p in align_enc.named_parameters():
-            if p.grad is None:
-                print(f"[Rank {torch.distributed.get_rank()}] No grad for {name}")
         
         total_loss = base_loss + (grand_extra_loss * weight)
         if return_outputs:
