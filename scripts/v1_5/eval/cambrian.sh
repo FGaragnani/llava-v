@@ -11,7 +11,7 @@
 #SBATCH --partition=boost_usr_prod
 #SBATCH --account=AIFAC_S02_096
 #SBATCH --time=02:30:00
-#SBATCH --array=0-0
+#SBATCH --array=0-20
 
 set -e
 
