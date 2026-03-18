@@ -16,7 +16,7 @@ benchmarks=(
     mme
     mmbench_en
     mmbench_cn
-    # seed
+    seed
     # mmvet
     mmmu
     mathvista
