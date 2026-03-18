@@ -39,8 +39,8 @@ import math
 
 def split_list(lst, n):
     """Split a list into n (roughly) equal-sized chunks"""
-    chunk_size = math.ceil(len(lst) / n)  # integer division
-    return [[i,i+chunk_size-1] for i in range(0, len(lst), chunk_size)]
+    chunk_size = math.ceil(lst / n)  # integer division
+    return [[i,i+chunk_size-1] for i in range(0, lst, chunk_size)]
 
 
 def get_chunk(lst, n, k):
