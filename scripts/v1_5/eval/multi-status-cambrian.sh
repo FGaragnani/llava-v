@@ -1,3 +1,4 @@
 #!/bin/bash
 
-bash scripts/v1_5/eval/status_cambrian.sh llava-v_s2--mean-midL_ve-qwen2_5
+bash scripts/v1_5/eval/status_cambrian.sh stage_three/llava-base_s3--align_extra-data
+bash scripts/v1_5/eval/status_cambrian.sh stage_three/llava-base_s3--align_mean-midL
