@@ -23,7 +23,7 @@ def tabulate_results(eval_dir, experiment_csv_fname, out_pivot_fname, out_all_re
         'mme',
         'mmbench_en',
         'mmbench_cn',
-        # 'seed',
+        'seed',
         # 'llava_w',
         # 'mmvet', # submission
         ## Addtl
