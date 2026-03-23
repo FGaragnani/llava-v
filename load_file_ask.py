@@ -1,5 +1,8 @@
 # Utility file. Load a model with LLaVAModelForCausalLM and ask a question.
 
+import sys
+sys.path.insert(0, '/leonardo/home/userexternal/fgaragna/llava')
+
 from model.language_model.llava_llama import LLaVAModelForCausalLM
 
 def load_model(model_path):
@@ -11,6 +14,7 @@ def ask(model, question):
     outputs = model.generate(**inputs, max_length=100)
     answer = model.tokenizer.decode(outputs[0], skip_special_tokens=True)
     return answer
+
 
 MODEL_PATH = "/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2--ve-qwen2_5"
 
