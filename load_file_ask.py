@@ -12,7 +12,7 @@ def ask(model, question):
     answer = model.tokenizer.decode(outputs[0], skip_special_tokens=True)
     return answer
 
-MODEL_PATH = ""
+MODEL_PATH = "/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2--ve-qwen2_5"
 
 input_str = ""
 
