@@ -1,7 +1,7 @@
 # Utility file. Load a model with LLaVAModelForCausalLM and ask a question.
 
 import sys
-sys.path.insert(0, '/leonardo/home/userexternal/fgaragna/llava')
+sys.path.insert(0, '/leonardo/home/userexternal/fgaragna')
 
 from model.language_model.llava_llama import LLaVAModelForCausalLM
 
