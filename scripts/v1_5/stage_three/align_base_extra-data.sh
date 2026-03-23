@@ -96,4 +96,5 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
 	--patch_agg_mode cls \
 	--grand_alignment_loss_weight 0.0 \
 	--text_token_pool mean \
-	--address_layer mid_layer
+	--address_layer mid_layer \
+	--glamm_instruction_label "Describe this image|Provide a description of the image|Explain what is shown in the image|Give a detailed description of this picture|What is depicted in this image?|Summarize the visual content of this image|Describe the contents of the picture|What can you see in this image?|Write a description of the given image|Interpret and describe this image"
