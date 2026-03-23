@@ -3,10 +3,10 @@
 import sys
 sys.path.insert(0, '/leonardo/home/userexternal/fgaragna')
 
-from model.language_model.llava_llama import LLaVAModelForCausalLM
+from model.language_model.llava_llama import LlavaLlamaForCausalLM
 
 def load_model(model_path):
-    model = LLaVAModelForCausalLM.from_pretrained(model_path)
+    model = LlavaLlamaForCausalLM.from_pretrained(model_path)
     return model
 
 def ask(model, question):
