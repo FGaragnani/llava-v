@@ -4,9 +4,13 @@ import sys
 sys.path.insert(0, '/leonardo/home/userexternal/fgaragna')
 
 from model.language_model.llava_llama import LlavaLlamaForCausalLM
+from model.language_model.llava_qwen import LlavaQwenForCausalLM
 
 def load_model(model_path):
-    model = LlavaLlamaForCausalLM.from_pretrained(model_path)
+    if "qwen" in model_path:
+        model = LlavaQwenForCausalLM.from_pretrained(model_path)
+    else:
+        model = LlavaLlamaForCausalLM.from_pretrained(model_path)
     return model
 
 def ask(model, question):
@@ -17,6 +21,7 @@ def ask(model, question):
 
 
 MODEL_PATH = "/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2--ve-qwen2_5"
+model = load_model(MODEL_PATH)
 
 input_str = ""
 
