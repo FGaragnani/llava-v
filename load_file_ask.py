@@ -29,5 +29,5 @@ while True:
     input_str = input("Enter your question (Ctrl-D to exit): ")
     if input_str == u'\u0004':
         break
-    answer = ask(load_model(MODEL_PATH), input_str)
+    answer = ask(model, input_str)
     print("Answer:", answer)
