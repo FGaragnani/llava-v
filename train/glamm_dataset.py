@@ -44,7 +44,10 @@ class GranDDataset(Dataset):
             getattr(data_args, "image_processor", None) if data_args else None
         )
         self.samples_limit = samples_limit
-        self.prompt_template = prompt_template or ""
+        self.prompt_template: str | list[str] = prompt_template or ""
+        if isinstance(self.prompt_template, str) and '|' in self.prompt_template:
+            prompts = [str(prompt).strip() for prompt in self.prompt_template.split('|')]
+            self.prompt_template = [prompt for prompt in prompts if prompt]
         self.label_joiner = label_joiner
         self.delete_corrupt = delete_corrupt
         self.check_area_fn = lambda img_size, patch_area: (patch_area / img_size) > check_area
@@ -95,6 +98,12 @@ class GranDDataset(Dataset):
 
     def __len__(self) -> int:
         return len(self._image_index)
+    
+    def _get_prompt_template(self) -> str:
+        if isinstance(self.prompt_template, list):
+            import random
+            return random.choice(self.prompt_template)
+        return self.prompt_template
 
     def __getitem__(self, idx: int) -> Dict[str, torch.Tensor | List | str]:
         if idx < 0 or idx >= len(self._image_index):
@@ -166,7 +175,7 @@ class GranDDataset(Dataset):
             image_tensor = self.image_processor.preprocess(image, return_tensors="pt")["pixel_values"][0]
 
         # Conversation
-        instruction = self.prompt_template
+        instruction = self._get_prompt_template().strip()
         caption_text = dense_caption_text
         conversation = [
             {"from": "human", "value": f"{DEFAULT_IMAGE_TOKEN}\n{instruction}" if instruction else DEFAULT_IMAGE_TOKEN},
