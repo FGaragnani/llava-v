@@ -21,10 +21,14 @@ def load_tokenizer(model_path):
 
 def ask(model, tokenizer, question):
     device = next(model.parameters()).device
-    inputs = tokenizer(question, return_tensors="pt").to(device)
+    model_inputs = tokenizer(question, return_tensors="pt").to(device)
     with torch.inference_mode():
-        outputs = model.generate(**inputs, max_new_tokens=100)
-    new_tokens = outputs[0][inputs["input_ids"].shape[1]:]
+        outputs = model.generate(
+            inputs=model_inputs["input_ids"],
+            attention_mask=model_inputs.get("attention_mask", None),
+            max_new_tokens=100,
+        )
+    new_tokens = outputs[0][model_inputs["input_ids"].shape[1]:]
     answer = tokenizer.decode(new_tokens, skip_special_tokens=True)
     return answer
 
