@@ -126,6 +126,10 @@ class PatchEmbedder(nn.Module):
         original_device = patches.device if isinstance(patches, torch.Tensor) else None
         inputs = self.processor(images=patches, return_tensors="pt")
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
+        
+        # Cast inputs to match model dtype (handles mixed precision training)
+        model_dtype = next(self.vision_model.parameters()).dtype
+        inputs = {k: v.to(dtype=model_dtype) if torch.is_tensor(v) and v.dtype != model_dtype else v for k, v in inputs.items()}
         try:
             outputs = self._run_vision_model(inputs)
         except RuntimeError as e:
@@ -174,6 +178,10 @@ class PatchEmbedder(nn.Module):
         original_device = imgs.device if isinstance(imgs, torch.Tensor) else None
         inputs = self.processor(images=imgs, return_tensors="pt")
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
+        
+        # Cast inputs to match model dtype (handles mixed precision training)
+        model_dtype = next(self.vision_model.parameters()).dtype
+        inputs = {k: v.to(dtype=model_dtype) if torch.is_tensor(v) and v.dtype != model_dtype else v for k, v in inputs.items()}
         outputs = self._run_vision_model(inputs)
 
         last_hidden = self._get_last_tokens(outputs)  # [N, num_tokens, D]
