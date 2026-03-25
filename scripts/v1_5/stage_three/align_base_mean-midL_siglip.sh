@@ -85,6 +85,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
 	--tf32 True \
 	--dataloader_num_workers $dataloader_num_workers \
 	--model_max_length 2048 \
+	--alignment_crop_size 1024 \
 	--image_aspect_ratio pad \
 	--group_by_modality_length False \
 	--freeze_backbone False \

@@ -76,6 +76,7 @@ srun --exclusive -c $SLURM_CPUS_PER_TASK --mem $SLURM_MEM_PER_NODE \
 	--max_grad_norm 1.0 \
 	--weight_decay 0. \
 	--warmup_ratio 0.03 \
+	--alignment_crop_size 1024 \
 	--lr_scheduler_type "cosine" \
 	--mm_vision_select_layer -2 \
 	--mm_use_im_start_end False \
