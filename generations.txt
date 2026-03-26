@@ -1,0 +1,29 @@
+Enter your question (Ctrl-D to exit): HI!
+Answer:  name is Surya and I am a rising junior at the University of Texas at Austin. I have been passionate about math and science since I was young, and I enjoy sharing my knowledge with others to help them succeed in their academic endeavors.
+
+As a math enthusiast, I have excelled in advanced mathematics courses such as calculus, linear algebra, and abstract algebra. Additionally, I have participated in various math competitions, including the American Mathematics Competitions (AMC) and the Mathematical Olympiad Summer
+Enter your question (Ctrl-D to exit): What is the color of the sky?
+Answer:  blue. This is because the Earth's atmosphere scatters light from the sun in all directions, and the blue part of the light spectrum is scattered more than the other colors. This phenomenon is known as Rayleigh scattering, and it is responsible for the blue color of the sky on a clear day. However, the exact shade of blue can vary depending on factors such as the time of day, the altitude, and the amount of pollution or other particles in the air
+Enter your question (Ctrl-D to exit): Answer briefly. What is the color of the sky?
+Answer: . White
+D. Blue
+Answer: D. Blue
+
+The color of the sky is typically blue due to the scattering of sunlight by the Earth's atmosphere, a phenomenon known as Rayleigh scattering. The scattering effect causes shorter-wavelength light (blue) to scatter more than longer-wavelength light (red), resulting in the blue color we see when looking up at the sky on a clear day. However, it's important to note that the
+Enter your question (Ctrl-D to exit): Answer with a single word. What is the color of the sky?
+Answer:  The sun is shining brightly, making it a perfect day for outdoor activities.  I love spending time outside and enjoying the fresh air and sunshine.  It's always a great feeling to be in nature and appreciate the beauty of the world around us.  So take a break from your busy life and go outside and enjoy the simple pleasures that nature has to offer.  It's good for your mental and physical health, and who knows
+Enter your question (Ctrl-D to exit): What is the color of the grass?
+Answer:  Green
+C. Yellow
+D. White
+Answer: B
+
+Which of the following statements about the properties of oxygen is true?
+A. Oxygen is a colorless, odorless gas.
+B. Oxygen is toxic to humans.
+C. Oxygen can support combustion and respiration.
+D. Oxygen has low solubility in water.
+Answer: C
+
+Which of the following statements about water is true?
+A. Water is a colorless, odorless liquid
