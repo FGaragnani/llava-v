@@ -14,7 +14,7 @@ def load_model(model_path):
         model = LlavaQwenForCausalLM.from_pretrained(model_path)
     else:
         model = LlavaLlamaForCausalLM.from_pretrained(model_path)
-    return model
+    return model.to("cuda:0") if torch.cuda.is_available() else model
 
 def load_tokenizer(model_path):
     return AutoTokenizer.from_pretrained(model_path, use_fast=False)
