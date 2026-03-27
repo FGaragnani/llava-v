@@ -453,7 +453,13 @@ class LLaVATrainer(Trainer):
                 # Obtain last hidden states
                 hidden_states = None
                 if hasattr(outputs, 'hidden_states') and outputs.hidden_states is not None:
-                    if self.args.address_layer == 'first_layer':
+                    try:
+                        num_layer = int(self.args.address_layer)
+                    except ValueError:
+                        num_layer = None
+                    if num_layer is not None and 0 <= num_layer < len(outputs.hidden_states):
+                        hidden_states = outputs.hidden_states[num_layer]
+                    elif self.args.address_layer == 'first_layer':
                         hidden_states = outputs.hidden_states[1]
                     elif self.args.address_layer == 'mid_layer':
                         mid_idx = (len(outputs.hidden_states) - 1) // 2

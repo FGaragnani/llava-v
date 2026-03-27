@@ -124,7 +124,7 @@ class TrainingArguments(transformers.TrainingArguments):
     group_by_modality_length: bool = field(default=False)
     grand_alignment_loss_weight: float = field(default=0.5)
     text_token_pool: str = field(default="mean", metadata={"help": "Pooling method for text tokens in GLAMM alignment: mean, last, attn."})
-    address_layer: str = field(default="last_layer", metadata={"help": "Which transformer layers to address for GLAMM alignment: first_layer, mid_layer, last_layer."})
+    address_layer: str = field(default="last_layer", metadata={"help": "Which transformer layers to address for GLAMM alignment: first_layer, mid_layer, last_layer. Can also pass the layer index number."})
     full_image_alignment: bool = field(default=False, metadata={"help": "Whether to use full image features for GLAMM alignment instead of cropped features."})
     align_with_image: bool = field(default=False, metadata={"help": "Whether to align text with image features in GLAMM alignment; if False, align with text; if True, align with image embeddings in LLaVA."})
     image_token_pool: Optional[str] = field(default=None, metadata={"help": "Pooling method for image tokens in GLAMM alignment: mean, last; if None, throws an error if needed."})
