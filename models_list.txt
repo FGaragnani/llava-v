@@ -1,2 +1,2 @@
-llava-v_s2--mean-midL-clip
-
+llava-v_s2--mean_24L
+llava-v_s2--mean_1L
