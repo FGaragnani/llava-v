@@ -8,7 +8,7 @@ from transformers import AutoTokenizer
 
 from model.language_model.llava_llama import LlavaLlamaForCausalLM
 from model.language_model.llava_qwen import LlavaQwenForCausalLM
-from conversation import conv_templates
+from conversation import conv_templates, get_stopping_criteria
 
 import argparse
 
@@ -38,14 +38,33 @@ def ask(model, tokenizer, question, template_conv):
     device = next(model.parameters()).device
     prompt = build_prompt_from_template(template_conv, question)
     model_inputs = tokenizer(prompt, return_tensors="pt").to(device)
+
+    generate_kwargs = {
+        "inputs": model_inputs["input_ids"],
+        "attention_mask": model_inputs.get("attention_mask", None),
+        "max_new_tokens": 100,
+        "do_sample": False,
+        "use_cache": True,
+    }
+
+    if tokenizer.eos_token_id is not None:
+        generate_kwargs["eos_token_id"] = tokenizer.eos_token_id
+    if tokenizer.pad_token_id is not None:
+        generate_kwargs["pad_token_id"] = tokenizer.pad_token_id
+    elif tokenizer.eos_token_id is not None:
+        generate_kwargs["pad_token_id"] = tokenizer.eos_token_id
+
+    generate_kwargs["stopping_criteria"] = get_stopping_criteria(tokenizer)
+
     with torch.inference_mode():
-        outputs = model.generate(
-            inputs=model_inputs["input_ids"],
-            attention_mask=model_inputs.get("attention_mask", None),
-            max_new_tokens=100,
-        )
+        outputs = model.generate(**generate_kwargs)
     new_tokens = outputs[0][model_inputs["input_ids"].shape[1]:]
-    answer = tokenizer.decode(new_tokens, skip_special_tokens=True)
+
+    answer = tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
+    if not answer:
+        answer = tokenizer.decode(new_tokens, skip_special_tokens=False).strip()
+        if not answer:
+            answer = "[EMPTY_GENERATION]"
     return answer
 
 
