@@ -8,6 +8,9 @@ from transformers import AutoTokenizer
 
 from model.language_model.llava_llama import LlavaLlamaForCausalLM
 from model.language_model.llava_qwen import LlavaQwenForCausalLM
+from conversation import conv_vicuna_v1, conv_qwen2_5
+
+import argparse
 
 def load_model(model_path):
     if "qwen" in model_path:
@@ -19,9 +22,10 @@ def load_model(model_path):
 def load_tokenizer(model_path):
     return AutoTokenizer.from_pretrained(model_path, use_fast=False)
 
-def ask(model, tokenizer, question):
+def ask(model, tokenizer, question, conversation):
     device = next(model.parameters()).device
-    model_inputs = tokenizer(question, return_tensors="pt").to(device)
+    prompt = conversation.get_prompt(question)
+    model_inputs = tokenizer(prompt, return_tensors="pt").to(device)
     with torch.inference_mode():
         outputs = model.generate(
             inputs=model_inputs["input_ids"],
@@ -32,17 +36,27 @@ def ask(model, tokenizer, question):
     answer = tokenizer.decode(new_tokens, skip_special_tokens=True)
     return answer
 
+if __name__ == "__main__":
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument("--model-path", type=str)
 
-MODEL_PATH = "/leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2--ve-qwen2_5"
+args = argparser.parse_args()
+MODEL_PATH = args.model_path
+
 model = load_model(MODEL_PATH)
 model.eval()
 tokenizer = load_tokenizer(MODEL_PATH)
+conv = conv_qwen2_5.copy() if "qwen" in MODEL_PATH else conv_vicuna_v1.copy()
 
-input_str = ""
+questions = [
+    "Hi! What is your name?",
+    "What color is the sky?",
+    "What color is the sky? Answer with a single word or phrase.",
+    "Where is the sky located with respect to the ground?",
+    "Where is the sky located with respect to the ground? Answer with a single word or phrase."
+]
 
-while True:
-    input_str = input("Enter your question (Ctrl-D to exit): ")
-    if input_str == u'\u0004':
-        break
-    answer = ask(model, tokenizer, input_str)
-    print("Answer:", answer)
+for question in questions:
+    print("Question: ", question)
+    answer = ask(model, tokenizer, question, conv)
+    print("Answer: ", answer)
