@@ -49,7 +49,4 @@ if [ -z "${MODEL_PATH}" ]; then
 fi
 
 echo "Running array task ${SLURM_ARRAY_TASK_ID} with model: ${MODEL_PATH}"
-torchrun \
-    --nnodes=$SLURM_NNODES --nproc-per-node=1 --rdzv-endpoint=$MASTER_ADDR --rdzv-id=$SLURM_JOB_NAME --rdzv-backend=c10d \
-    test_gen/load_file_ask.py \
-    --model-path "${MODEL_PATH}"
+python test_gen/load_file_ask.py --model-path "${MODEL_PATH}"
