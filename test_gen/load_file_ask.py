@@ -54,8 +54,6 @@ def ask(model, tokenizer, question, template_conv):
     elif tokenizer.eos_token_id is not None:
         generate_kwargs["pad_token_id"] = tokenizer.eos_token_id
 
-    generate_kwargs["stopping_criteria"] = get_stopping_criteria(tokenizer)
-
     with torch.inference_mode():
         outputs = model.generate(**generate_kwargs)
     new_tokens = outputs[0][model_inputs["input_ids"].shape[1]:]
@@ -71,7 +69,7 @@ def ask(model, tokenizer, question, template_conv):
 def infer_conv_mode(model_path, override=None):
     if override is not None:
         return override
-    return "qwen2_5" if "qwen" in model_path.lower() else "vicuna_v1"
+    return "qwen2_5" if "qwen" in model_path.lower() else "llava_v1"
 
 
 if __name__ == "__main__":
