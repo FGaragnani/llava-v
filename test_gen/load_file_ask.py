@@ -9,7 +9,6 @@ from transformers import AutoTokenizer
 from model.language_model.llava_llama import LlavaLlamaForCausalLM
 from model.language_model.llava_qwen import LlavaQwenForCausalLM
 from conversation import conv_templates
-from mm_utils import get_model_name_from_path
 
 import argparse
 
@@ -53,21 +52,7 @@ def ask(model, tokenizer, question, template_conv):
 def infer_conv_mode(model_path, override=None):
     if override is not None:
         return override
-
-    model_name = get_model_name_from_path(model_path).lower()
-    if "qwen" in model_name:
-        return "qwen2_5"
-    if "llama-2" in model_name:
-        return "llava_llama_2"
-    if "mistral" in model_name:
-        return "mistral_instruct"
-    if "v1.6-34b" in model_name:
-        return "chatml_direct"
-    if "v1" in model_name:
-        return "llava_v1"
-    if "mpt" in model_name:
-        return "mpt"
-    return "llava_v0"
+    return "qwen2_5" if "qwen" in model_path.lower() else "vicuna_v1"
 
 
 if __name__ == "__main__":
