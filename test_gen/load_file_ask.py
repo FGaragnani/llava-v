@@ -8,23 +8,36 @@ from transformers import AutoTokenizer
 
 from model.language_model.llava_llama import LlavaLlamaForCausalLM
 from model.language_model.llava_qwen import LlavaQwenForCausalLM
-from conversation import conv_vicuna_v1, conv_qwen2_5
+from conversation import conv_templates
+from mm_utils import get_model_name_from_path
 
 import argparse
+
 
 def load_model(model_path):
     if "qwen" in model_path:
         model = LlavaQwenForCausalLM.from_pretrained(model_path)
     else:
         model = LlavaLlamaForCausalLM.from_pretrained(model_path)
-    return model.to("cuda:0") if torch.cuda.is_available() else model
+    if torch.cuda.is_available():
+        model = model.cuda()
+    return model
+
 
 def load_tokenizer(model_path):
     return AutoTokenizer.from_pretrained(model_path, use_fast=False)
 
-def ask(model, tokenizer, question, conversation):
+
+def build_prompt_from_template(template_conv, question):
+    conv = template_conv.copy()
+    conv.append_message(conv.roles[0], question)
+    conv.append_message(conv.roles[1], None)
+    return conv.get_prompt()
+
+
+def ask(model, tokenizer, question, template_conv):
     device = next(model.parameters()).device
-    prompt = conversation.get_prompt(question)
+    prompt = build_prompt_from_template(template_conv, question)
     model_inputs = tokenizer(prompt, return_tensors="pt").to(device)
     with torch.inference_mode():
         outputs = model.generate(
@@ -36,27 +49,52 @@ def ask(model, tokenizer, question, conversation):
     answer = tokenizer.decode(new_tokens, skip_special_tokens=True)
     return answer
 
+
+def infer_conv_mode(model_path, override=None):
+    if override is not None:
+        return override
+
+    model_name = get_model_name_from_path(model_path).lower()
+    if "qwen" in model_name:
+        return "qwen2_5"
+    if "llama-2" in model_name:
+        return "llava_llama_2"
+    if "mistral" in model_name:
+        return "mistral_instruct"
+    if "v1.6-34b" in model_name:
+        return "chatml_direct"
+    if "v1" in model_name:
+        return "llava_v1"
+    if "mpt" in model_name:
+        return "mpt"
+    return "llava_v0"
+
+
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("--model-path", type=str)
+    argparser.add_argument("--model-path", type=str, required=True)
+    argparser.add_argument("--conv-mode", type=str, default=None)
+    args = argparser.parse_args()
 
-args = argparser.parse_args()
-MODEL_PATH = args.model_path
+    model_path = args.model_path
+    conv_mode = infer_conv_mode(model_path, override=args.conv_mode)
+    if conv_mode not in conv_templates:
+        raise ValueError(f"Unknown conv mode: {conv_mode}. Available: {sorted(conv_templates.keys())}")
 
-model = load_model(MODEL_PATH)
-model.eval()
-tokenizer = load_tokenizer(MODEL_PATH)
-conv = conv_qwen2_5.copy() if "qwen" in MODEL_PATH else conv_vicuna_v1.copy()
+    model = load_model(model_path)
+    model.eval()
+    tokenizer = load_tokenizer(model_path)
+    template_conv = conv_templates[conv_mode]
 
-questions = [
-    "Hi! What is your name?",
-    "What color is the sky?",
-    "What color is the sky? Answer with a single word or phrase.",
-    "Where is the sky located with respect to the ground?",
-    "Where is the sky located with respect to the ground? Answer with a single word or phrase."
-]
+    questions = [
+        "Hi! What is your name?",
+        "What color is the sky?",
+        "What color is the sky? Answer with a single word or phrase.",
+        "Where is the sky located with respect to the ground?",
+        "Where is the sky located with respect to the ground? Answer with a single word or phrase.",
+    ]
 
-for question in questions:
-    print("Question: ", question)
-    answer = ask(model, tokenizer, question, conv)
-    print("Answer: ", answer)
+    for question in questions:
+        print("Question:", question)
+        answer = ask(model, tokenizer, question, template_conv)
+        print("Answer:", answer)

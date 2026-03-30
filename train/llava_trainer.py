@@ -6,7 +6,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from PIL import Image
 import bitsandbytes
-import os
 
 from torch.utils.data import Sampler
 from llava.train.attn_pooler import MHAPooler
@@ -352,7 +351,6 @@ class LLaVATrainer(Trainer):
         outputs = model(**inputs)
         base_loss = outputs.loss if hasattr(outputs, 'loss') else outputs[0]
         grand_extra_loss = torch.zeros((), device=base_loss.device)
-        grand_loss_applied = False
         align_forward_calls = 0
 
         def attach_alignment_graph(tensor: Optional[torch.Tensor]):
@@ -864,13 +862,13 @@ class LLaVATrainer(Trainer):
             print("[GrandAlignDebug] Missing required inputs for GranD loss; skipping alignment.")
 
         # ZeRO-3 safety: keep alignment_encoder forward-call count consistent across ranks.
+        ####
         expected_align_calls = 0
         if labels is not None and hasattr(labels, 'size'):
             expected_align_calls = int(labels.size(0))
         elif inputs.get('input_ids', None) is not None and hasattr(inputs['input_ids'], 'size'):
             expected_align_calls = int(inputs['input_ids'].size(0))
 
-        # GRAND_FORCE_MASK triggers one additional alignment_encoder forward.
         if os.environ.get("GRAND_FORCE_MASK", "0") == "1":
             expected_align_calls += 1
 
@@ -891,12 +889,8 @@ class LLaVATrainer(Trainer):
                     )
             except Exception as e:
                 logger.warning(f"[GrandAlignDebug] align_call_debug_failed: {repr(e)}")
+        ####
 
-        # if not grand_loss_applied:
-        #     print(f"Rank {torch.distributed.get_rank()} running alignment")
-        #     print("[GrandAlignDebug] No GranD loss applied; running dummy alignment for graph consistency.")
-        #     run_dummy_text_image_alignment()
-        
         total_loss = base_loss + (grand_extra_loss * weight)
         if return_outputs:
             return total_loss, outputs
