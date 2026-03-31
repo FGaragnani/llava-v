@@ -32,9 +32,8 @@ export HF_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 
 MODELS=(
-    llava-v_s2--mean_24L
-    llava-v_s2--mean_1L
-)
+    /leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2--mean_24L
+    /leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2--mean_1L
 
 if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
     echo "SLURM_ARRAY_TASK_ID is not set. Submit this script with sbatch."
