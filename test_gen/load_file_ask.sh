@@ -32,11 +32,8 @@ export HF_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 
 MODELS=(
-    /leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2--ve-qwen2_5
-    /leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2--mean-midL_ve-qwen2_5
-    /leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/stage_three/llava-base_s3--align_extra-data
-    /leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/stage_three/llava-base_s3--align_mean-midL
-    /leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-base/llava_s2
+    llava-v_s2--mean_24L
+    llava-v_s2--mean_1L
 )
 
 if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
