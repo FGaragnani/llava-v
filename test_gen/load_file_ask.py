@@ -93,8 +93,8 @@ if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
     argparser.add_argument("--model-path", type=str, required=True)
     argparser.add_argument("--model-base", type=str, default=None)
-    argparser.add_argument("--sky-image", type=str, default="sky.png")
-    argparser.add_argument("--ground-image", type=str, default="ground.jpg")
+    argparser.add_argument("--sky-image", type=str, default="test_gen/sky.png")
+    argparser.add_argument("--ground-image", type=str, default="test_gen/ground.jpg")
     argparser.add_argument("--conv-mode", type=str, default=None)
     args = argparser.parse_args()
 
