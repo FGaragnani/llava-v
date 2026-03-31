@@ -11,7 +11,7 @@
 #SBATCH --partition=boost_usr_prod
 #SBATCH --account=AIFAC_S02_096
 #SBATCH --time=00:30:00
-#SBATCH --array=0-4
+#SBATCH --array=0-2
 
 module load anaconda3/2022.05
 module load profile/deeplrn
@@ -34,6 +34,7 @@ export TRANSFORMERS_OFFLINE=1
 MODELS=(
     /leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2--mean_24L
     /leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2--mean_1L
+)
 
 if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
     echo "SLURM_ARRAY_TASK_ID is not set. Submit this script with sbatch."
