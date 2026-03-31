@@ -21,7 +21,7 @@ def load_image(image_path):
 
 def ask(model, tokenizer, image_processor, question, images, conv_mode="llava_v1"):
     """Ask a question given images using the model."""
-    # device = next(model.parameters()).device
+    device = next(model.parameters()).device
     
     # Build prompt with image tokens
     conv = conv_templates[conv_mode].copy()
@@ -36,6 +36,7 @@ def ask(model, tokenizer, image_processor, question, images, conv_mode="llava_v1
     # Tokenize prompt
     from mm_utils import tokenizer_image_token
     input_ids_result = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt')
+    print(input_ids_result)
     if isinstance(input_ids_result, list):
         input_ids = torch.tensor(input_ids_result, dtype=torch.long)
     else:
@@ -93,7 +94,7 @@ def infer_conv_mode(model_name, override=None):
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
-    # argparser.add_argument("--model-path", type=str, required=True)
+    argparser.add_argument("--model-path", type=str, required=True)
     argparser.add_argument("--model-base", type=str, default=None)
     argparser.add_argument("--sky-image", type=str, default="test_gen/sky.png")
     argparser.add_argument("--ground-image", type=str, default="test_gen/ground.jpg")
@@ -101,19 +102,21 @@ if __name__ == "__main__":
     args = argparser.parse_args()
 
     # Load model and tokenizer using canonical loader
-    # model_name = get_model_name_from_path(args.model_path)
-    # print(f"Loading model: {model_name} from {args.model_path}")
-    # tokenizer, model, image_processor, _ = load_pretrained_model(
-    #     model_path=args.model_path,
-    #     model_base=args.model_base,
-    #     model_name=model_name,
-    #     load_8bit=False,
-    #     load_4bit=False,
-    # )
+    model_name = get_model_name_from_path(args.model_path)
+    print(f"Loading model: {model_name} from {args.model_path}")
+    tokenizer, model, image_processor, _ = load_pretrained_model(
+        model_path=args.model_path,
+        model_base=args.model_base,
+        model_name=model_name,
+        load_8bit=False,
+        load_4bit=False,
+    )
 
     # Infer or override conversation mode
     conv_mode = infer_conv_mode("qwen", override=args.conv_mode)
     print(f"Using conversation mode: {conv_mode}")
+    
+    print("Tokenizer: ", tokenizer)
 
     # model.eval()
 
@@ -132,6 +135,6 @@ if __name__ == "__main__":
 
     for image, question in qa_pairs:
         print("Question:", question)
-        answer = ask(None, None, None, question, [image], conv_mode=conv_mode)
+        answer = ask(model, tokenizer, image_processor, question, [image], conv_mode=conv_mode)
         print("Answer:", answer)
         print()
