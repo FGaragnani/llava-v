@@ -10,7 +10,6 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --partition=boost_usr_prod
 #SBATCH --account=AIFAC_S02_096
-#SBATCH --qos=boost_qos_dbg
 #SBATCH --time=00:30:00
 #SBATCH --array=0-2
 
