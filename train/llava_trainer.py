@@ -861,37 +861,6 @@ class LLaVATrainer(Trainer):
         else:
             print("[GrandAlignDebug] Missing required inputs for GranD loss; skipping alignment.")
 
-        # ZeRO-3 safety: keep alignment_encoder forward-call count consistent across ranks.
-        ####
-        #if grand_mask is not None:
-        #    expected_align_calls = 0
-        #    if labels is not None and hasattr(labels, 'size'):
-        #        expected_align_calls = int(labels.size(0))
-        #    elif inputs.get('input_ids', None) is not None and hasattr(inputs['input_ids'], 'size'):
-        #        expected_align_calls = int(inputs['input_ids'].size(0))
-    #
-        #    if os.environ.get("GRAND_FORCE_MASK", "0") == "1":
-        #        expected_align_calls += 1
-    #
-        #    if expected_align_calls > 0 and align_forward_calls < expected_align_calls and grand_mask is not None:
-        #        missing_calls = expected_align_calls - align_forward_calls
-        #        for _ in range(missing_calls):
-        #            print(f"[GrandAlignDebug] Running dummy alignment rank={torch.distributed.get_rank() if torch.distributed.is_available() and torch.distributed.is_initialized() else -1} to top up forward calls: {align_forward_calls}/{expected_align_calls}")
-        #            run_dummy_text_image_alignment(forced_batch=1)
-    #
-        #    if os.environ.get("GRAND_LOSS_DEBUG", "0") == "1":
-        #        try:
-        #            rank = torch.distributed.get_rank() if torch.distributed.is_available() and torch.distributed.is_initialized() else -1
-        #            step = int(getattr(self.state, "global_step", -1))
-        #            max_steps = 20
-        #            if step < max_steps:
-        #                logger.warning(
-        #                    f"[GrandAlignDebug] rank={rank} step={step} align_calls={align_forward_calls} expected={expected_align_calls} topup={max(0, expected_align_calls - align_forward_calls)}"
-        #                )
-        #        except Exception as e:
-        #            logger.warning(f"[GrandAlignDebug] align_call_debug_failed: {repr(e)}")
-        ####
-
         total_loss = base_loss + (grand_extra_loss * weight)
         if return_outputs:
             return total_loss, outputs
