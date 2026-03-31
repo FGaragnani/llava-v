@@ -453,7 +453,7 @@ class LLaVATrainer(Trainer):
                     except ValueError:
                         num_layer = None
                     if num_layer is not None and 0 <= num_layer < len(outputs.hidden_states):
-                        hidden_states = outputs.hidden_states[num_layer]
+                        hidden_states = outputs.hidden_states[num_layer + 1]
                     elif self.args.address_layer == 'first_layer':
                         hidden_states = outputs.hidden_states[1]
                     elif self.args.address_layer == 'mid_layer':

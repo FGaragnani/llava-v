@@ -30,6 +30,8 @@ def ask(model, tokenizer, image_processor, question, images, conv_mode="llava_v1
     conv.append_message(conv.roles[0], inp)
     conv.append_message(conv.roles[1], None)
     prompt = conv.get_prompt()
+    
+    print("""Prompt:\n""" + prompt + "\n")
 
     # Tokenize prompt
     from mm_utils import tokenizer_image_token
