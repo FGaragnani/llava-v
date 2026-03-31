@@ -351,7 +351,6 @@ class LLaVATrainer(Trainer):
         outputs = model(**inputs)
         base_loss = outputs.loss if hasattr(outputs, 'loss') else outputs[0]
         grand_extra_loss = torch.zeros((), device=base_loss.device)
-        align_forward_calls = 0
 
         def attach_alignment_graph(tensor: Optional[torch.Tensor]):
             """Attach alignment output to loss graph with zero numerical contribution."""
@@ -399,8 +398,6 @@ class LLaVATrainer(Trainer):
                 dummy_input = dummy_input.to(device=target_device, dtype=target_dtype)
 
                 projected_text = align_enc(dummy_input)
-                nonlocal align_forward_calls
-                align_forward_calls += 1
 
                 # Pure graph touch: ensures alignment_encoder participates, but contributes zero loss.
                 attach_alignment_graph(projected_text)
@@ -723,7 +720,6 @@ class LLaVATrainer(Trainer):
                             # Align text to image dimensions
                             try:
                                 projected_text_batch = align_enc(text_batch)
-                                align_forward_calls += 1
                                 attach_alignment_graph(projected_text_batch)
                             except Exception as e:
                                 logger.warning(f"[GrandAlignDebug] text_align_forward_failed: {repr(e)}")
@@ -837,7 +833,6 @@ class LLaVATrainer(Trainer):
                             img_batch = torch.stack(pooled_img_embeds, dim=0).to(device=hidden_states.device, dtype=hidden_states.dtype)
                             try:
                                 projected_img_batch = align_enc(img_batch)
-                                align_forward_calls += 1
                                 attach_alignment_graph(projected_img_batch)
                             except Exception as e:
                                 logger.warning(f"[GrandAlignDebug] image_align_forward_failed: {repr(e)}")
