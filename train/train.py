@@ -667,7 +667,7 @@ def preprocess_mpt(
             trained_pos = (target[:total_len] != IGNORE_INDEX).nonzero(as_tuple=False).flatten()
             if trained_pos.numel() > 0:
                 first_ids = target[trained_pos[:8]].tolist()
-                first_toks = tokenizer.convert_ids_to_tokens(first_ids)
+                first_toks = tokenizer.decode(first_ids)
                 print(f"[mpt-mask-probe] first_trained_ids={first_ids} first_trained_tokens={first_toks}")
             else:
                 print("[mpt-mask-probe] no trained tokens in sample")
