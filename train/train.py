@@ -41,6 +41,7 @@ from PIL import Image
 
 
 local_rank = None
+_mpt_first_trained_probe_left = 8
 
 
 def rank0_print(*args):
@@ -598,6 +599,7 @@ def preprocess_mpt(
 
     # Mask targets
     sep = conv.sep + conv.roles[1]
+    global _mpt_first_trained_probe_left
     for conversation, target in zip(conversations, targets):
         total_len = int(target.ne(tokenizer.pad_token_id).sum())
 
@@ -646,6 +648,16 @@ def preprocess_mpt(
                     f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
                     f" (ignored)"
                 )
+
+        if _mpt_first_trained_probe_left > 0:
+            trained_pos = (target[:total_len] != IGNORE_INDEX).nonzero(as_tuple=False).flatten()
+            if trained_pos.numel() > 0:
+                first_ids = target[trained_pos[:8]].tolist()
+                first_toks = tokenizer.convert_ids_to_tokens(first_ids)
+                print(f"[mpt-mask-probe] first_trained_ids={first_ids} first_trained_tokens={first_toks}")
+            else:
+                print("[mpt-mask-probe] no trained tokens in sample")
+            _mpt_first_trained_probe_left -= 1
 
     return dict(
         input_ids=input_ids,
