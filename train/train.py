@@ -597,6 +597,15 @@ def preprocess_mpt(
     targets = input_ids.clone()
     assert conv.sep_style == conversation_lib.SeparatorStyle.MPT
 
+    control_ids = set()
+    for tok in ("<|im_start|>", "<|im_end|>", "assistant", "user"):
+        try:
+            tid = tokenizer.convert_tokens_to_ids(tok)
+            if tid is not None and tid >= 0 and tid != tokenizer.unk_token_id:
+                control_ids.add(int(tid))
+        except Exception:
+            pass
+
     # Mask targets
     sep = conv.sep + conv.roles[1]
     global _mpt_first_trained_probe_left
@@ -640,6 +649,11 @@ def preprocess_mpt(
 
             cur_len += effective_round_len
         target[cur_len:] = IGNORE_INDEX
+
+        if control_ids:
+            for tid in control_ids:
+                control_mask = (target[:total_len] != IGNORE_INDEX) & (target[:total_len] == tid)
+                target[:total_len][control_mask] = IGNORE_INDEX
 
         if cur_len < tokenizer.model_max_length:
             if cur_len != total_len:
