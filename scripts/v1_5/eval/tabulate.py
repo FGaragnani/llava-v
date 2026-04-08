@@ -18,12 +18,12 @@ def tabulate_results(eval_dir, experiment_csv_fname, out_pivot_fname, out_all_re
         'gqa',
         'vizwiz',
         'scienceqa',
-        'textvqa',
+        # 'textvqa',
         'pope',
         'mme',
-        'mmbench_en',
+        # 'mmbench_en',
         'mmbench_cn',
-        'seed',
+        # 'seed',
         # 'llava_w',
         # 'mmvet', # submission
         ## Addtl
@@ -36,7 +36,7 @@ def tabulate_results(eval_dir, experiment_csv_fname, out_pivot_fname, out_all_re
         # 'stvqa', # submission
         'ocrbench',
         'mmstar',
-        'realworldqa',
+        # 'realworldqa',
         # 'qbench',
         'blink',
         'mmvp',

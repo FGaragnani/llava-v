@@ -11,12 +11,12 @@ benchmarks=(
     gqa
     vizwiz
     scienceqa
-    textvqa
+    # textvqa
     pope
     mme
-    mmbench_en
+    # mmbench_en
     mmbench_cn
-    seed
+    # seed
     # mmvet
     mmmu
     mathvista
@@ -27,7 +27,7 @@ benchmarks=(
     # stvqa
     ocrbench
     mmstar
-    realworldqa
+    # realworldqa
     # qbench
     blink
     mmvp
