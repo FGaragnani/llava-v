@@ -33,6 +33,7 @@ export TRANSFORMERS_OFFLINE=1
 
 MODELS=(
     /leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2--ve-qwen2_5
+    /leonardo_scratch/large/userexternal/fgaragna/checkpoints/llava-v/llava-v_s2--mean-midL_ve-qwen2_5
 )
 
 if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
