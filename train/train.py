@@ -597,15 +597,6 @@ def preprocess_mpt(
     targets = input_ids.clone()
     assert conv.sep_style == conversation_lib.SeparatorStyle.MPT
 
-    control_ids = set()
-    for tok in ("<|im_start|>", "<|im_end|>", "assistant", "user"):
-        try:
-            tid = tokenizer.convert_tokens_to_ids(tok)
-            if tid is not None and tid >= 0 and tid != tokenizer.unk_token_id:
-                control_ids.add(int(tid))
-        except Exception:
-            pass
-
     # Mask targets
     sep = conv.sep + conv.roles[1]
     global _mpt_first_trained_probe_left
@@ -650,11 +641,6 @@ def preprocess_mpt(
             cur_len += effective_round_len
         target[cur_len:] = IGNORE_INDEX
 
-        if control_ids:
-            for tid in control_ids:
-                control_mask = (target[:total_len] != IGNORE_INDEX) & (target[:total_len] == tid)
-                target[:total_len][control_mask] = IGNORE_INDEX
-
         if cur_len < tokenizer.model_max_length:
             if cur_len != total_len:
                 target[:] = IGNORE_INDEX
@@ -672,6 +658,111 @@ def preprocess_mpt(
             else:
                 print("[mpt-mask-probe] no trained tokens in sample")
             _mpt_first_trained_probe_left -= 1
+
+    return dict(
+        input_ids=input_ids,
+        labels=targets,
+    )
+
+
+def preprocess_qwen(
+    sources,
+    tokenizer: transformers.PreTrainedTokenizer,
+    has_image: bool = False
+) -> Dict:
+    conv = conversation_lib.default_conversation.copy()
+    roles = {"human": conv.roles[0], "gpt": conv.roles[1]}
+
+    conversations = []
+    for i, source in enumerate(sources):
+        if roles[source[0]["from"]] != conv.roles[0]:
+            source = source[1:]
+
+        conv.messages = []
+        for j, sentence in enumerate(source):
+            role = roles[sentence["from"]]
+            assert role == conv.roles[j % 2], f"{i}"
+            conv.append_message(role, sentence["value"])
+        conversations.append(conv.get_prompt())
+
+    if has_image:
+        input_ids = torch.stack([
+            tokenizer_image_token(prompt, tokenizer, return_tensors='pt')
+            for prompt in conversations
+        ], dim=0)
+    else:
+        input_ids = tokenizer(
+            conversations,
+            return_tensors="pt",
+            padding="longest",
+            max_length=tokenizer.model_max_length,
+            truncation=True,
+        ).input_ids
+
+    targets = input_ids.clone()
+    assert conv.sep_style == conversation_lib.SeparatorStyle.MPT
+
+    token_count_cache = {}
+
+    def _count_tokens(text: str) -> int:
+        if text in token_count_cache:
+            return token_count_cache[text]
+        if has_image:
+            count = len(tokenizer_image_token(text, tokenizer))
+        else:
+            count = len(tokenizer(text).input_ids)
+        token_count_cache[text] = count
+        return count
+
+    sep = conv.sep + conv.roles[1]
+    for conversation, target in zip(conversations, targets):
+        total_len = int(target.ne(tokenizer.pad_token_id).sum())
+
+        rounds = conversation.split(conv.sep)
+        re_rounds = [conv.sep.join(rounds[:3])]
+        for conv_idx in range(3, len(rounds), 2):
+            re_rounds.append(conv.sep.join(rounds[conv_idx:conv_idx + 2]))
+
+        cur_len = 0
+        target[:cur_len] = IGNORE_INDEX
+        prefix_text = ""
+
+        for rou in re_rounds:
+            if rou == "":
+                break
+
+            parts = rou.split(sep)
+            if len(parts) != 2:
+                break
+            parts[0] += sep
+
+            round_text = rou + conv.sep
+            prefix_len = _count_tokens(prefix_text)
+            instruction_end_len = _count_tokens(prefix_text + parts[0])
+            round_end_len = _count_tokens(prefix_text + round_text)
+
+            round_len = max(0, round_end_len - prefix_len)
+            instruction_len = max(0, instruction_end_len - prefix_len)
+
+            remaining = total_len - cur_len
+            if remaining <= 0:
+                break
+
+            effective_round_len = min(round_len, remaining)
+            effective_instruction_len = min(instruction_len, effective_round_len)
+
+            target[cur_len : cur_len + effective_instruction_len] = IGNORE_INDEX
+            cur_len += effective_round_len
+            prefix_text += round_text
+
+        target[cur_len:] = IGNORE_INDEX
+
+        if cur_len < tokenizer.model_max_length and cur_len != total_len:
+            target[:] = IGNORE_INDEX
+            print(
+                f"WARNING: tokenization mismatch: {cur_len} vs. {total_len}."
+                f" (ignored)"
+            )
 
     return dict(
         input_ids=input_ids,
@@ -717,7 +808,8 @@ def preprocess(
         return preprocess_plain(sources, tokenizer)
     if conversation_lib.default_conversation.sep_style == conversation_lib.SeparatorStyle.LLAMA_2:
         return preprocess_llama_2(sources, tokenizer, has_image=has_image)
-    # Route by separator style so ChatML/MPT variants (e.g. qwen2_5) get correct masking.
+    if conversation_lib.default_conversation.version.startswith("qwen"):
+        return preprocess_qwen(sources, tokenizer, has_image=has_image)
     if conversation_lib.default_conversation.sep_style == conversation_lib.SeparatorStyle.MPT:
         return preprocess_mpt(sources, tokenizer, has_image=has_image)
     if conversation_lib.default_conversation.version.startswith("v1"):
