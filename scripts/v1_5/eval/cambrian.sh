@@ -9,7 +9,7 @@
 #SBATCH --mem=48G
 #SBATCH --cpus-per-task=4
 #SBATCH --partition=boost_usr_prod
-#SBATCH --account=AIFAC_S02_096
+#SBATCH --account=IscrB_EMLLM
 #SBATCH --time=02:30:00
 #SBATCH --array=0-20
 
